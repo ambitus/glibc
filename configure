@@ -5068,7 +5068,7 @@ _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   libc_cv_compiler_ok=yes
 else
-  libc_cv_compiler_ok=no
+  libc_cv_compiler_ok=no && test -n "$enable_hacker_mode" && libc_cv_compiler_ok=yes
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi

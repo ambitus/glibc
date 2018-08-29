@@ -961,7 +961,7 @@ AC_CHECK_PROG_VER(MAKEINFO, makeinfo, --version,
   [GNU texinfo.* \([0-9][0-9.]*\)],
   [4.[7-9]*|4.[1-9][0-9]*|[5-9].*],
   MAKEINFO=: aux_missing="$aux_missing makeinfo")
-AC_CHECK_PROG_VER(SED, sed, --version,
+AC_CHECK_PROG_VER(SED, sed, --version
   [GNU sed[^0-9]* \([0-9]*\.[0-9.]*\)],
   [3.0[2-9]*|3.[1-9]*|[4-9]*],
   SED=: aux_missing="$aux_missing sed")
@@ -978,7 +978,8 @@ AC_TRY_COMPILE([], [
 #error insufficient compiler
 #endif],
 	       [libc_cv_compiler_ok=yes],
-	       [libc_cv_compiler_ok=no])])
+               # If hacker mode's enabled, allow non-gcc compilers
+	       [libc_cv_compiler_ok=no && test -n "$enable_hacker_mode" && libc_cv_compiler_ok=yes])])
 AS_IF([test $libc_cv_compiler_ok != yes],
       [critic_missing="$critic_missing compiler"])
 
