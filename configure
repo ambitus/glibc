@@ -4109,6 +4109,10 @@ gnu*)
   base_os=mach/hurd ;;
 linux*)
   base_os=unix/sysv ;;
+# PORTME: any new OSs should define base_os. Otherwise the order of
+# includes will not be consistent with what they are for hurd and linux.
+zos*)
+  base_os=unix/sysv ;;
 esac
 
 # For sunos4.1.1, try sunos4.1.1, then sunos4.1, then sunos4, then sunos.
