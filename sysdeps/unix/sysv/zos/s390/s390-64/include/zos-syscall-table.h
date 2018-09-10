@@ -947,4 +947,335 @@
 #define __SYS_NR_BPX_OFFSET_379 __BPX_statx
 #define __SYS_NR_BPX_OFFSET_380 __BPX_s390_sthyi
 
+/* we use a signed long long return type for all */
+#define __ZOS_COMPAT_CHOKE_COMPILER_UNIMPLEMENTED ({_Static_assert(0, "not yet implemented");})
+#define __ZOS_COMPAT_STUB_UNIMPLEMENTED do { } while (0)
+#define __ZOS_COMPAT_UNIMPLEMENTED __ZOS_COMPAT_STUB_UNIMPLEMENTED
+
+#define __sys_proto_exit(decl_name) void decl_name (int status)
+#define __sys_proto_fork(decl_name) pid_t decl_name (void)
+#define __sys_proto_read(decl_name) ssize_t decl_name (int fd, void *buf, size_t count)
+#define __sys_proto_write(decl_name) ssize_t decl_name (int fd, const void *buf, size_t count)
+#define __sys_proto_open(decl_name) int decl_name (const char *pathname, int flags, mode_t mode)
+#define __sys_proto_close(decl_name) int decl_name (int fd)
+#define __sys_proto_restart_syscall(decl_name) int decl_name (void)
+#define __sys_proto_creat(decl_name) int decl_name (const char *pathname, mode_t mode)
+#define __sys_proto_link(decl_name) int decl_name (const char *oldpath, const char *newpath)
+#define __sys_proto_unlink(decl_name) int decl_name (const char *pathname)
+#define __sys_proto_execve(decl_name) int decl_name (const char *filename, char *const argv[], char *const envp[])
+#define __sys_proto_chdir(decl_name) int decl_name (const char *path)
+#define __sys_proto_mknod(decl_name) int decl_name (const char *pathname, mode_t mode, dev_t dev)
+#define __sys_proto_chmod(decl_name) int decl_name (const char *pathname, mode_t mode)
+#define __sys_proto_lseek(decl_name) off_t decl_name (int fd, off_t offset, int whence)
+#define __sys_proto_getpid(decl_name) pid_t decl_name (void)
+#define __sys_proto_mount(decl_name) int decl_name (const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data)
+#define __sys_proto_umount(decl_name) int decl_name (const char *target)
+#define __sys_proto_ptrace(decl_name) long decl_name (enum __ptrace_request request, pid_t pid, void *addr, void *data)
+#define __sys_proto_alarm(decl_name) unsigned int decl_name (unsigned int seconds)
+#define __sys_proto_pause(decl_name) int decl_name (void)
+#define __sys_proto_utime(decl_name) int decl_name (const char *filename, const struct utimbuf *times)
+#define __sys_proto_access(decl_name) int decl_name (const char *pathname, int mode)
+#define __sys_proto_nice(decl_name) int decl_name (int inc)
+#define __sys_proto_sync(decl_name) void decl_name (void)
+#define __sys_proto_kill(decl_name) int decl_name (pid_t pid, int sig)
+#define __sys_proto_rename(decl_name) int decl_name (const char *oldpath, const char *newpath)
+#define __sys_proto_mkdir(decl_name) int decl_name (const char *pathname, mode_t mode)
+#define __sys_proto_rmdir(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_dup(decl_name) int decl_name (int oldfd)
+#define __sys_proto_pipe(decl_name) int decl_name (int pipefd[2])
+#define __sys_proto_times(decl_name) clock_t decl_name (struct tms *buf)
+#define __sys_proto_brk(decl_name) int decl_name (void *addr)
+#define __sys_proto_signal(decl_name) void (*decl_name(int, void (*)(int)))(int)
+#define __sys_proto_acct(decl_name) int decl_name (const char *filename)
+#define __sys_proto_umount2(decl_name) int decl_name (const char *target, int flags)
+#define __sys_proto_ioctl(decl_name) int decl_name (int fd, unsigned long request, ...)
+#define __sys_proto_fcntl(decl_name) int decl_name (int fd, int cmd, ... /* arg */ )
+#define __sys_proto_setpgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_umask(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_chroot(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_ustat(decl_name) int decl_name (dev_t dev, struct ustat *ubuf)
+#define __sys_proto_dup2(decl_name) int decl_name (int oldfd, int newfd)
+#define __sys_proto_getppid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getpgrp(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setsid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sigaction(decl_name) int decl_name (int signum, const struct sigaction *act, struct sigaction *oldact)
+#define __sys_proto_sigsuspend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sigpending(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sethostname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setrlimit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getrusage(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_gettimeofday(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_settimeofday(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_symlink(decl_name) int decl_name (const char *target, const char *linkpath)
+#define __sys_proto_readlink(decl_name) ssize_t decl_name (const char *pathname, char *buf, size_t bufsiz)
+#define __sys_proto_uselib(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_swapon(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_reboot(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_readdir(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mmap(decl_name) void *decl_name (void *addr, size_t length, int prot, int flags, int fd, off_t offset)
+#define __sys_proto_munmap(decl_name) int decl_name (void *addr, size_t length)
+#define __sys_proto_truncate(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_ftruncate(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fchmod(decl_name) int decl_name (int fd, mode_t mode)
+#define __sys_proto_getpriority(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setpriority(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_statfs(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fstatfs(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_socketcall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_syslog(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setitimer(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getitimer(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_stat(decl_name) int decl_name (const char *pathname, struct stat *statbuf)
+#define __sys_proto_lstat(decl_name) int decl_name (const char *pathname, struct stat *statbuf)
+#define __sys_proto_fstat(decl_name) int decl_name (int fd, struct stat *statbuf)
+#define __sys_proto_lookup_dcookie(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_vhangup(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_idle(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_wait4(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_swapoff(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sysinfo(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_ipc(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fsync(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sigreturn(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_clone(decl_name) long decl_name (void *child_stack, unsigned long flags, int *ptid, int *ctid, unsigned long newtls)
+#define __sys_proto_setdomainname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_uname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_adjtimex(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mprotect(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sigprocmask(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_create_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_init_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_delete_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_get_kernel_syms(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_quotactl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getpgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fchdir(decl_name) int decl_name (int fd)
+#define __sys_proto_bdflush(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sysfs(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_personality(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_afs_syscall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getdents(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_select(decl_name) int decl_name (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
+#define __sys_proto_flock(decl_name) int decl_name (int fd, int operation)
+#define __sys_proto_msync(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_readv(decl_name) ssize_t decl_name (int fd, const struct iovec *iov, int iovcnt)
+#define __sys_proto_writev(decl_name) ssize_t decl_name (int fd, const struct iovec *iov, int iovcnt)
+#define __sys_proto_getsid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fdatasync(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto__sysctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mlock(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_munlock(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mlockall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_munlockall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_setparam(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_getparam(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_setscheduler(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_getscheduler(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_yield(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_get_priority_max(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_get_priority_min(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_rr_get_interval(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_nanosleep(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mremap(decl_name) void *decl_name (void *old_address, size_t old_size, size_t new_size, int flags, ... /* void *new_address */)
+#define __sys_proto_query_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_poll(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_nfsservctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_prctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigreturn(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigaction(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigprocmask(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigpending(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigtimedwait(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigqueueinfo(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigsuspend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_pread64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_pwrite64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getcwd(decl_name) char *decl_name (char *buf, size_t size)
+#define __sys_proto_capget(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_capset(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sigaltstack(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sendfile(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getpmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_putpmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_vfork(decl_name) pid_t decl_name (void)
+#define __sys_proto_getrlimit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_lchown(decl_name) int decl_name (const char *pathname, uid_t owner, gid_t group)
+#define __sys_proto_getuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_geteuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getegid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setreuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setregid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getgroups(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setgroups(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fchown(decl_name) int decl_name (int fd, uid_t owner, gid_t group)
+#define __sys_proto_setresuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getresuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setresgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getresgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_chown(decl_name) int decl_name (const char *pathname, uid_t owner, gid_t group)
+#define __sys_proto_setuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setfsuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setfsgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_pivot_root(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mincore(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_madvise(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getdents64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_readahead(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_lsetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fsetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_lgetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fgetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_listxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_llistxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_flistxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_removexattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_lremovexattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fremovexattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_gettid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_tkill(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_futex(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_setaffinity(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_getaffinity(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_tgkill(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_io_setup(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_io_destroy(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_io_getevents(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_io_submit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_io_cancel(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_exit_group(decl_name) void decl_name (int status)
+#define __sys_proto_epoll_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_epoll_ctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_epoll_wait(decl_name) int decl_name (int epfd, struct epoll_event *events, int maxevents, int timeout)
+#define __sys_proto_set_tid_address(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fadvise64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timer_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timer_settime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timer_gettime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timer_getoverrun(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timer_delete(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_clock_settime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_clock_gettime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_clock_getres(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_clock_nanosleep(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_statfs64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fstatfs64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_remap_file_pages(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mbind(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_get_mempolicy(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_set_mempolicy(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mq_open(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mq_unlink(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mq_timedsend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mq_timedreceive(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mq_notify(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mq_getsetattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_kexec_load(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_add_key(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_request_key(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_keyctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_waitid(decl_name) int decl_name (idtype_t idtype, id_t id, siginfo_t *infop, int options, struct rusage *usageinfo)
+#define __sys_proto_ioprio_set(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_ioprio_get(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_inotify_init(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_inotify_add_watch(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_inotify_rm_watch(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_migrate_pages(decl_name) long decl_name (int pid, unsigned long maxnode, const unsigned long *old_nodes, const unsigned long *new_nodes)
+#define __sys_proto_openat(decl_name) int decl_name  (int dirfd, const char *pathname, int flags, mode_t mode)
+#define __sys_proto_mkdirat(decl_name) int decl_name (int dirfd, const char *pathname, mode_t mode)
+#define __sys_proto_mknodat(decl_name) int decl_name (int dirfd, const char *pathname, mode_t mode, dev_t dev)
+#define __sys_proto_fchownat(decl_name) int decl_name (int dirfd, const char *pathname, uid_t owner, gid_t group, int flags)
+#define __sys_proto_futimesat(decl_name) int decl_name (int dirfd, const char *pathname, const struct timeval times[2])
+#define __sys_proto_newfstatat(decl_name) int decl_name (int dirfd, const char *pathname, struct stat *statbuf, int flags)
+#define __sys_proto_unlinkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_renameat(decl_name) int decl_name (int olddirfd, const char *oldpath, int newdirfd, const char *newpath)
+#define __sys_proto_linkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_symlinkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_readlinkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fchmodat(decl_name) int decl_name (int dirfd, const char *pathname, mode_t mode, int flags)
+#define __sys_proto_faccessat(decl_name) int decl_name (int dirfd, const char *pathname, int mode, int flags)
+#define __sys_proto_pselect6(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_ppoll(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_unshare(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_set_robust_list(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_get_robust_list(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_splice(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sync_file_range(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_tee(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_vmsplice(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_move_pages(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getcpu(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_epoll_pwait(decl_name) int decl_name (int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *sigmask)
+#define __sys_proto_utimes(decl_name) int decl_name (const char *filename, const struct timeval times[2])
+#define __sys_proto_fallocate(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_utimensat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_signalfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timerfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_eventfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timerfd_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timerfd_settime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_timerfd_gettime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_signalfd4(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_eventfd2(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_inotify_init1(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_pipe2(decl_name) int decl_name (int pipefd[2], int flags)
+#define __sys_proto_dup3(decl_name) int decl_name (int oldfd, int newfd, int flags)
+#define __sys_proto_epoll_create1(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_preadv(decl_name) ssize_t decl_name (int fd, const struct iovec *iov, int iovcnt, off_t offset)
+#define __sys_proto_pwritev(decl_name) ssize_t decl_name (int fd, const struct iovec *iov, int iovcnt, off_t offset)
+#define __sys_proto_rt_tgsigqueueinfo(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_perf_event_open(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fanotify_init(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_fanotify_mark(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_prlimit64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_name_to_handle_at(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_open_by_handle_at(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_clock_adjtime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_syncfs(decl_name) int decl_name (int fd)
+#define __sys_proto_setns(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_process_vm_readv(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_process_vm_writev(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_s390_runtime_instr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_kcmp(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_finit_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_setattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sched_getattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_renameat2(decl_name) int decl_name (int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)
+#define __sys_proto_seccomp(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getrandom(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_memfd_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_bpf(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_s390_pci_mmio_write(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_s390_pci_mmio_read(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_execveat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_userfaultfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_membarrier(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_recvmmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sendmmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_socket(decl_name) int decl_name (int domain, int type, int protocol)
+#define __sys_proto_socketpair(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_bind(decl_name) int decl_name (int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+#define __sys_proto_connect(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_listen(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_accept4(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getsockopt(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setsockopt(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getsockname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getpeername(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sendto(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sendmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_recvfrom(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_recvmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_shutdown(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mlock2(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_copy_file_range(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_preadv2(decl_name) ssize_t decl_name (int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)
+#define __sys_proto_pwritev2(decl_name) ssize_t decl_name (int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)
+#define __sys_proto_s390_guarded_storage(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_statx(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_s390_sthyi(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+
 #endif /* _ASM_ZOS_BPX_OFFSETS_H */
