@@ -74,34 +74,45 @@
 #define INTERNAL_SYSCALL(name, err, nr, args...) \
   ({ \
     extern SHIM_DECL (name, nr, args); \
-    SHIM (name)(args);		       \
+    SHIM_NAME (name) (&(err), args);   \
   })
 
 
 #undef INLINE_SYSCALL
-#define INLINE_SYSCALL(name, nr, args...)		      \
-  ({							      \
-    long _ret = INTERNAL_SYSCALL (name, , nr, args);	      \
-    if (__glibc_unlikely (INTERNAL_SYSCALL_ERROR_P (_ret, ))) \
-      {							      \
-	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, ));	      \
-	_ret = -1;					      \
-      }							      \
+#define INLINE_SYSCALL(name, nr, args...)				\
+  ({									\
+    INTERNAL_SYSCALL_DECL (_sc_err);					\
+    long _ret = INTERNAL_SYSCALL (name, _sc_err, nr, args);		\
+    if (INTERNAL_SYSCALL_ERROR_P (_ret, _sc_err))			\
+      {									\
+	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, _sc_err));		\
+	_ret = -1;  /* always return -1 on err */			\
+      }									\
     _ret; })
 
+/* the return code field must be unset before each call, because
+   it might not get set at all. */
 #undef INTERNAL_SYSCALL_DECL
-#define INTERNAL_SYSCALL_DECL(err) do { } while (0)
+#define INTERNAL_SYSCALL_DECL(err) long err = 0
 
 #undef INTERNAL_SYSCALL_NCS
 #define INTERNAL_SYSCALL_NCS(no, err, nr, args...)  \
   not yet implemented, choke gcc
 
+/* z/OS TODO: this should be something that is always true if
+   the syscall returns an error, and can check.
+
+   Syscalls usually return -1 on error, but sometimes they return 0.
+   Since we are always providing err to each call at the moment, and
+   know it will always be initialized to 0, we just check if it's still
+   0 at the moment. We might change it later to use both, which might
+   allow us to avoid passing in that extra parameter at times. */
 #undef INTERNAL_SYSCALL_ERROR_P
-#define INTERNAL_SYSCALL_ERROR_P(val, err)	\
-  ((unsigned long) (val) >= -4095UL)
+#define INTERNAL_SYSCALL_ERROR_P(val, err) \
+  ((void) (val), __builtin_expect ((err), 0))
 
 #undef INTERNAL_SYSCALL_ERRNO
-#define INTERNAL_SYSCALL_ERRNO(val, err)	(-(val))
+#define INTERNAL_SYSCALL_ERRNO(val, err)	((void) (val), (err))
 
 #define PTR_MANGLE(var) \
   (var) = (void *) ((uintptr_t) (var) ^ THREAD_GET_POINTER_GUARD ())

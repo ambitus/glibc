@@ -50,9 +50,7 @@ typedef uintptr_t ptr31ptr_t;
 #define SHIM_PROTO(syscall_name)
 /* take advantage of old-style declarations */
 #define SHIM_DECL(syscall_name, nr, args...) \
-  long long SHIM_NAME (syscall_name)()
-
-#define SHIM(syscall_name)
+  long long SHIM_NAME (syscall_name) ()
 
 /*************************************************************
  * macros and inline functions useful for implementing shims
@@ -96,12 +94,6 @@ extern void __libc_fatal (const char *__message) __attribute__ ((__noreturn__));
   })
 
 #include <sys/stat.h>
-
-inline uint32_t mode_t_to_bpxymode(mode_t mode)
-{
-
-}
-
 
 #endif /* __ASSEMBLER__ */
 #endif /* _ZOS_LINUX_SYSCALL_SHIM_H */
