@@ -1,0 +1,110 @@
+/* Assembler macros for 64 bit z/OS.
+   Copyright (C) 2018 Rocket Software.
+   Contributed by Giancarlo Frix (gfrix@rocketsoftware.com).
+   This file is part of the GNU C Library.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, see
+   <http://www.gnu.org/licenses/>.  */
+
+#ifndef _ZOS_SYSDEP_H
+#define _ZOS_SYSDEP_H 1
+
+#include <sysdeps/s390/s390-64/sysdep.h>
+#include <sysdeps/unix/sysdep.h>
+#include <sysdeps/unix/sysv/linux/sysdep.h>
+#include <dl-sysdep.h>	/* For RTLD_PRIVATE_ERRNO.  */
+#include <tls.h>
+#include <assert.h>
+#include "linux_shims/linux_syscall_shim.h"
+
+/* this file is based on sysdeps/unix/sysv/linux/s390/s390-64/sysdep.h */
+
+#undef SYS_ify
+#define ZOS_SYSDEP_CAT(a, b) a##b
+#define SYS_ify(syscall_name)	ZOS_SYSDEP_CAT(__NR_, syscall_name)
+#define __NR_syscall 0
+
+#define SINGLE_THREAD_BY_GLOBAL		1
+
+#ifdef __XPLINK__
+# error "Building glibc with XPLINK is not supported (yet...)"
+#endif /* __XPLINK__ */
+
+#ifdef __ASSEMBLER__
+/* dummy decls, we dont need assembler support yet */
+# undef	PSEUDO
+# define PSEUDO(name, syscall_name, args)
+# undef	PSEUDO_END
+# define PSEUDO_END(name)
+# undef	PSEUDO_NOERRNO
+# define PSEUDO_NOERRNO(name, syscall_name, args)
+# undef	PSEUDO_END_NOERRNO
+# define PSEUDO_END_NOERRNO(name)
+# undef	PSEUDO_ERRVAL
+# define PSEUDO_ERRVAL(name, syscall_name, args)
+# undef	PSEUDO_END_ERRVAL
+# define PSEUDO_END_ERRVAL(name)
+# define ret
+# define ret_NOERRNO
+# define ret_ERRVAL
+# define SYSCALL_ERROR
+# define SYSCALL_ERROR_LABEL
+# define SYSCALL_ERROR_HANDLER
+# undef	DO_CALL
+# define DO_CALL(syscall_name, args)
+# define PTR_MANGLE(reg, tmpreg)
+# define PTR_MANGLE2(reg, tmpreg)
+# define PTR_DEMANGLE(reg, tmpreg)
+
+#endif /* __ASSEMBLER__ */
+
+/* base syscall implementation */
+#undef INTERNAL_SYSCALL
+#define INTERNAL_SYSCALL(name, err, nr, args...) \
+  ({ \
+    extern SHIM_DECL (name, nr, args); \
+    SHIM (name)(args);		       \
+  })
+
+
+#undef INLINE_SYSCALL
+#define INLINE_SYSCALL(name, nr, args...)		      \
+  ({							      \
+    long _ret = INTERNAL_SYSCALL (name, , nr, args);	      \
+    if (__glibc_unlikely (INTERNAL_SYSCALL_ERROR_P (_ret, ))) \
+      {							      \
+	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, ));	      \
+	_ret = -1;					      \
+      }							      \
+    _ret; })
+
+#undef INTERNAL_SYSCALL_DECL
+#define INTERNAL_SYSCALL_DECL(err) do { } while (0)
+
+#undef INTERNAL_SYSCALL_NCS
+#define INTERNAL_SYSCALL_NCS(no, err, nr, args...)  \
+  not yet implemented, choke gcc
+
+#undef INTERNAL_SYSCALL_ERROR_P
+#define INTERNAL_SYSCALL_ERROR_P(val, err)	\
+  ((unsigned long) (val) >= -4095UL)
+
+#undef INTERNAL_SYSCALL_ERRNO
+#define INTERNAL_SYSCALL_ERRNO(val, err)	(-(val))
+
+#define PTR_MANGLE(var) \
+  (var) = (void *) ((uintptr_t) (var) ^ THREAD_GET_POINTER_GUARD ())
+#define PTR_DEMANGLE(var)	PTR_MANGLE (var)
+
+#endif /* _ZOS_SYSDEP_H */
