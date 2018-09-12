@@ -50,4 +50,43 @@
 
 /* TODO: define the __S_* constants */
 
+/* Encoding of the file mode.  */
+
+#define __S_IFMT	0xFF000000 /* These bits determine file type.  */
+
+/* File types.	*/
+#define __S_IFDIR	0x01000000 /* Directory.  */
+#define __S_IFCHR	0x02000000 /* Character device.	 */
+#define __S_IFBLK	0x06000000 /* Block device.  */
+#define __S_IFREG	0x03000000 /* Regular file.  */
+#define __S_IFIFO	0x04000000 /* FIFO.  */
+#define __S_IFLNK	0x05000000 /* Symbolic link.  */
+#define __S_IFSOCK	0x07000000 /* Socket.  */
+
+/* POSIX.1b objects.  Note that these macros always evaluate to zero.  But
+   they do it by enforcing the correct use of the macros.  */
+#define __S_TYPEISMQ(buf)  ((buf)->st_mode - (buf)->st_mode)
+#define __S_TYPEISSEM(buf) ((buf)->st_mode - (buf)->st_mode)
+#define __S_TYPEISSHM(buf) ((buf)->st_mode - (buf)->st_mode)
+
+/* Protection bits.  */
+
+#define	__S_ISUID	04000	/* Set user ID on execution.  */
+#define	__S_ISGID	02000	/* Set group ID on execution.  */
+#define	__S_ISVTX	01000	/* Save swapped text after use (sticky).  */
+#define	__S_IREAD	0400	/* Read by owner.  */
+#define	__S_IWRITE	0200	/* Write by owner.  */
+#define	__S_IEXEC	0100	/* Execute by owner.  */
+
+/* TODO: S_* macros for z/OS-specific filetypes?
+   S_ISVMEXTL, etc.  */
+
+/*
+  TODO: The following:
+#ifdef __USE_ATFILE
+# define UTIME_NOW	((1l << 30) - 1l)
+# define UTIME_OMIT	((1l << 30) - 2l)
+#endif
+*/
+
 #endif	/* bits/stat.h */
