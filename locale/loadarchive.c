@@ -201,11 +201,24 @@ _nl_load_locale_from_archive (int category, const char **namep)
 	 and failed, so we won't try again.  */
       archmapped = &headmap;
 
+#ifdef O_CLOEXEC
       /* The archive has never been opened.  */
       fd = __open_nocancel (archfname, O_RDONLY|O_LARGEFILE|O_CLOEXEC);
       if (fd < 0)
 	/* Cannot open the archive, for whatever reason.  */
 	return NULL;
+#else
+      fd = __open_nocancel (archfname, O_RDONLY|O_LARGEFILE);
+      if (fd < 0)
+	return NULL;
+      /* z/OS TODO: FIXME: There is a race condition here. */
+      if (__builtin_expect (__fcntl64_nocancel (fd, F_SETFD, FD_CLOEXEC),
+			    0) < 0)
+	{
+	  __close_nocancel (fd);
+	  return NULL;
+	}
+#endif /* O_CLOEXEC */
 
       if (__fxstat64 (_STAT_VER, fd, &archive_stat) == -1)
 	{
@@ -397,11 +410,24 @@ _nl_load_locale_from_archive (int category, const char **namep)
 	  if (fd == -1)
 	    {
 	      struct stat64 st;
+#ifdef O_CLOEXEC
 	      fd = __open_nocancel (archfname,
 				    O_RDONLY|O_LARGEFILE|O_CLOEXEC);
 	      if (fd == -1)
 		/* Cannot open the archive, for whatever reason.  */
 		return NULL;
+#else
+	      fd = __open_nocancel (archfname, O_RDONLY|O_LARGEFILE);
+	      if (fd == -1)
+		return NULL;
+	      /* z/OS TODO: FIXME: There is a race condition here. */
+	      if (__builtin_expect (__fcntl64_nocancel (fd, F_SETFD, FD_CLOEXEC),
+				    0) < 0)
+		{
+		  __close_nocancel (fd);
+		  return NULL;
+		}
+#endif /* O_CLOEXEC */
 	      /* Now verify we think this is really the same archive file
 		 we opened before.  If it has been changed we cannot trust
 		 the header we read previously.  */

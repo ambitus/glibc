@@ -97,11 +97,21 @@ __lckpwdf (void)
   /* Prevent problems caused by multiple threads.  */
   __libc_lock_lock (lock);
 
-  int oflags = O_WRONLY | O_CREAT | O_CLOEXEC;
+  int oflags = O_WRONLY | O_CREAT
+#ifdef O_CLOEXEC
+			| O_CLOEXEC
+#endif
+    ;
   lock_fd = __open (PWD_LOCKFILE, oflags, 0600);
   if (lock_fd == -1)
     /* Cannot create lock file.  */
     RETURN_CLOSE_FD (-1);
+#ifndef O_CLOEXEC
+  /* z/OS TODO: FIXME: the race condition here is dangerous, but I don't
+     think it's a security vulnerability.  */
+  if (__builtin_expect (__fcntl (lock_fd, F_SETFD, FD_CLOEXEC), 0) < 0)
+    RETURN_CLOSE_FD (-1);
+#endif
 
   /* Now we have to get exclusive write access.  Since multiple
      process could try this we won't stop when it first fails.

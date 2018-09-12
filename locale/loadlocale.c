@@ -175,10 +175,23 @@ _nl_load_locale (struct loaded_l10nfile *file, int category)
   file->decided = 1;
   file->data = NULL;
 
+#ifdef O_CLOEXEC
   fd = __open_nocancel (file->filename, O_RDONLY | O_CLOEXEC);
   if (__builtin_expect (fd, 0) < 0)
     /* Cannot open the file.  */
     return;
+#else
+  fd = __open_nocancel (file->filename, O_RDONLY);
+  if (__builtin_expect (fd, 0) < 0)
+    return;
+  /* z/OS TODO: FIXME: There is a race condition here. */
+  if (__builtin_expect (__fcntl64_nocancel (fd, F_SETFD, FD_CLOEXEC),
+			0) < 0)
+    {
+      __close_nocancel (fd);
+      return;
+    }
+#endif /* O_CLOEXEC */
 
   if (__builtin_expect (__fxstat64 (_STAT_VER, fd, &st), 0) < 0)
     {
@@ -203,9 +216,22 @@ _nl_load_locale (struct loaded_l10nfile *file, int category)
 		 _nl_category_names.str + _nl_category_name_idxs[category],
 		 _nl_category_name_sizes[category] + 1);
 
+#ifdef O_CLOEXEC
       fd = __open_nocancel (newp, O_RDONLY | O_CLOEXEC);
       if (__builtin_expect (fd, 0) < 0)
 	return;
+#else
+      fd = __open_nocancel (newp, O_RDONLY);
+      if (__builtin_expect (fd, 0) < 0)
+	return;
+      /* z/OS TODO: FIXME: There is a race condition here. */
+      if (__builtin_expect (__fcntl64_nocancel (fd, F_SETFD, FD_CLOEXEC),
+			    0) < 0)
+	{
+	  __close_nocancel (fd);
+	  return;
+	}
+#endif /* O_CLOEXEC */
 
       if (__builtin_expect (__fxstat64 (_STAT_VER, fd, &st), 0) < 0)
 	goto puntfd;

@@ -165,7 +165,12 @@ sem_open (const char *name, int oflag, ...)
     {
     try_again:
       fd = __libc_open (shm_name,
-			(oflag & ~(O_CREAT|O_ACCMODE)) | O_NOFOLLOW | O_RDWR);
+			(oflag & ~(O_CREAT|O_ACCMODE)) | O_RDWR
+			/* z/OS TODO: should check for links here */
+#ifdef O_NOFOLLOW
+						       | O_NOFOLLOW
+#endif
+			);
 
       if (fd == -1)
 	{

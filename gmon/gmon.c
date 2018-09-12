@@ -362,13 +362,22 @@ write_gmon (void)
 	size_t len = strlen (env);
 	char buf[len + 20];
 	__snprintf (buf, sizeof (buf), "%s.%u", env, __getpid ());
+#ifdef O_NOFOLLOW
 	fd = __open_nocancel (buf, O_CREAT|O_TRUNC|O_WRONLY|O_NOFOLLOW, 0666);
+#else
+	/* z/OS TODO: this isn't safe. */
+	fd = __open_nocancel (buf, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+#endif /* O_NOFOLLOW */
       }
 
     if (fd == -1)
       {
+#ifdef O_NOFOLLOW
 	fd = __open_nocancel ("gmon.out", O_CREAT|O_TRUNC|O_WRONLY|O_NOFOLLOW,
 			      0666);
+#else
+	fd = __open_nocancel ("gmon.out", O_CREAT|O_TRUNC|O_WRONLY, 0666);
+#endif /* O_NOFOLLOW */
 	if (fd < 0)
 	  {
 	    char buf[300];

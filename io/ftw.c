@@ -336,7 +336,12 @@ open_dir_stream (int *dfdp, struct ftw_data *data, struct dir_data *dirp)
       if (dfdp != NULL && *dfdp != -1)
 	{
 	  int fd = __openat64_nocancel (*dfdp, data->dirbuf + data->ftw.base,
-					O_RDONLY | O_DIRECTORY | O_NDELAY);
+					O_RDONLY
+#ifdef O_DIRECTORY
+					/* z/OS TODO: possible DOS here */
+					| O_DIRECTORY
+#endif
+					| O_NDELAY);
 	  dirp->stream = NULL;
 	  if (fd != -1 && (dirp->stream = __fdopendir (fd)) == NULL)
 	    __close_nocancel_nostatus (fd);
@@ -689,7 +694,11 @@ ftw_startup (const char *dir, int is_nftw, void *func, int descriptors,
       /* We have to be able to go back to the current working
 	 directory.  The best way to do this is to use a file
 	 descriptor.  */
-      cwdfd = __open (".", O_RDONLY | O_DIRECTORY);
+      cwdfd = __open (".", O_RDONLY
+#ifdef O_DIRECTORY
+		           | O_DIRECTORY
+#endif
+		      );
       if (cwdfd == -1)
 	{
 	  /* Try getting the directory name.  This can be needed if

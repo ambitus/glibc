@@ -189,6 +189,16 @@ _IO_file_open (FILE *fp, const char *filename, int posix_mode, int prot,
     fdesc = __open (filename, posix_mode | (is32not64 ? 0 : O_LARGEFILE), prot);
   if (fdesc < 0)
     return NULL;
+#ifndef O_CLOEXEC
+  /* If we don't have O_CLOEXEC, we need to emulate it using fcntl.  */
+  /* z/OS TODO: FIXME: Race condition here. */
+  if (fp->_flags2 & _IO_FLAGS2_CLOEXEC &&
+      __glibc_unlikely (__fcntl64_nocancel (fdesc, F_SETFD, FD_CLOEXEC) < 0))
+    {
+      __close_nocancel (fdesc);
+      return NULL;
+    }
+#endif /* ! O_CLOEXEC */
   fp->_fileno = fdesc;
   _IO_mask_flags (fp, read_write,_IO_NO_READS+_IO_NO_WRITES+_IO_IS_APPENDING);
   /* For append mode, send the file offset to the end of the file.  Don't
@@ -268,7 +278,10 @@ _IO_new_file_fopen (FILE *fp, const char *filename, const char *mode,
 	  fp->_flags2 |= _IO_FLAGS2_NOTCANCEL;
 	  continue;
 	case 'e':
+#ifdef O_CLOEXEC
+	  /* See _IO_file_open.  */
 	  oflags |= O_CLOEXEC;
+#endif /* ! O_CLOEXEC */
 	  fp->_flags2 |= _IO_FLAGS2_CLOEXEC;
 	  continue;
 	default:

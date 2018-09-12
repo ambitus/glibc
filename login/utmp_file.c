@@ -144,10 +144,23 @@ setutent_file (void)
       file_name = TRANSFORM_UTMP_FILE_NAME (__libc_utmp_file_name);
 
       file_writable = false;
+#ifdef O_CLOEXEC
       file_fd = __open_nocancel
 	(file_name, O_RDONLY | O_LARGEFILE | O_CLOEXEC);
       if (file_fd == -1)
 	return 0;
+#else
+      file_fd = __open_nocancel
+	(file_name, O_RDONLY | O_LARGEFILE);
+      if (file_fd == -1)
+	return 0;
+      if (__builtin_expect (__fcntl64_nocancel (file_fd, F_SETFD,
+						FD_CLOEXEC), 0) < 0)
+	{
+	  __close_nocancel (file_fd);
+	  return 0;
+	}
+#endif /* O_CLOEXEC */
     }
 
   __lseek64 (file_fd, 0, SEEK_SET);
@@ -375,10 +388,23 @@ pututline_file (const struct utmp *data)
       /* We must make the file descriptor writable before going on.  */
       const char *file_name = TRANSFORM_UTMP_FILE_NAME (__libc_utmp_file_name);
 
+#ifdef O_CLOEXEC
       int new_fd = __open_nocancel
 	(file_name, O_RDWR | O_LARGEFILE | O_CLOEXEC);
       if (new_fd == -1)
 	return NULL;
+#else
+      int new_fd  = __open_nocancel
+	(file_name, O_RDWR | O_LARGEFILE);
+      if (new_fd == -1)
+	return NULL;
+      if (__builtin_expect (__fcntl64_nocancel (new_fd, F_SETFD,
+						FD_CLOEXEC), 0) < 0)
+	{
+	  __close_nocancel (new_fd);
+	  return NULL;
+	}
+#endif /* O_CLOEXEC */
 
       if (__lseek64 (new_fd, __lseek64 (file_fd, 0, SEEK_CUR), SEEK_SET) == -1
 	  || __dup2 (new_fd, file_fd) < 0)
