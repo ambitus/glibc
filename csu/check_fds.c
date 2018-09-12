@@ -33,6 +33,19 @@
 #include <device-nrs.h>
 #include <not-cancel.h>
 
+/* Some OSes don't provide /dev/full. For those, we can use /dev/zero
+   instead. OSes that need to use /dev/zero instead of /dev/full
+   should define __GLIBC_NO_DEVFULL, DEV_ZERO_MAJOR, and
+   DEV_ZERO_MINOR in <device-nrs.h>.  */
+#ifndef __GLIBC_NO_DEVFULL
+# define PATH_DEV_WRITE _PATH_DEV "full"
+# define DEV_WRITE_MAJOR DEV_FULL_MAJOR
+# define DEV_WRITE_MINOR DEV_FULL_MINOR
+#else
+# define PATH_DEV_WRITE _PATH_DEV "zero"
+# define DEV_WRITE_MAJOR DEV_ZERO_MAJOR
+# define DEV_WRITE_MINOR DEV_ZERO_MINOR
+#endif
 
 /* Should other OSes (e.g., Hurd) have different versions which can
    be written in a better way?  */
@@ -48,8 +61,8 @@ check_one_fd (int fd, int mode)
       /* For writable descriptors we use /dev/full.  */
       if ((mode & O_ACCMODE) == O_WRONLY)
 	{
-	  name = _PATH_DEV "full";
-	  dev = __gnu_dev_makedev (DEV_FULL_MAJOR, DEV_FULL_MINOR);
+	  name = PATH_DEV_WRITE;
+	  dev = __gnu_dev_makedev (DEV_WRITE_MAJOR, DEV_WRITE_MINOR);
 	}
       else
 	{
@@ -90,7 +103,16 @@ __libc_check_standard_fds (void)
      is really paranoid but some people actually are.  If /dev/null
      should happen to be a symlink to somewhere else and not the
      device commonly known as "/dev/null" we bail out.  */
+#ifdef O_NOFOLLOW
   check_one_fd (STDIN_FILENO, O_WRONLY | O_NOFOLLOW);
   check_one_fd (STDOUT_FILENO, O_RDONLY | O_NOFOLLOW);
   check_one_fd (STDERR_FILENO, O_RDONLY | O_NOFOLLOW);
+#else
+  /* z/OS TODO: without O_NOFOLLOW, there's no easy way to atomically
+     check for a symlink and open, there will always be a race
+     condition, so at the moment we don't even try.  */
+  check_one_fd (STDIN_FILENO, O_WRONLY);
+  check_one_fd (STDOUT_FILENO, O_RDONLY);
+  check_one_fd (STDERR_FILENO, O_RDONLY);
+#endif
 }
