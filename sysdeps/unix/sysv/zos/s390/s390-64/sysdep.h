@@ -73,7 +73,7 @@
 #undef INTERNAL_SYSCALL
 #define INTERNAL_SYSCALL(name, err, nr, args...) \
   ({ \
-    extern SHIM_DECL (name, nr, args); \
+    extern SHIM_DECL (name); \
     SHIM_NAME (name) (&(err), args);   \
   })
 
@@ -93,7 +93,7 @@
 /* the return code field must be unset before each call, because
    it might not get set at all. */
 #undef INTERNAL_SYSCALL_DECL
-#define INTERNAL_SYSCALL_DECL(err) long err = 0
+#define INTERNAL_SYSCALL_DECL(err) int err = 0
 
 #undef INTERNAL_SYSCALL_NCS
 #define INTERNAL_SYSCALL_NCS(no, err, nr, args...)  \
@@ -114,8 +114,10 @@
 #undef INTERNAL_SYSCALL_ERRNO
 #define INTERNAL_SYSCALL_ERRNO(val, err)	((void) (val), (err))
 
+#undef PTR_MANGLE
 #define PTR_MANGLE(var) \
   (var) = (void *) ((uintptr_t) (var) ^ THREAD_GET_POINTER_GUARD ())
+#undef PTR_DEMANGLE
 #define PTR_DEMANGLE(var)	PTR_MANGLE (var)
 
 #endif /* _ZOS_SYSDEP_H */

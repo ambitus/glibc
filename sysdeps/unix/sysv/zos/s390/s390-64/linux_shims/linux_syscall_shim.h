@@ -40,17 +40,16 @@ typedef uintptr_t ptr31ptr_t;
 /* generic utility macros */
 #define _SHIM_CAT(a, b) _SHIM_INDIR_CAT (a, b)
 #define _SHIM_INDIR_CAT(a, b) a##b
-#define _SHIM_STRINGIFY(a) _SHIM_INDIR_STRINGIFY(a)
+#define _SHIM_STRINGIFY(a) _SHIM_INDIR_STRINGIFY (a)
 #define _SHIM_INDIR_STRINGIFY(a) #a
 /* end generic utility macros */
 
 
 
 #define SHIM_NAME(syscall_name) _SHIM_CAT (__linux_compat_, syscall_name)
-#define SHIM_PROTO(syscall_name)
-/* take advantage of old-style declarations */
-#define SHIM_DECL(syscall_name, nr, args...) \
-  long long SHIM_NAME (syscall_name) ()
+/* Look up proto from our unholy table of protos */
+#define SHIM_DECL(syscall_name) \
+  _SHIM_CAT (__sys_proto_, syscall_name) (SHIM_NAME(syscall_name))
 
 /*************************************************************
  * macros and inline functions useful for implementing shims
@@ -60,7 +59,7 @@ typedef uintptr_t ptr31ptr_t;
 
 extern void __libc_fatal (const char *__message) __attribute__ ((__noreturn__));
 #define BPX_CALL(name, ftype, args...) \
-  ((ftype)(BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name))))(args)
+  ((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args)
 
 /* emit an error at runtime */
 #define _SHIM_NOT_YET_IMPLEMENTED			\
