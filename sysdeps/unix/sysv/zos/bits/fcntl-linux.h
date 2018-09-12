@@ -113,12 +113,10 @@
 #endif
 
 #ifdef __USE_XOPEN2K8
-# define O_DIRECTORY	__O_DIRECTORY	/* Must be a directory.	 */
-# define O_NOFOLLOW	__O_NOFOLLOW	/* Do not follow links.	 */
-# if 0
-/* z/OS has no O_CLOEXEC */
-#  define O_CLOEXEC	__O_CLOEXEC	/* Set close_on_exec.  */
-# endif
+/* z/OS has no O_CLOEXEC, O_NOFOLLOW, O_DIRECTORY */
+/* #define O_DIRECTORY  __O_DIRECTORY */  /* Must be a directory.  */
+/* #define O_NOFOLLOW   __O_NOFOLLOW  */  /* Do not follow links.  */
+/* #define O_CLOEXEC    __O_CLOEXEC   */  /* Set close_on_exec.    */
 #endif
 
 #ifdef __USE_GNU
