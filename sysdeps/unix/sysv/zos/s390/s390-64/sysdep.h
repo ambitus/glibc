@@ -25,8 +25,6 @@
 #include <sysdeps/unix/sysv/linux/sysdep.h>
 #include <dl-sysdep.h>	/* For RTLD_PRIVATE_ERRNO.  */
 #include <tls.h>
-#include <assert.h>
-#include "linux_shims/linux_syscall_shim.h"
 
 /* this file is based on sysdeps/unix/sysv/linux/s390/s390-64/sysdep.h */
 
@@ -41,7 +39,61 @@
 # error "Building glibc with XPLINK is not supported (yet...)"
 #endif /* __XPLINK__ */
 
-#ifdef __ASSEMBLER__
+#ifndef __ASSEMBLER__
+# include <assert.h>
+# include "linux_shims/linux_syscall_shim.h"
+/* base syscall implementation */
+# undef INTERNAL_SYSCALL
+# define INTERNAL_SYSCALL(name, err, nr, args...) \
+  ({ \
+    extern SHIM_DECL (name); \
+    SHIM_NAME (name) (&(err), args);   \
+  })
+
+
+# undef INLINE_SYSCALL
+# define INLINE_SYSCALL(name, nr, args...)				\
+  ({									\
+    INTERNAL_SYSCALL_DECL (_sc_err);					\
+    long _ret = INTERNAL_SYSCALL (name, _sc_err, nr, args);		\
+    if (INTERNAL_SYSCALL_ERROR_P (_ret, _sc_err))			\
+      {									\
+	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, _sc_err));		\
+	_ret = -1;  /* always return -1 on err */			\
+      }									\
+    _ret; })
+
+/* the return code field must be unset before each call, because
+   it might not get set at all. */
+# undef INTERNAL_SYSCALL_DECL
+# define INTERNAL_SYSCALL_DECL(err) int err = 0
+
+# undef INTERNAL_SYSCALL_NCS
+# define INTERNAL_SYSCALL_NCS(no, err, nr, args...)  \
+  not yet implemented, choke gcc
+
+/* z/OS TODO: this should be something that is always true if
+   the syscall returns an error, and can check.
+
+   Syscalls usually return -1 on error, but sometimes they return 0.
+   Since we are always providing err to each call at the moment, and
+   know it will always be initialized to 0, we just check if it's still
+   0 at the moment. We might change it later to use both, which might
+   allow us to avoid passing in that extra parameter at times. */
+# undef INTERNAL_SYSCALL_ERROR_P
+# define INTERNAL_SYSCALL_ERROR_P(val, err) \
+  ((void) (val), __builtin_expect ((err), 0))
+
+# undef INTERNAL_SYSCALL_ERRNO
+# define INTERNAL_SYSCALL_ERRNO(val, err)	((void) (val), (err))
+
+# undef PTR_MANGLE
+# define PTR_MANGLE(var) \
+  (var) = (void *) ((uintptr_t) (var) ^ THREAD_GET_POINTER_GUARD ())
+# undef PTR_DEMANGLE
+# define PTR_DEMANGLE(var)	PTR_MANGLE (var)
+
+#else /* __ASSEMBLER__ */
 /* dummy decls, we dont need assembler support yet */
 # undef	PSEUDO
 # define PSEUDO(name, syscall_name, args)
@@ -69,55 +121,5 @@
 
 #endif /* __ASSEMBLER__ */
 
-/* base syscall implementation */
-#undef INTERNAL_SYSCALL
-#define INTERNAL_SYSCALL(name, err, nr, args...) \
-  ({ \
-    extern SHIM_DECL (name); \
-    SHIM_NAME (name) (&(err), args);   \
-  })
-
-
-#undef INLINE_SYSCALL
-#define INLINE_SYSCALL(name, nr, args...)				\
-  ({									\
-    INTERNAL_SYSCALL_DECL (_sc_err);					\
-    long _ret = INTERNAL_SYSCALL (name, _sc_err, nr, args);		\
-    if (INTERNAL_SYSCALL_ERROR_P (_ret, _sc_err))			\
-      {									\
-	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, _sc_err));		\
-	_ret = -1;  /* always return -1 on err */			\
-      }									\
-    _ret; })
-
-/* the return code field must be unset before each call, because
-   it might not get set at all. */
-#undef INTERNAL_SYSCALL_DECL
-#define INTERNAL_SYSCALL_DECL(err) int err = 0
-
-#undef INTERNAL_SYSCALL_NCS
-#define INTERNAL_SYSCALL_NCS(no, err, nr, args...)  \
-  not yet implemented, choke gcc
-
-/* z/OS TODO: this should be something that is always true if
-   the syscall returns an error, and can check.
-
-   Syscalls usually return -1 on error, but sometimes they return 0.
-   Since we are always providing err to each call at the moment, and
-   know it will always be initialized to 0, we just check if it's still
-   0 at the moment. We might change it later to use both, which might
-   allow us to avoid passing in that extra parameter at times. */
-#undef INTERNAL_SYSCALL_ERROR_P
-#define INTERNAL_SYSCALL_ERROR_P(val, err) \
-  ((void) (val), __builtin_expect ((err), 0))
-
-#undef INTERNAL_SYSCALL_ERRNO
-#define INTERNAL_SYSCALL_ERRNO(val, err)	((void) (val), (err))
-
-#undef PTR_MANGLE
-#define PTR_MANGLE(var) \
-  (var) = (void *) ((uintptr_t) (var) ^ THREAD_GET_POINTER_GUARD ())
-#undef PTR_DEMANGLE
-#define PTR_DEMANGLE(var)	PTR_MANGLE (var)
 
 #endif /* _ZOS_SYSDEP_H */
