@@ -1000,7 +1000,7 @@
 #define __sys_proto_setsid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_sigaction(decl_name) int decl_name (int *errcode, int signum, const struct sigaction *act, struct sigaction *oldact)
 #define __sys_proto_sigsuspend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sigpending(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sigpending(decl_name) int decl_name (int *errcode, sigset_t *set)
 #define __sys_proto_sethostname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_setrlimit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_getrusage(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1042,7 +1042,7 @@
 #define __sys_proto_uname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_adjtimex(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_mprotect(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sigprocmask(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_sigprocmask(decl_name) int decl_name (int *errcode, int how, const old_kernel_sigset_t *set, old_kernel_sigset_t *oldset)
 #define __sys_proto_create_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_init_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_delete_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1082,11 +1082,11 @@
 #define __sys_proto_nfsservctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_prctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_rt_sigreturn(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_rt_sigaction(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_rt_sigprocmask(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_rt_sigpending(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_rt_sigtimedwait(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_rt_sigqueueinfo(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_rt_sigaction(decl_name) int decl_name (int *errcode, int signum, const struct kernel_sigaction *act, struct kernel_sigaction *oldact, size_t sigsetsize)
+#define __sys_proto_rt_sigprocmask(decl_name) int decl_name (int *errcode, int how, const sigset_t *set, sigset_t *oldset, size_t sigsetsize)
+#define __sys_proto_rt_sigpending(decl_name) int decl_name (int *errcode, sigset_t *set, size_t sigsetsize)
+#define __sys_proto_rt_sigtimedwait(decl_name) int decl_name (int *errcode, const sigset_t *set, siginfo_t *info, const struct timespec *timeout, size_t sigsetsize)
+#define __sys_proto_rt_sigqueueinfo(decl_name) int decl_name (int *errcode, pid_t tgid, int sig, siginfo_t *uinfo)
 #define __sys_proto_rt_sigsuspend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_pread64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_pwrite64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1137,7 +1137,7 @@
 #define __sys_proto_fremovexattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_gettid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_tkill(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_futex(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_futex(decl_name) int decl_name (int *errcode, int *uaddr, int futex_op, int val, const struct timespec *timeout, ...)
 #define __sys_proto_sched_setaffinity(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_sched_getaffinity(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_tgkill(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1245,7 +1245,7 @@
 #define __sys_proto_sched_getattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_renameat2(decl_name) int decl_name (int *errcode, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)
 #define __sys_proto_seccomp(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getrandom(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getrandom(decl_name) ssize_t decl_name (int *errcode, void *buf, size_t buflen, unsigned int flags)
 #define __sys_proto_memfd_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_bpf(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_s390_pci_mmio_write(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
