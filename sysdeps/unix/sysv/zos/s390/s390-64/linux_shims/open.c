@@ -9,7 +9,7 @@
 typedef void (*bpx4opn_t)(const uint32_t *pathname_len,
 			  const char * const *pathname,
 			  const struct bpxyopnf * const *options,
-			  const struct bpxymode * const *mode,
+			  const mode_t *mode,
 			  int32_t *retval, int32_t *retcode,
 			  int32_t *reason_code);
 
@@ -22,27 +22,22 @@ typedef void (*bpx4opn_t)(const uint32_t *pathname_len,
    standard wrong, but use it anyway for now.
  */
 
-int
-__linux_compat_open (const char *pathname, int flags, mode_t mode)
+int32_t
+__linux_compat_open (long *err_code, const char *pathname, int flags, mode_t mode)
 {
-  int32_t retval, retcode, reason_code;
+  int32_t retval, reason_code;
   int32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH(pathname, -1);
-  int32_t mode_field = mode_t_to_bpxymode(mode);
   BPX_CALL (open, bpx4opn_t, &pathname_len, &pathname, &flags,
-	    &mode_field, &retval, &retcode, &reason_code);
-  if (__glibc_unlikely(retval == -1))
-    {
-      __set_errno(retcode);
-    }
+	    &mode, &retval, &err_code, &reason_code);
   /* TODO: check important reason codes. */
   return retval;
 }
 
-int
-__linux_compat_openat (int dirfd, const char *pathname, int flags,
+int32_t
+__linux_compat_openat (long *err_code, int dirfd, const char *pathname, int flags,
 		       mode_t mode)
 {
   if (dirfd == AT_FDCWD || *pathname == '/')
-    return __linux_compat_open(pathname, flags, mode);
-  _SHIM_NOT_YET_IMPLEMENTED
+    return __linux_compat_open(err_code, pathname, flags, mode);
+  _SHIM_NOT_YET_IMPLEMENTED;
 }
