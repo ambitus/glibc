@@ -94,31 +94,9 @@
 # define PTR_DEMANGLE(var)	PTR_MANGLE (var)
 
 #else /* __ASSEMBLER__ */
-/* dummy decls, we dont need assembler support yet */
-# undef	PSEUDO
-# define PSEUDO(name, syscall_name, args)
-# undef	PSEUDO_END
-# define PSEUDO_END(name)
-# undef	PSEUDO_NOERRNO
-# define PSEUDO_NOERRNO(name, syscall_name, args)
-# undef	PSEUDO_END_NOERRNO
-# define PSEUDO_END_NOERRNO(name)
-# undef	PSEUDO_ERRVAL
-# define PSEUDO_ERRVAL(name, syscall_name, args)
-# undef	PSEUDO_END_ERRVAL
-# define PSEUDO_END_ERRVAL(name)
-# define ret
-# define ret_NOERRNO
-# define ret_ERRVAL
-# define SYSCALL_ERROR
-# define SYSCALL_ERROR_LABEL
-# define SYSCALL_ERROR_HANDLER
-# undef	DO_CALL
-# define DO_CALL(syscall_name, args)
-# define PTR_MANGLE(reg, tmpreg)
-# define PTR_MANGLE2(reg, tmpreg)
-# define PTR_DEMANGLE(reg, tmpreg)
-
+/* dummy out or use the z/Linux decls for now, we dont need assembler
+   support yet.  */
+# include <sysdeps/unix/sysv/linux/s390/s390-64/sysdep.h>
 #endif /* __ASSEMBLER__ */
 
 
