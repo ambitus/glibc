@@ -948,17 +948,15 @@
 #define __SYS_NR_BPX_OFFSET_380 __BPX_s390_sthyi
 
 /* TODO: move this stuff out of here */
-#define __ZOS_COMPAT_CHOKE_COMPILER_UNIMPLEMENTED ({_Static_assert(0, "not yet implemented");})
-#define __ZOS_COMPAT_STUB_UNIMPLEMENTED do { } while (0)
-#define __ZOS_COMPAT_UNIMPLEMENTED __ZOS_COMPAT_STUB_UNIMPLEMENTED
+#include <unimplemented.h>
 
-#define __sys_proto_exit(decl_name) void decl_name (int *errcode, int status)
-#define __sys_proto_fork(decl_name) pid_t decl_name (int *errcode, void)
+#define __sys_proto_exit(decl_name) int decl_name (int *errcode, int status)
+#define __sys_proto_fork(decl_name) pid_t decl_name (int *errcode)
 #define __sys_proto_read(decl_name) ssize_t decl_name (int *errcode, int fd, void *buf, size_t count)
 #define __sys_proto_write(decl_name) ssize_t decl_name (int *errcode, int fd, const void *buf, size_t count)
 #define __sys_proto_open(decl_name) int decl_name (int *errcode, const char *pathname, int flags, mode_t mode)
 #define __sys_proto_close(decl_name) int decl_name (int *errcode, int fd)
-#define __sys_proto_restart_syscall(decl_name) int decl_name (int *errcode, void)
+#define __sys_proto_restart_syscall(decl_name) int decl_name (int *errcode)
 #define __sys_proto_creat(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode)
 #define __sys_proto_link(decl_name) int decl_name (int *errcode, const char *oldpath, const char *newpath)
 #define __sys_proto_unlink(decl_name) int decl_name (int *errcode, const char *pathname)
@@ -967,16 +965,16 @@
 #define __sys_proto_mknod(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode, dev_t dev)
 #define __sys_proto_chmod(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode)
 #define __sys_proto_lseek(decl_name) off_t decl_name (int *errcode, int fd, off_t offset, int whence)
-#define __sys_proto_getpid(decl_name) pid_t decl_name (int *errcode, void)
+#define __sys_proto_getpid(decl_name) pid_t decl_name (int *errcode)
 #define __sys_proto_mount(decl_name) int decl_name (int *errcode, const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data)
 #define __sys_proto_umount(decl_name) int decl_name (int *errcode, const char *target)
 #define __sys_proto_ptrace(decl_name) long decl_name (int *errcode, enum __ptrace_request request, pid_t pid, void *addr, void *data)
 #define __sys_proto_alarm(decl_name) unsigned int decl_name (int *errcode, unsigned int seconds)
-#define __sys_proto_pause(decl_name) int decl_name (int *errcode, void)
+#define __sys_proto_pause(decl_name) int decl_name (int *errcode)
 #define __sys_proto_utime(decl_name) int decl_name (int *errcode, const char *filename, const struct utimbuf *times)
 #define __sys_proto_access(decl_name) int decl_name (int *errcode, const char *pathname, int mode)
 #define __sys_proto_nice(decl_name) int decl_name (int *errcode, int inc)
-#define __sys_proto_sync(decl_name) void decl_name (int *errcode, void)
+#define __sys_proto_sync(decl_name) int decl_name (int *errcode)
 #define __sys_proto_kill(decl_name) int decl_name (int *errcode, pid_t pid, int sig)
 #define __sys_proto_rename(decl_name) int decl_name (int *errcode, const char *oldpath, const char *newpath)
 #define __sys_proto_mkdir(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode)
@@ -1031,7 +1029,7 @@
 #define __sys_proto_lookup_dcookie(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_vhangup(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_idle(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_wait4(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_wait4(decl_name) pid_t decl_name (int *errcode, pid_t pid, int *wstatus, int options, struct rusage *rusage)
 #define __sys_proto_swapoff(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_sysinfo(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_ipc(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1039,9 +1037,9 @@
 #define __sys_proto_sigreturn(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_clone(decl_name) long decl_name (int *errcode, void *child_stack, unsigned long flags, int *ptid, int *ctid, unsigned long newtls)
 #define __sys_proto_setdomainname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_uname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_uname(decl_name) int decl_name (int* errcode, struct utsname *buf)
 #define __sys_proto_adjtimex(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mprotect(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mprotect(decl_name) int decl_name (int *errcode, void *addr, size_t len, int prot)
 #define __sys_proto_sigprocmask(decl_name) int decl_name (int *errcode, int how, const old_kernel_sigset_t *set, old_kernel_sigset_t *oldset)
 #define __sys_proto_create_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_init_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1063,10 +1061,10 @@
 #define __sys_proto_getsid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_fdatasync(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto__sysctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mlock(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_munlock(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mlockall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_munlockall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_mlock(decl_name) int decl_name (int *errcode, const void *addr, size_t len)
+#define __sys_proto_munlock(decl_name) int decl_name (int *errcode, const void *addr, size_t len)
+#define __sys_proto_mlockall(decl_name) int decl_name (int *errcode, int flags)
+#define __sys_proto_munlockall(decl_name) int decl_name (int *errcode)
 #define __sys_proto_sched_setparam(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_sched_getparam(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_sched_setscheduler(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1075,7 +1073,7 @@
 #define __sys_proto_sched_get_priority_max(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_sched_get_priority_min(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_sched_rr_get_interval(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_nanosleep(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_nanosleep(decl_name) int decl_name (int *errcode, const struct timespec *req, struct timespec *rem)
 #define __sys_proto_mremap(decl_name) void *decl_name (int *errcode, void *old_address, size_t old_size, size_t new_size, int flags, ... /* void *new_address */)
 #define __sys_proto_query_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_poll(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1097,7 +1095,7 @@
 #define __sys_proto_sendfile(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_getpmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_putpmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_vfork(decl_name) pid_t decl_name (int *errcode, void)
+#define __sys_proto_vfork(decl_name) pid_t decl_name (int *errcode)
 #define __sys_proto_getrlimit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_lchown(decl_name) int decl_name (int *errcode, const char *pathname, uid_t owner, gid_t group)
 #define __sys_proto_getuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1106,22 +1104,23 @@
 #define __sys_proto_getegid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_setreuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_setregid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getgroups(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setgroups(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getgroups(decl_name) int decl_name (int *errcode, int size, gid_t list[])
+#define __sys_proto_setgroups(decl_name) int decl_name (int *errcode, size_t size, const gid_t *list)
 #define __sys_proto_fchown(decl_name) int decl_name (int *errcode, int fd, uid_t owner, gid_t group)
 #define __sys_proto_setresuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_getresuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_setresgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_getresgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_chown(decl_name) int decl_name (int *errcode, const char *pathname, uid_t owner, gid_t group)
-#define __sys_proto_setuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_setuid(decl_name) int decl_name (int *errcode, uid_t uid)
+#define __sys_proto_setgid(decl_name) int decl_name (int *errcode, gid_t gid)
 #define __sys_proto_setfsuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_setfsgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_pivot_root(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_mincore(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_madvise(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getdents64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+/* the way glibc uses this doesn't match up with the documented proto */
+#define __sys_proto_getdents64(decl_name) int decl_name (int *errcode, unsigned int fd, char *dirp, unsigned int count)
 #define __sys_proto_readahead(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_setxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_lsetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1146,7 +1145,7 @@
 #define __sys_proto_io_getevents(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_io_submit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_io_cancel(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_exit_group(decl_name) void decl_name (int *errcode, int status)
+#define __sys_proto_exit_group(decl_name) int decl_name (int *errcode, int status)
 #define __sys_proto_epoll_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_epoll_ctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_epoll_wait(decl_name) int decl_name (int *errcode, int epfd, struct epoll_event *events, int maxevents, int timeout)
@@ -1250,7 +1249,7 @@
 #define __sys_proto_bpf(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_s390_pci_mmio_write(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_s390_pci_mmio_read(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_execveat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_execveat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags)
 #define __sys_proto_userfaultfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_membarrier(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_recvmmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
@@ -1277,5 +1276,12 @@
 #define __sys_proto_s390_guarded_storage(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_statx(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
 #define __sys_proto_s390_sthyi(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+
+/* Prototypes for z/OS-specific syscalls.
+   These are the interfaces the syscalls SHOULD have had (minus the first
+   param).
+   TODO: define better names for the functions themselves.
+   __linux_compat_* isn't really accurate with them.  */
+#define __sys_proto_opendir(decl_name) int decl_name (int *errcode, const char*name)
 
 #endif /* _ASM_ZOS_BPX_OFFSETS_H */
