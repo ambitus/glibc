@@ -18,15 +18,14 @@
    <http://www.gnu.org/licenses/>.
 
    We don't use the Linux implementation because there's no openat
-   equivalent BPX syscall, and we don't need to worry about
-   cancellation. */
+   equivalent BPX syscall. */
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
 
-#include <sysdep.h>
+#include <sysdep-cancel.h>
 
 /* Open FILE with access OFLAG.  If O_CREAT or O_TMPFILE is in OFLAG,
    a third argument is the file protection.  */
@@ -43,7 +42,7 @@ __libc_open (const char *file, int oflag, ...)
       va_end (arg);
     }
 
-  return INLINE_SYSCALL_CALL (open, file, oflag, mode);
+  return SYSCALL_CANCEL (open, file, oflag, mode);
 }
 libc_hidden_def (__libc_open)
 

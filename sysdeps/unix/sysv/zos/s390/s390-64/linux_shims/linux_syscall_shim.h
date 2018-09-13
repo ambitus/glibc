@@ -10,6 +10,7 @@
 #include <zos-syscall-table.h>
 
 #include <stdint.h>
+#include <unimplemented.h>
 
 uintptr_t bpx_call_table;
 
@@ -40,8 +41,6 @@ typedef uintptr_t ptr31ptr_t;
 /* generic utility macros */
 #define _SHIM_CAT(a, b) _SHIM_INDIR_CAT (a, b)
 #define _SHIM_INDIR_CAT(a, b) a##b
-#define _SHIM_STRINGIFY(a) _SHIM_INDIR_STRINGIFY (a)
-#define _SHIM_INDIR_STRINGIFY(a) #a
 /* end generic utility macros */
 
 
@@ -62,11 +61,8 @@ extern void __libc_fatal (const char *__message) __attribute__ ((__noreturn__));
   ((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args)
 
 /* emit an error at runtime */
-#define _SHIM_NOT_YET_IMPLEMENTED			\
-  __libc_fatal("not yet implemented in the z/OS port:"	\
-	       " file: " _SHIM_STRINGIFY(__FILE__)	\
-	       " func: " _SHIM_STRINGIFY(__FUNCTION__)	\
-	       " line: " _SHIM_STRINGIFY(__LINE__));
+#define _SHIM_NOT_YET_IMPLEMENTED \
+  __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED
 
 /* z/OS TODO: PATH_MAX isn't sufficient. It's historically unreliable.
    Check to see what the maximum possible path that can be made on z/OS
