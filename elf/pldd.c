@@ -115,7 +115,12 @@ main (int argc, char *argv[])
   /* Determine the program name.  */
   char buf[7 + 3 * sizeof (pid)];
   snprintf (buf, sizeof (buf), "/proc/%lu", pid);
-  int dfd = open (buf, O_RDONLY | O_DIRECTORY);
+  int dfd = open (buf, O_RDONLY
+/* z/OS TODO: do a stat here */
+#ifdef O_DIRECTORY
+		       | O_DIRECTORY
+#endif
+		  );
   if (dfd == -1)
     error (EXIT_FAILURE, errno, gettext ("cannot open %s"), buf);
 
@@ -147,9 +152,24 @@ main (int argc, char *argv[])
     struct thread_list *next;
   } *thread_list = NULL;
 
-  int taskfd = openat (dfd, "task", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+  int taskfd = openat (dfd, "task", O_RDONLY
+/* z/OS TODO: do a stat here */
+#ifdef O_DIRECTORY
+		       | O_DIRECTORY
+#endif
+#ifdef O_CLOEXEC
+		       | O_CLOEXEC
+#endif
+		       );
   if (taskfd == 1)
     error (EXIT_FAILURE, errno, gettext ("cannot open %s/task"), buf);
+#ifndef O_CLOEXEC
+  if (fcntl64 (taskfd, F_SETFD, FD_CLOEXEC) == -1)
+    {
+      close (taskfd);
+      error (EXIT_FAILURE, errno, gettext ("cannot open %s/task"), buf);
+    }
+#endif
   DIR *dir = fdopendir (taskfd);
   if (dir == NULL)
     error (EXIT_FAILURE, errno, gettext ("cannot prepare reading %s/task"),

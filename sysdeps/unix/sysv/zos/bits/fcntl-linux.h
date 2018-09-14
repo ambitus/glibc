@@ -76,9 +76,9 @@
 #ifndef __O_DSYNC
 # define __O_DSYNC      __GLIBC_ZOS_INTERNAL_UNIMPLEMENTED
 #endif
-#ifndef __O_TMPFILE
-# define __O_TMPFILE    __GLIBC_ZOS_INTERNAL_UNIMPLEMENTED
-#endif
+/* #ifndef __O_TMPFILE */
+/* # define __O_TMPFILE    __GLIBC_ZOS_INTERNAL_UNIMPLEMENTED */
+/* #endif */
 
 #ifndef F_GETLK
 # define F_GETLK    5	/* Get record locking info.  */
@@ -86,9 +86,9 @@
 # define F_SETLKW   7	/* Set record locking info (blocking).	*/
 #endif
 #ifndef F_GETLK64
-# define F_GETLK64	__GLIBC_ZOS_INTERNAL_UNIMPLEMENTED	/* Get record locking info.  */
-# define F_SETLK64	__GLIBC_ZOS_INTERNAL_UNIMPLEMENTED	/* Set record locking info (non-blocking).  */
-# define F_SETLKW64	__GLIBC_ZOS_INTERNAL_UNIMPLEMENTED	/* Set record locking info (blocking).	*/
+# define F_GETLK64	0	/* Get record locking info.  */
+# define F_SETLK64	0	/* Set record locking info (non-blocking).  */
+# define F_SETLKW64	0	/* Set record locking info (blocking).	*/
 #endif
 
 /* open file description locks.
@@ -103,9 +103,9 @@
    last reference to the the file description against which they were acquired
    is put. */
 #ifdef __USE_GNU
-# define F_OFD_GETLK  __GLIBC_ZOS_INTERNAL_UNIMPLEMENTED
-# define F_OFD_SETLK	__GLIBC_ZOS_INTERNAL_UNIMPLEMENTED
-# define F_OFD_SETLKW	__GLIBC_ZOS_INTERNAL_UNIMPLEMENTED
+# define F_OFD_GETLK  0
+# define F_OFD_SETLK	0
+# define F_OFD_SETLKW	0
 #endif
 
 #ifdef __USE_LARGEFILE64
@@ -123,7 +123,7 @@
 # define O_DIRECT	__O_DIRECT	/* Direct disk access.	*/
 # define O_NOATIME	__O_NOATIME	/* Do not set atime.  */
 # define O_PATH		__O_PATH	/* Resolve pathname but do not open file.  */
-# define O_TMPFILE	__O_TMPFILE	/* Atomically create nameless file.  */
+/* # define O_TMPFILE	__O_TMPFILE */	/* Atomically create nameless file.  */
 #endif
 
 /* For now, Linux has no separate synchronicity options for read
