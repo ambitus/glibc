@@ -948,340 +948,674 @@
 #define __SYS_NR_BPX_OFFSET_380 __BPX_s390_sthyi
 
 /* TODO: move this stuff out of here */
-#include <unimplemented.h>
 
-#define __sys_proto_exit(decl_name) int decl_name (int *errcode, int status)
-#define __sys_proto_fork(decl_name) pid_t decl_name (int *errcode)
-#define __sys_proto_read(decl_name) ssize_t decl_name (int *errcode, int fd, void *buf, size_t count)
+#define __sys_proto_exit(decl_name) /* int decl_name (int *errcode, int status) */
+#define __sys_proto_fork(decl_name) /* pid_t decl_name (int *errcode) */
+#define __sys_proto_read(decl_name) /* ssize_t decl_name (int *errcode, int fd, void *buf, size_t count) */
 #define __sys_proto_write(decl_name) ssize_t decl_name (int *errcode, int fd, const void *buf, size_t count)
 #define __sys_proto_open(decl_name) int decl_name (int *errcode, const char *pathname, int flags, mode_t mode)
-#define __sys_proto_close(decl_name) int decl_name (int *errcode, int fd)
-#define __sys_proto_restart_syscall(decl_name) int decl_name (int *errcode)
-#define __sys_proto_creat(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode)
-#define __sys_proto_link(decl_name) int decl_name (int *errcode, const char *oldpath, const char *newpath)
-#define __sys_proto_unlink(decl_name) int decl_name (int *errcode, const char *pathname)
-#define __sys_proto_execve(decl_name) int decl_name (int *errcode, const char *filename, char *const argv[], char *const envp[])
-#define __sys_proto_chdir(decl_name) int decl_name (int *errcode, const char *path)
-#define __sys_proto_mknod(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode, dev_t dev)
-#define __sys_proto_chmod(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode)
-#define __sys_proto_lseek(decl_name) off_t decl_name (int *errcode, int fd, off_t offset, int whence)
-#define __sys_proto_getpid(decl_name) pid_t decl_name (int *errcode)
-#define __sys_proto_mount(decl_name) int decl_name (int *errcode, const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data)
-#define __sys_proto_umount(decl_name) int decl_name (int *errcode, const char *target)
-#define __sys_proto_ptrace(decl_name) long decl_name (int *errcode, enum __ptrace_request request, pid_t pid, void *addr, void *data)
-#define __sys_proto_alarm(decl_name) unsigned int decl_name (int *errcode, unsigned int seconds)
-#define __sys_proto_pause(decl_name) int decl_name (int *errcode)
-#define __sys_proto_utime(decl_name) int decl_name (int *errcode, const char *filename, const struct utimbuf *times)
-#define __sys_proto_access(decl_name) int decl_name (int *errcode, const char *pathname, int mode)
-#define __sys_proto_nice(decl_name) int decl_name (int *errcode, int inc)
-#define __sys_proto_sync(decl_name) int decl_name (int *errcode)
-#define __sys_proto_kill(decl_name) int decl_name (int *errcode, pid_t pid, int sig)
-#define __sys_proto_rename(decl_name) int decl_name (int *errcode, const char *oldpath, const char *newpath)
-#define __sys_proto_mkdir(decl_name) int decl_name (int *errcode, const char *pathname, mode_t mode)
-#define __sys_proto_rmdir(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_dup(decl_name) int decl_name (int *errcode, int oldfd)
-#define __sys_proto_pipe(decl_name) int decl_name (int *errcode, int pipefd[2])
-#define __sys_proto_times(decl_name) clock_t decl_name (int *errcode, struct tms *buf)
-#define __sys_proto_brk(decl_name) int decl_name (int *errcode, void *addr)
-#define __sys_proto_signal(decl_name) void (*decl_name(int, void (*)(int)))(int)
-#define __sys_proto_acct(decl_name) int decl_name (int *errcode, const char *filename)
-#define __sys_proto_umount2(decl_name) int decl_name (int *errcode, const char *target, int flags)
-#define __sys_proto_ioctl(decl_name) int decl_name (int *errcode, int fd, unsigned long request, ...)
-#define __sys_proto_fcntl(decl_name) int decl_name (int *errcode, int fd, int cmd, ... /* arg */ )
-#define __sys_proto_setpgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_umask(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_chroot(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_ustat(decl_name) int decl_name (int *errcode, dev_t dev, struct ustat *ubuf)
-#define __sys_proto_dup2(decl_name) int decl_name (int *errcode, int oldfd, int newfd)
-#define __sys_proto_getppid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getpgrp(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setsid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sigaction(decl_name) int decl_name (int *errcode, int signum, const struct sigaction *act, struct sigaction *oldact)
-#define __sys_proto_sigsuspend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sigpending(decl_name) int decl_name (int *errcode, sigset_t *set)
-#define __sys_proto_sethostname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setrlimit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getrusage(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_gettimeofday(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_settimeofday(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_symlink(decl_name) int decl_name (int *errcode, const char *target, const char *linkpath)
-#define __sys_proto_readlink(decl_name) ssize_t decl_name (int *errcode, const char *pathname, char *buf, size_t bufsiz)
-#define __sys_proto_uselib(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_swapon(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_reboot(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_readdir(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mmap(decl_name) void *decl_name (int *errcode, void *addr, size_t length, int prot, int flags, int fd, off_t offset)
-#define __sys_proto_munmap(decl_name) int decl_name (int *errcode, void *addr, size_t length)
-#define __sys_proto_truncate(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_ftruncate(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fchmod(decl_name) int decl_name (int *errcode, int fd, mode_t mode)
-#define __sys_proto_getpriority(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setpriority(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_statfs(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fstatfs(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_socketcall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_syslog(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setitimer(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getitimer(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_stat(decl_name) int decl_name (int *errcode, const char *pathname, struct stat *statbuf)
-#define __sys_proto_lstat(decl_name) int decl_name (int *errcode, const char *pathname, struct stat *statbuf)
-#define __sys_proto_fstat(decl_name) int decl_name (int *errcode, int fd, struct stat *statbuf)
-#define __sys_proto_lookup_dcookie(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_vhangup(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_idle(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_wait4(decl_name) pid_t decl_name (int *errcode, pid_t pid, int *wstatus, int options, struct rusage *rusage)
-#define __sys_proto_swapoff(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sysinfo(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_ipc(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fsync(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sigreturn(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_clone(decl_name) long decl_name (int *errcode, void *child_stack, unsigned long flags, int *ptid, int *ctid, unsigned long newtls)
-#define __sys_proto_setdomainname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_uname(decl_name) int decl_name (int* errcode, struct utsname *buf)
-#define __sys_proto_adjtimex(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mprotect(decl_name) int decl_name (int *errcode, void *addr, size_t len, int prot)
-#define __sys_proto_sigprocmask(decl_name) int decl_name (int *errcode, int how, const old_kernel_sigset_t *set, old_kernel_sigset_t *oldset)
-#define __sys_proto_create_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_init_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_delete_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_get_kernel_syms(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_quotactl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getpgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fchdir(decl_name) int decl_name (int *errcode, int fd)
-#define __sys_proto_bdflush(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sysfs(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_personality(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_afs_syscall(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getdents(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_select(decl_name) int decl_name (int *errcode, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
-#define __sys_proto_flock(decl_name) int decl_name (int *errcode, int fd, int operation)
-#define __sys_proto_msync(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_readv(decl_name) ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt)
-#define __sys_proto_writev(decl_name) ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt)
-#define __sys_proto_getsid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fdatasync(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto__sysctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mlock(decl_name) int decl_name (int *errcode, const void *addr, size_t len)
-#define __sys_proto_munlock(decl_name) int decl_name (int *errcode, const void *addr, size_t len)
-#define __sys_proto_mlockall(decl_name) int decl_name (int *errcode, int flags)
-#define __sys_proto_munlockall(decl_name) int decl_name (int *errcode)
-#define __sys_proto_sched_setparam(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_getparam(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_setscheduler(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_getscheduler(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_yield(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_get_priority_max(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_get_priority_min(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_rr_get_interval(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_nanosleep(decl_name) int decl_name (int *errcode, const struct timespec *req, struct timespec *rem)
-#define __sys_proto_mremap(decl_name) void *decl_name (int *errcode, void *old_address, size_t old_size, size_t new_size, int flags, ... /* void *new_address */)
-#define __sys_proto_query_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_poll(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_nfsservctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_prctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_rt_sigreturn(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_rt_sigaction(decl_name) int decl_name (int *errcode, int signum, const struct kernel_sigaction *act, struct kernel_sigaction *oldact, size_t sigsetsize)
-#define __sys_proto_rt_sigprocmask(decl_name) int decl_name (int *errcode, int how, const sigset_t *set, sigset_t *oldset, size_t sigsetsize)
-#define __sys_proto_rt_sigpending(decl_name) int decl_name (int *errcode, sigset_t *set, size_t sigsetsize)
-#define __sys_proto_rt_sigtimedwait(decl_name) int decl_name (int *errcode, const sigset_t *set, siginfo_t *info, const struct timespec *timeout, size_t sigsetsize)
-#define __sys_proto_rt_sigqueueinfo(decl_name) int decl_name (int *errcode, pid_t tgid, int sig, siginfo_t *uinfo)
-#define __sys_proto_rt_sigsuspend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_pread64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_pwrite64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getcwd(decl_name) char *decl_name (int *errcode, char *buf, size_t size)
-#define __sys_proto_capget(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_capset(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sigaltstack(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sendfile(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getpmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_putpmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_vfork(decl_name) pid_t decl_name (int *errcode)
-#define __sys_proto_getrlimit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_lchown(decl_name) int decl_name (int *errcode, const char *pathname, uid_t owner, gid_t group)
-#define __sys_proto_getuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_geteuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getegid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setreuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setregid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getgroups(decl_name) int decl_name (int *errcode, int size, gid_t list[])
-#define __sys_proto_setgroups(decl_name) int decl_name (int *errcode, size_t size, const gid_t *list)
-#define __sys_proto_fchown(decl_name) int decl_name (int *errcode, int fd, uid_t owner, gid_t group)
-#define __sys_proto_setresuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getresuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setresgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getresgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_chown(decl_name) int decl_name (int *errcode, const char *pathname, uid_t owner, gid_t group)
-#define __sys_proto_setuid(decl_name) int decl_name (int *errcode, uid_t uid)
-#define __sys_proto_setgid(decl_name) int decl_name (int *errcode, gid_t gid)
-#define __sys_proto_setfsuid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setfsgid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_pivot_root(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mincore(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_madvise(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_close(decl_name) /* int decl_name (int *errcode, int fd) */
+#define __sys_proto_restart_syscall(decl_name) /* int decl_name (int *errcode) */
+#define __sys_proto_creat(decl_name) /* int decl_name (int *errcode, const char *pathname, mode_t mode) */
+#define __sys_proto_link(decl_name) /* int decl_name (int *errcode, const char *oldpath, const char *newpath) */
+#define __sys_proto_unlink(decl_name) /* int decl_name (int *errcode, const char *pathname) */
+#define __sys_proto_execve(decl_name) /* int decl_name (int *errcode, const char *filename, char *const argv[], char *const envp[]) */
+#define __sys_proto_chdir(decl_name) /* int decl_name (int *errcode, const char *path) */
+#define __sys_proto_mknod(decl_name) /* int decl_name (int *errcode, const char *pathname, mode_t mode, dev_t dev) */
+#define __sys_proto_chmod(decl_name) /* int decl_name (int *errcode, const char *pathname, mode_t mode) */
+#define __sys_proto_lseek(decl_name) /* off_t decl_name (int *errcode, int fd, off_t offset, int whence) */
+#define __sys_proto_getpid(decl_name) /* pid_t decl_name (int *errcode) */
+#define __sys_proto_mount(decl_name) /* int decl_name (int *errcode, const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data) */
+#define __sys_proto_umount(decl_name) /* int decl_name (int *errcode, const char *target) */
+#define __sys_proto_ptrace(decl_name) /* long decl_name (int *errcode, enum __ptrace_request request, pid_t pid, void *addr, void *data) */
+#define __sys_proto_alarm(decl_name) /* unsigned int decl_name (int *errcode, unsigned int seconds) */
+#define __sys_proto_pause(decl_name) /* int decl_name (int *errcode) */
+#define __sys_proto_utime(decl_name) /* int decl_name (int *errcode, const char *filename, const struct utimbuf *times) */
+#define __sys_proto_access(decl_name) /* int decl_name (int *errcode, const char *pathname, int mode) */
+#define __sys_proto_nice(decl_name) /* int decl_name (int *errcode, int inc) */
+#define __sys_proto_sync(decl_name) /* int decl_name (int *errcode) */
+#define __sys_proto_kill(decl_name) /* int decl_name (int *errcode, pid_t pid, int sig) */
+#define __sys_proto_rename(decl_name) /* int decl_name (int *errcode, const char *oldpath, const char *newpath) */
+#define __sys_proto_mkdir(decl_name) /* int decl_name (int *errcode, const char *pathname, mode_t mode) */
+#define __sys_proto_rmdir(decl_name)
+#define __sys_proto_dup(decl_name) /* int decl_name (int *errcode, int oldfd) */
+#define __sys_proto_pipe(decl_name) /* int decl_name (int *errcode, int pipefd[2]) */
+#define __sys_proto_times(decl_name) /* clock_t decl_name (int *errcode, struct tms *buf) */
+#define __sys_proto_brk(decl_name) /* int decl_name (int *errcode, void *addr) */
+#define __sys_proto_signal(decl_name) /* void (*decl_name(int, void (*)(int)))(int) */
+#define __sys_proto_acct(decl_name) /* int decl_name (int *errcode, const char *filename) */
+#define __sys_proto_umount2(decl_name) /* int decl_name (int *errcode, const char *target, int flags) */
+#define __sys_proto_ioctl(decl_name) /* int decl_name (int *errcode, int fd, unsigned long request, ...) */
+#define __sys_proto_fcntl(decl_name) /* int decl_name (int *errcode, int fd, int cmd, ...) */
+#define __sys_proto_setpgid(decl_name)
+#define __sys_proto_umask(decl_name)
+#define __sys_proto_chroot(decl_name)
+#define __sys_proto_ustat(decl_name) /* int decl_name (int *errcode, dev_t dev, struct ustat *ubuf) */
+#define __sys_proto_dup2(decl_name) /* int decl_name (int *errcode, int oldfd, int newfd) */
+#define __sys_proto_getppid(decl_name)
+#define __sys_proto_getpgrp(decl_name)
+#define __sys_proto_setsid(decl_name)
+#define __sys_proto_sigaction(decl_name) /* int decl_name (int *errcode, int signum, const struct sigaction *act, struct sigaction *oldact) */
+#define __sys_proto_sigsuspend(decl_name)
+#define __sys_proto_sigpending(decl_name) /* int decl_name (int *errcode, sigset_t *set) */
+#define __sys_proto_sethostname(decl_name)
+#define __sys_proto_setrlimit(decl_name)
+#define __sys_proto_getrusage(decl_name)
+#define __sys_proto_gettimeofday(decl_name)
+#define __sys_proto_settimeofday(decl_name)
+#define __sys_proto_symlink(decl_name) /* int decl_name (int *errcode, const char *target, const char *linkpath) */
+#define __sys_proto_readlink(decl_name) /* ssize_t decl_name (int *errcode, const char *pathname, char *buf, size_t bufsiz) */
+#define __sys_proto_uselib(decl_name)
+#define __sys_proto_swapon(decl_name)
+#define __sys_proto_reboot(decl_name)
+#define __sys_proto_readdir(decl_name)
+#define __sys_proto_mmap(decl_name) /* void *decl_name (int *errcode, void *addr, size_t length, int prot, int flags, int fd, off_t offset) */
+#define __sys_proto_munmap(decl_name) /* int decl_name (int *errcode, void *addr, size_t length) */
+#define __sys_proto_truncate(decl_name)
+#define __sys_proto_ftruncate(decl_name)
+#define __sys_proto_fchmod(decl_name) /* int decl_name (int *errcode, int fd, mode_t mode) */
+#define __sys_proto_getpriority(decl_name)
+#define __sys_proto_setpriority(decl_name)
+#define __sys_proto_statfs(decl_name)
+#define __sys_proto_fstatfs(decl_name)
+#define __sys_proto_socketcall(decl_name)
+#define __sys_proto_syslog(decl_name)
+#define __sys_proto_setitimer(decl_name)
+#define __sys_proto_getitimer(decl_name)
+#define __sys_proto_stat(decl_name) /* int decl_name (int *errcode, const char *pathname, struct stat *statbuf) */
+#define __sys_proto_lstat(decl_name) /* int decl_name (int *errcode, const char *pathname, struct stat *statbuf) */
+#define __sys_proto_fstat(decl_name) /* int decl_name (int *errcode, int fd, struct stat *statbuf) */
+#define __sys_proto_lookup_dcookie(decl_name)
+#define __sys_proto_vhangup(decl_name)
+#define __sys_proto_idle(decl_name)
+#define __sys_proto_wait4(decl_name) /* pid_t decl_name (int *errcode, pid_t pid, int *wstatus, int options, struct rusage *rusage) */
+#define __sys_proto_swapoff(decl_name)
+#define __sys_proto_sysinfo(decl_name)
+#define __sys_proto_ipc(decl_name)
+#define __sys_proto_fsync(decl_name)
+#define __sys_proto_sigreturn(decl_name)
+#define __sys_proto_clone(decl_name) /* long decl_name (int *errcode, void *child_stack, unsigned long flags, int *ptid, int *ctid, unsigned long newtls) */
+#define __sys_proto_setdomainname(decl_name)
+#define __sys_proto_uname(decl_name) /* int decl_name (int* errcode, struct utsname *buf) */
+#define __sys_proto_adjtimex(decl_name)
+#define __sys_proto_mprotect(decl_name) /* int decl_name (int *errcode, void *addr, size_t len, int prot) */
+#define __sys_proto_sigprocmask(decl_name) /* int decl_name (int *errcode, int how, const old_kernel_sigset_t *set, old_kernel_sigset_t *oldset) */
+#define __sys_proto_create_module(decl_name)
+#define __sys_proto_init_module(decl_name)
+#define __sys_proto_delete_module(decl_name)
+#define __sys_proto_get_kernel_syms(decl_name)
+#define __sys_proto_quotactl(decl_name)
+#define __sys_proto_getpgid(decl_name)
+#define __sys_proto_fchdir(decl_name) /* int decl_name (int *errcode, int fd) */
+#define __sys_proto_bdflush(decl_name)
+#define __sys_proto_sysfs(decl_name)
+#define __sys_proto_personality(decl_name)
+#define __sys_proto_afs_syscall(decl_name)
+#define __sys_proto_getdents(decl_name)
+#define __sys_proto_select(decl_name) /* int decl_name (int *errcode, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) */
+#define __sys_proto_flock(decl_name) /* int decl_name (int *errcode, int fd, int operation) */
+#define __sys_proto_msync(decl_name)
+#define __sys_proto_readv(decl_name) /* ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt) */
+#define __sys_proto_writev(decl_name) /* ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt) */
+#define __sys_proto_getsid(decl_name)
+#define __sys_proto_fdatasync(decl_name)
+#define __sys_proto__sysctl(decl_name)
+#define __sys_proto_mlock(decl_name) /* int decl_name (int *errcode, const void *addr, size_t len) */
+#define __sys_proto_munlock(decl_name) /* int decl_name (int *errcode, const void *addr, size_t len) */
+#define __sys_proto_mlockall(decl_name) /* int decl_name (int *errcode, int flags) */
+#define __sys_proto_munlockall(decl_name) /* int decl_name (int *errcode) */
+#define __sys_proto_sched_setparam(decl_name)
+#define __sys_proto_sched_getparam(decl_name)
+#define __sys_proto_sched_setscheduler(decl_name)
+#define __sys_proto_sched_getscheduler(decl_name)
+#define __sys_proto_sched_yield(decl_name)
+#define __sys_proto_sched_get_priority_max(decl_name)
+#define __sys_proto_sched_get_priority_min(decl_name)
+#define __sys_proto_sched_rr_get_interval(decl_name)
+#define __sys_proto_nanosleep(decl_name) /* int decl_name (int *errcode, const struct timespec *req, struct timespec *rem) */
+#define __sys_proto_mremap(decl_name) /* void *decl_name (int *errcode, void *old_address, size_t old_size, size_t new_size, int flags, ...) */
+#define __sys_proto_query_module(decl_name)
+#define __sys_proto_poll(decl_name)
+#define __sys_proto_nfsservctl(decl_name)
+#define __sys_proto_prctl(decl_name)
+#define __sys_proto_rt_sigreturn(decl_name)
+#define __sys_proto_rt_sigaction(decl_name) /* int decl_name (int *errcode, int signum, const struct kernel_sigaction *act, struct kernel_sigaction *oldact, size_t sigsetsize) */
+#define __sys_proto_rt_sigprocmask(decl_name) /* int decl_name (int *errcode, int how, const sigset_t *set, sigset_t *oldset, size_t sigsetsize) */
+#define __sys_proto_rt_sigpending(decl_name) /* int decl_name (int *errcode, sigset_t *set, size_t sigsetsize) */
+#define __sys_proto_rt_sigtimedwait(decl_name) /* int decl_name (int *errcode, const sigset_t *set, siginfo_t *info, const struct timespec *timeout, size_t sigsetsize) */
+#define __sys_proto_rt_sigqueueinfo(decl_name) /* int decl_name (int *errcode, pid_t tgid, int sig, siginfo_t *uinfo) */
+#define __sys_proto_rt_sigsuspend(decl_name)
+#define __sys_proto_pread64(decl_name)
+#define __sys_proto_pwrite64(decl_name)
+#define __sys_proto_getcwd(decl_name) /* char *decl_name (int *errcode, char *buf, size_t size) */
+#define __sys_proto_capget(decl_name)
+#define __sys_proto_capset(decl_name)
+#define __sys_proto_sigaltstack(decl_name)
+#define __sys_proto_sendfile(decl_name)
+#define __sys_proto_getpmsg(decl_name)
+#define __sys_proto_putpmsg(decl_name)
+#define __sys_proto_vfork(decl_name) /* pid_t decl_name (int *errcode) */
+#define __sys_proto_getrlimit(decl_name)
+#define __sys_proto_lchown(decl_name) /* int decl_name (int *errcode, const char *pathname, uid_t owner, gid_t group) */
+#define __sys_proto_getuid(decl_name)
+#define __sys_proto_getgid(decl_name)
+#define __sys_proto_geteuid(decl_name)
+#define __sys_proto_getegid(decl_name)
+#define __sys_proto_setreuid(decl_name)
+#define __sys_proto_setregid(decl_name)
+#define __sys_proto_getgroups(decl_name) /* int decl_name (int *errcode, int size, gid_t list[]) */
+#define __sys_proto_setgroups(decl_name) /* int decl_name (int *errcode, size_t size, const gid_t *list) */
+#define __sys_proto_fchown(decl_name) /* int decl_name (int *errcode, int fd, uid_t owner, gid_t group) */
+#define __sys_proto_setresuid(decl_name)
+#define __sys_proto_getresuid(decl_name)
+#define __sys_proto_setresgid(decl_name)
+#define __sys_proto_getresgid(decl_name)
+#define __sys_proto_chown(decl_name) /* int decl_name (int *errcode, const char *pathname, uid_t owner, gid_t group) */
+#define __sys_proto_setuid(decl_name) /* int decl_name (int *errcode, uid_t uid) */
+#define __sys_proto_setgid(decl_name) /* int decl_name (int *errcode, gid_t gid) */
+#define __sys_proto_setfsuid(decl_name)
+#define __sys_proto_setfsgid(decl_name)
+#define __sys_proto_pivot_root(decl_name)
+#define __sys_proto_mincore(decl_name)
+#define __sys_proto_madvise(decl_name)
 /* the way glibc uses this doesn't match up with the documented proto */
-#define __sys_proto_getdents64(decl_name) int decl_name (int *errcode, unsigned int fd, char *dirp, unsigned int count)
-#define __sys_proto_readahead(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_lsetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fsetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_lgetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fgetxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_listxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_llistxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_flistxattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_removexattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_lremovexattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fremovexattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_gettid(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_tkill(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_futex(decl_name) int decl_name (int *errcode, int *uaddr, int futex_op, int val, const struct timespec *timeout, ...)
-#define __sys_proto_sched_setaffinity(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_getaffinity(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_tgkill(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_io_setup(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_io_destroy(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_io_getevents(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_io_submit(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_io_cancel(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_exit_group(decl_name) int decl_name (int *errcode, int status)
-#define __sys_proto_epoll_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_epoll_ctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_epoll_wait(decl_name) int decl_name (int *errcode, int epfd, struct epoll_event *events, int maxevents, int timeout)
-#define __sys_proto_set_tid_address(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fadvise64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timer_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timer_settime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timer_gettime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timer_getoverrun(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timer_delete(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_clock_settime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_clock_gettime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_clock_getres(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_clock_nanosleep(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_statfs64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fstatfs64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_remap_file_pages(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mbind(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_get_mempolicy(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_set_mempolicy(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mq_open(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mq_unlink(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mq_timedsend(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mq_timedreceive(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mq_notify(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mq_getsetattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_kexec_load(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_add_key(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_request_key(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_keyctl(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_waitid(decl_name) int decl_name (int *errcode, idtype_t idtype, id_t id, siginfo_t *infop, int options, struct rusage *usageinfo)
-#define __sys_proto_ioprio_set(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_ioprio_get(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_inotify_init(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_inotify_add_watch(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_inotify_rm_watch(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_migrate_pages(decl_name) long decl_name (int *errcode, int pid, unsigned long maxnode, const unsigned long *old_nodes, const unsigned long *new_nodes)
-#define __sys_proto_openat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, int flags, mode_t mode)
-#define __sys_proto_mkdirat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, mode_t mode)
-#define __sys_proto_mknodat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, mode_t mode, dev_t dev)
-#define __sys_proto_fchownat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, uid_t owner, gid_t group, int flags)
-#define __sys_proto_futimesat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, const struct timeval times[2])
-#define __sys_proto_newfstatat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, struct stat *statbuf, int flags)
-#define __sys_proto_unlinkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_renameat(decl_name) int decl_name (int *errcode, int olddirfd, const char *oldpath, int newdirfd, const char *newpath)
-#define __sys_proto_linkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_symlinkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_readlinkat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fchmodat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, mode_t mode, int flags)
-#define __sys_proto_faccessat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, int mode, int flags)
-#define __sys_proto_pselect6(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_ppoll(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_unshare(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_set_robust_list(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_get_robust_list(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_splice(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sync_file_range(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_tee(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_vmsplice(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_move_pages(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getcpu(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_epoll_pwait(decl_name) int decl_name (int *errcode, int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *sigmask)
-#define __sys_proto_utimes(decl_name) int decl_name (int *errcode, const char *filename, const struct timeval times[2])
-#define __sys_proto_fallocate(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_utimensat(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_signalfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timerfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_eventfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timerfd_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timerfd_settime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_timerfd_gettime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_signalfd4(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_eventfd2(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_inotify_init1(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_pipe2(decl_name) int decl_name (int *errcode, int pipefd[2], int flags)
-#define __sys_proto_dup3(decl_name) int decl_name (int *errcode, int oldfd, int newfd, int flags)
-#define __sys_proto_epoll_create1(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_preadv(decl_name) ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset)
-#define __sys_proto_pwritev(decl_name) ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset)
-#define __sys_proto_rt_tgsigqueueinfo(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_perf_event_open(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fanotify_init(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_fanotify_mark(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_prlimit64(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_name_to_handle_at(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_open_by_handle_at(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_clock_adjtime(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_syncfs(decl_name) int decl_name (int *errcode, int fd)
-#define __sys_proto_setns(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_process_vm_readv(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_process_vm_writev(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_s390_runtime_instr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_kcmp(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_finit_module(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_setattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sched_getattr(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_renameat2(decl_name) int decl_name (int *errcode, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)
-#define __sys_proto_seccomp(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getrandom(decl_name) ssize_t decl_name (int *errcode, void *buf, size_t buflen, unsigned int flags)
-#define __sys_proto_memfd_create(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_bpf(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_s390_pci_mmio_write(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_s390_pci_mmio_read(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_execveat(decl_name) int decl_name (int *errcode, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags)
-#define __sys_proto_userfaultfd(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_membarrier(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_recvmmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sendmmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_socket(decl_name) int decl_name (int *errcode, int domain, int type, int protocol)
-#define __sys_proto_socketpair(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_bind(decl_name) int decl_name (int *errcode, int sockfd, const struct sockaddr *addr, socklen_t addrlen)
-#define __sys_proto_connect(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_listen(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_accept4(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getsockopt(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_setsockopt(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getsockname(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_getpeername(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sendto(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_sendmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_recvfrom(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_recvmsg(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_shutdown(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_mlock2(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_copy_file_range(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_preadv2(decl_name) ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)
-#define __sys_proto_pwritev2(decl_name) ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)
-#define __sys_proto_s390_guarded_storage(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_statx(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
-#define __sys_proto_s390_sthyi(decl_name) __GLIBC_ZOS_UNIMPLEMENTED
+#define __sys_proto_getdents64(decl_name) /* int decl_name (int *errcode, unsigned int fd, char *dirp, unsigned int count) */
+#define __sys_proto_readahead(decl_name)
+#define __sys_proto_setxattr(decl_name)
+#define __sys_proto_lsetxattr(decl_name)
+#define __sys_proto_fsetxattr(decl_name)
+#define __sys_proto_getxattr(decl_name)
+#define __sys_proto_lgetxattr(decl_name)
+#define __sys_proto_fgetxattr(decl_name)
+#define __sys_proto_listxattr(decl_name)
+#define __sys_proto_llistxattr(decl_name)
+#define __sys_proto_flistxattr(decl_name)
+#define __sys_proto_removexattr(decl_name)
+#define __sys_proto_lremovexattr(decl_name)
+#define __sys_proto_fremovexattr(decl_name)
+#define __sys_proto_gettid(decl_name)
+#define __sys_proto_tkill(decl_name)
+#define __sys_proto_futex(decl_name) /* int decl_name (int *errcode, int *uaddr, int futex_op, int val, const struct timespec *timeout, ...) */
+#define __sys_proto_sched_setaffinity(decl_name)
+#define __sys_proto_sched_getaffinity(decl_name)
+#define __sys_proto_tgkill(decl_name)
+#define __sys_proto_io_setup(decl_name)
+#define __sys_proto_io_destroy(decl_name)
+#define __sys_proto_io_getevents(decl_name)
+#define __sys_proto_io_submit(decl_name)
+#define __sys_proto_io_cancel(decl_name)
+#define __sys_proto_exit_group(decl_name) /* int decl_name (int *errcode, int status) */
+#define __sys_proto_epoll_create(decl_name)
+#define __sys_proto_epoll_ctl(decl_name)
+#define __sys_proto_epoll_wait(decl_name) /* int decl_name (int *errcode, int epfd, struct epoll_event *events, int maxevents, int timeout) */
+#define __sys_proto_set_tid_address(decl_name)
+#define __sys_proto_fadvise64(decl_name)
+#define __sys_proto_timer_create(decl_name)
+#define __sys_proto_timer_settime(decl_name)
+#define __sys_proto_timer_gettime(decl_name)
+#define __sys_proto_timer_getoverrun(decl_name)
+#define __sys_proto_timer_delete(decl_name)
+#define __sys_proto_clock_settime(decl_name)
+#define __sys_proto_clock_gettime(decl_name)
+#define __sys_proto_clock_getres(decl_name)
+#define __sys_proto_clock_nanosleep(decl_name)
+#define __sys_proto_statfs64(decl_name)
+#define __sys_proto_fstatfs64(decl_name)
+#define __sys_proto_remap_file_pages(decl_name)
+#define __sys_proto_mbind(decl_name)
+#define __sys_proto_get_mempolicy(decl_name)
+#define __sys_proto_set_mempolicy(decl_name)
+#define __sys_proto_mq_open(decl_name)
+#define __sys_proto_mq_unlink(decl_name)
+#define __sys_proto_mq_timedsend(decl_name)
+#define __sys_proto_mq_timedreceive(decl_name)
+#define __sys_proto_mq_notify(decl_name)
+#define __sys_proto_mq_getsetattr(decl_name)
+#define __sys_proto_kexec_load(decl_name)
+#define __sys_proto_add_key(decl_name)
+#define __sys_proto_request_key(decl_name)
+#define __sys_proto_keyctl(decl_name)
+#define __sys_proto_waitid(decl_name) /* int decl_name (int *errcode, idtype_t idtype, id_t id, siginfo_t *infop, int options, struct rusage *usageinfo) */
+#define __sys_proto_ioprio_set(decl_name)
+#define __sys_proto_ioprio_get(decl_name)
+#define __sys_proto_inotify_init(decl_name)
+#define __sys_proto_inotify_add_watch(decl_name)
+#define __sys_proto_inotify_rm_watch(decl_name)
+#define __sys_proto_migrate_pages(decl_name) /* long decl_name (int *errcode, int pid, unsigned long maxnode, const unsigned long *old_nodes, const unsigned long *new_nodes) */
+#define __sys_proto_openat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, int flags, mode_t mode) */
+#define __sys_proto_mkdirat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, mode_t mode) */
+#define __sys_proto_mknodat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, mode_t mode, dev_t dev) */
+#define __sys_proto_fchownat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, uid_t owner, gid_t group, int flags) */
+#define __sys_proto_futimesat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, const struct timeval times[2]) */
+#define __sys_proto_newfstatat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, struct stat *statbuf, int flags) */
+#define __sys_proto_unlinkat(decl_name)
+#define __sys_proto_renameat(decl_name) /* int decl_name (int *errcode, int olddirfd, const char *oldpath, int newdirfd, const char *newpath) */
+#define __sys_proto_linkat(decl_name)
+#define __sys_proto_symlinkat(decl_name)
+#define __sys_proto_readlinkat(decl_name)
+#define __sys_proto_fchmodat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, mode_t mode, int flags) */
+#define __sys_proto_faccessat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, int mode, int flags) */
+#define __sys_proto_pselect6(decl_name)
+#define __sys_proto_ppoll(decl_name)
+#define __sys_proto_unshare(decl_name)
+#define __sys_proto_set_robust_list(decl_name)
+#define __sys_proto_get_robust_list(decl_name)
+#define __sys_proto_splice(decl_name)
+#define __sys_proto_sync_file_range(decl_name)
+#define __sys_proto_tee(decl_name)
+#define __sys_proto_vmsplice(decl_name)
+#define __sys_proto_move_pages(decl_name)
+#define __sys_proto_getcpu(decl_name)
+#define __sys_proto_epoll_pwait(decl_name) /* int decl_name (int *errcode, int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *sigmask) */
+#define __sys_proto_utimes(decl_name) /* int decl_name (int *errcode, const char *filename, const struct timeval times[2]) */
+#define __sys_proto_fallocate(decl_name)
+#define __sys_proto_utimensat(decl_name)
+#define __sys_proto_signalfd(decl_name)
+#define __sys_proto_timerfd(decl_name)
+#define __sys_proto_eventfd(decl_name)
+#define __sys_proto_timerfd_create(decl_name)
+#define __sys_proto_timerfd_settime(decl_name)
+#define __sys_proto_timerfd_gettime(decl_name)
+#define __sys_proto_signalfd4(decl_name)
+#define __sys_proto_eventfd2(decl_name)
+#define __sys_proto_inotify_init1(decl_name)
+#define __sys_proto_pipe2(decl_name) /* int decl_name (int *errcode, int pipefd[2], int flags) */
+#define __sys_proto_dup3(decl_name) /* int decl_name (int *errcode, int oldfd, int newfd, int flags) */
+#define __sys_proto_epoll_create1(decl_name)
+#define __sys_proto_preadv(decl_name) /* ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset) */
+#define __sys_proto_pwritev(decl_name) /* ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset) */
+#define __sys_proto_rt_tgsigqueueinfo(decl_name)
+#define __sys_proto_perf_event_open(decl_name)
+#define __sys_proto_fanotify_init(decl_name)
+#define __sys_proto_fanotify_mark(decl_name)
+#define __sys_proto_prlimit64(decl_name)
+#define __sys_proto_name_to_handle_at(decl_name)
+#define __sys_proto_open_by_handle_at(decl_name)
+#define __sys_proto_clock_adjtime(decl_name)
+#define __sys_proto_syncfs(decl_name) /* int decl_name (int *errcode, int fd) */
+#define __sys_proto_setns(decl_name)
+#define __sys_proto_process_vm_readv(decl_name)
+#define __sys_proto_process_vm_writev(decl_name)
+#define __sys_proto_s390_runtime_instr(decl_name)
+#define __sys_proto_kcmp(decl_name)
+#define __sys_proto_finit_module(decl_name)
+#define __sys_proto_sched_setattr(decl_name)
+#define __sys_proto_sched_getattr(decl_name)
+#define __sys_proto_renameat2(decl_name) /* int decl_name (int *errcode, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags) */
+#define __sys_proto_seccomp(decl_name)
+#define __sys_proto_getrandom(decl_name) /* ssize_t decl_name (int *errcode, void *buf, size_t buflen, unsigned int flags) */
+#define __sys_proto_memfd_create(decl_name)
+#define __sys_proto_bpf(decl_name)
+#define __sys_proto_s390_pci_mmio_write(decl_name)
+#define __sys_proto_s390_pci_mmio_read(decl_name)
+#define __sys_proto_execveat(decl_name) /* int decl_name (int *errcode, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags) */
+#define __sys_proto_userfaultfd(decl_name)
+#define __sys_proto_membarrier(decl_name)
+#define __sys_proto_recvmmsg(decl_name)
+#define __sys_proto_sendmmsg(decl_name)
+#define __sys_proto_socket(decl_name) /* int decl_name (int *errcode, int domain, int type, int protocol) */
+#define __sys_proto_socketpair(decl_name)
+#define __sys_proto_bind(decl_name) /* int decl_name (int *errcode, int sockfd, const struct sockaddr *addr, socklen_t addrlen) */
+#define __sys_proto_connect(decl_name)
+#define __sys_proto_listen(decl_name)
+#define __sys_proto_accept4(decl_name)
+#define __sys_proto_getsockopt(decl_name)
+#define __sys_proto_setsockopt(decl_name)
+#define __sys_proto_getsockname(decl_name)
+#define __sys_proto_getpeername(decl_name)
+#define __sys_proto_sendto(decl_name)
+#define __sys_proto_sendmsg(decl_name)
+#define __sys_proto_recvfrom(decl_name)
+#define __sys_proto_recvmsg(decl_name)
+#define __sys_proto_shutdown(decl_name)
+#define __sys_proto_mlock2(decl_name)
+#define __sys_proto_copy_file_range(decl_name)
+#define __sys_proto_preadv2(decl_name) /* ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags) */
+#define __sys_proto_pwritev2(decl_name) /* ssize_t decl_name (int *errcode, int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags) */
+#define __sys_proto_s390_guarded_storage(decl_name)
+#define __sys_proto_statx(decl_name)
+#define __sys_proto_s390_sthyi(decl_name)
 
 /* Prototypes for z/OS-specific syscalls.
    These are the interfaces the syscalls SHOULD have had (minus the first
    param).
    TODO: define better names for the functions themselves.
    __linux_compat_* isn't really accurate with them.  */
-#define __sys_proto_opendir(decl_name) int decl_name (int *errcode, const char*name)
+#define __sys_proto_opendir(decl_name) /* int decl_name (int *errcode, const char*name) */
+
+
+
+/* whether or not the call is enabled or disabled right now. This stuff should
+   not be present in any final version, it's just for debugging in the early
+   stages of the port. To enable a syscall, define the corresponding macro
+   below to 'if_true', and the corresponding macro above to the proper
+   proto.  */
+#define __shim_enabled_exit(if_true, if_false) if_false
+#define __shim_enabled_fork(if_true, if_false) if_false
+#define __shim_enabled_read(if_true, if_false) if_false
+#define __shim_enabled_write(if_true, if_false) if_true
+#define __shim_enabled_open(if_true, if_false) if_true
+#define __shim_enabled_close(if_true, if_false) if_false
+#define __shim_enabled_restart_syscall(if_true, if_false) if_false
+#define __shim_enabled_creat(if_true, if_false) if_false
+#define __shim_enabled_link(if_true, if_false) if_false
+#define __shim_enabled_unlink(if_true, if_false) if_false
+#define __shim_enabled_execve(if_true, if_false) if_false
+#define __shim_enabled_chdir(if_true, if_false) if_false
+#define __shim_enabled_mknod(if_true, if_false) if_false
+#define __shim_enabled_chmod(if_true, if_false) if_false
+#define __shim_enabled_lseek(if_true, if_false) if_false
+#define __shim_enabled_getpid(if_true, if_false) if_false
+#define __shim_enabled_mount(if_true, if_false) if_false
+#define __shim_enabled_umount(if_true, if_false) if_false
+#define __shim_enabled_ptrace(if_true, if_false) if_false
+#define __shim_enabled_alarm(if_true, if_false) if_false
+#define __shim_enabled_pause(if_true, if_false) if_false
+#define __shim_enabled_utime(if_true, if_false) if_false
+#define __shim_enabled_access(if_true, if_false) if_false
+#define __shim_enabled_nice(if_true, if_false) if_false
+#define __shim_enabled_sync(if_true, if_false) if_false
+#define __shim_enabled_kill(if_true, if_false) if_false
+#define __shim_enabled_rename(if_true, if_false) if_false
+#define __shim_enabled_mkdir(if_true, if_false) if_false
+#define __shim_enabled_rmdir(if_true, if_false) if_false
+#define __shim_enabled_dup(if_true, if_false) if_false
+#define __shim_enabled_pipe(if_true, if_false) if_false
+#define __shim_enabled_times(if_true, if_false) if_false
+#define __shim_enabled_brk(if_true, if_false) if_false
+#define __shim_enabled_signal(if_true, if_false) if_false
+#define __shim_enabled_acct(if_true, if_false) if_false
+#define __shim_enabled_umount2(if_true, if_false) if_false
+#define __shim_enabled_ioctl(if_true, if_false) if_false
+#define __shim_enabled_fcntl(if_true, if_false) if_false
+#define __shim_enabled_setpgid(if_true, if_false) if_false
+#define __shim_enabled_umask(if_true, if_false) if_false
+#define __shim_enabled_chroot(if_true, if_false) if_false
+#define __shim_enabled_ustat(if_true, if_false) if_false
+#define __shim_enabled_dup2(if_true, if_false) if_false
+#define __shim_enabled_getppid(if_true, if_false) if_false
+#define __shim_enabled_getpgrp(if_true, if_false) if_false
+#define __shim_enabled_setsid(if_true, if_false) if_false
+#define __shim_enabled_sigaction(if_true, if_false) if_false
+#define __shim_enabled_sigsuspend(if_true, if_false) if_false
+#define __shim_enabled_sigpending(if_true, if_false) if_false
+#define __shim_enabled_sethostname(if_true, if_false) if_false
+#define __shim_enabled_setrlimit(if_true, if_false) if_false
+#define __shim_enabled_getrusage(if_true, if_false) if_false
+#define __shim_enabled_gettimeofday(if_true, if_false) if_false
+#define __shim_enabled_settimeofday(if_true, if_false) if_false
+#define __shim_enabled_symlink(if_true, if_false) if_false
+#define __shim_enabled_readlink(if_true, if_false) if_false
+#define __shim_enabled_uselib(if_true, if_false) if_false
+#define __shim_enabled_swapon(if_true, if_false) if_false
+#define __shim_enabled_reboot(if_true, if_false) if_false
+#define __shim_enabled_readdir(if_true, if_false) if_false
+#define __shim_enabled_mmap(if_true, if_false) if_false
+#define __shim_enabled_munmap(if_true, if_false) if_false
+#define __shim_enabled_truncate(if_true, if_false) if_false
+#define __shim_enabled_ftruncate(if_true, if_false) if_false
+#define __shim_enabled_fchmod(if_true, if_false) if_false
+#define __shim_enabled_getpriority(if_true, if_false) if_false
+#define __shim_enabled_setpriority(if_true, if_false) if_false
+#define __shim_enabled_statfs(if_true, if_false) if_false
+#define __shim_enabled_fstatfs(if_true, if_false) if_false
+#define __shim_enabled_socketcall(if_true, if_false) if_false
+#define __shim_enabled_syslog(if_true, if_false) if_false
+#define __shim_enabled_setitimer(if_true, if_false) if_false
+#define __shim_enabled_getitimer(if_true, if_false) if_false
+#define __shim_enabled_stat(if_true, if_false) if_false
+#define __shim_enabled_lstat(if_true, if_false) if_false
+#define __shim_enabled_fstat(if_true, if_false) if_false
+#define __shim_enabled_lookup_dcookie(if_true, if_false) if_false
+#define __shim_enabled_vhangup(if_true, if_false) if_false
+#define __shim_enabled_idle(if_true, if_false) if_false
+#define __shim_enabled_wait4(if_true, if_false) if_false
+#define __shim_enabled_swapoff(if_true, if_false) if_false
+#define __shim_enabled_sysinfo(if_true, if_false) if_false
+#define __shim_enabled_ipc(if_true, if_false) if_false
+#define __shim_enabled_fsync(if_true, if_false) if_false
+#define __shim_enabled_sigreturn(if_true, if_false) if_false
+#define __shim_enabled_clone(if_true, if_false) if_false
+#define __shim_enabled_setdomainname(if_true, if_false) if_false
+#define __shim_enabled_uname(if_true, if_false) if_false
+#define __shim_enabled_adjtimex(if_true, if_false) if_false
+#define __shim_enabled_mprotect(if_true, if_false) if_false
+#define __shim_enabled_sigprocmask(if_true, if_false) if_false
+#define __shim_enabled_create_module(if_true, if_false) if_false
+#define __shim_enabled_init_module(if_true, if_false) if_false
+#define __shim_enabled_delete_module(if_true, if_false) if_false
+#define __shim_enabled_get_kernel_syms(if_true, if_false) if_false
+#define __shim_enabled_quotactl(if_true, if_false) if_false
+#define __shim_enabled_getpgid(if_true, if_false) if_false
+#define __shim_enabled_fchdir(if_true, if_false) if_false
+#define __shim_enabled_bdflush(if_true, if_false) if_false
+#define __shim_enabled_sysfs(if_true, if_false) if_false
+#define __shim_enabled_personality(if_true, if_false) if_false
+#define __shim_enabled_afs_syscall(if_true, if_false) if_false
+#define __shim_enabled_getdents(if_true, if_false) if_false
+#define __shim_enabled_select(if_true, if_false) if_false
+#define __shim_enabled_flock(if_true, if_false) if_false
+#define __shim_enabled_msync(if_true, if_false) if_false
+#define __shim_enabled_readv(if_true, if_false) if_false
+#define __shim_enabled_writev(if_true, if_false) if_false
+#define __shim_enabled_getsid(if_true, if_false) if_false
+#define __shim_enabled_fdatasync(if_true, if_false) if_false
+#define __shim_enabled__sysctl(if_true, if_false) if_false
+#define __shim_enabled_mlock(if_true, if_false) if_false
+#define __shim_enabled_munlock(if_true, if_false) if_false
+#define __shim_enabled_mlockall(if_true, if_false) if_false
+#define __shim_enabled_munlockall(if_true, if_false) if_false
+#define __shim_enabled_sched_setparam(if_true, if_false) if_false
+#define __shim_enabled_sched_getparam(if_true, if_false) if_false
+#define __shim_enabled_sched_setscheduler(if_true, if_false) if_false
+#define __shim_enabled_sched_getscheduler(if_true, if_false) if_false
+#define __shim_enabled_sched_yield(if_true, if_false) if_false
+#define __shim_enabled_sched_get_priority_max(if_true, if_false) if_false
+#define __shim_enabled_sched_get_priority_min(if_true, if_false) if_false
+#define __shim_enabled_sched_rr_get_interval(if_true, if_false) if_false
+#define __shim_enabled_nanosleep(if_true, if_false) if_false
+#define __shim_enabled_mremap(if_true, if_false) if_false
+#define __shim_enabled_query_module(if_true, if_false) if_false
+#define __shim_enabled_poll(if_true, if_false) if_false
+#define __shim_enabled_nfsservctl(if_true, if_false) if_false
+#define __shim_enabled_prctl(if_true, if_false) if_false
+#define __shim_enabled_rt_sigreturn(if_true, if_false) if_false
+#define __shim_enabled_rt_sigaction(if_true, if_false) if_false
+#define __shim_enabled_rt_sigprocmask(if_true, if_false) if_false
+#define __shim_enabled_rt_sigpending(if_true, if_false) if_false
+#define __shim_enabled_rt_sigtimedwait(if_true, if_false) if_false
+#define __shim_enabled_rt_sigqueueinfo(if_true, if_false) if_false
+#define __shim_enabled_rt_sigsuspend(if_true, if_false) if_false
+#define __shim_enabled_pread64(if_true, if_false) if_false
+#define __shim_enabled_pwrite64(if_true, if_false) if_false
+#define __shim_enabled_getcwd(if_true, if_false) if_false
+#define __shim_enabled_capget(if_true, if_false) if_false
+#define __shim_enabled_capset(if_true, if_false) if_false
+#define __shim_enabled_sigaltstack(if_true, if_false) if_false
+#define __shim_enabled_sendfile(if_true, if_false) if_false
+#define __shim_enabled_getpmsg(if_true, if_false) if_false
+#define __shim_enabled_putpmsg(if_true, if_false) if_false
+#define __shim_enabled_vfork(if_true, if_false) if_false
+#define __shim_enabled_getrlimit(if_true, if_false) if_false
+#define __shim_enabled_lchown(if_true, if_false) if_false
+#define __shim_enabled_getuid(if_true, if_false) if_false
+#define __shim_enabled_getgid(if_true, if_false) if_false
+#define __shim_enabled_geteuid(if_true, if_false) if_false
+#define __shim_enabled_getegid(if_true, if_false) if_false
+#define __shim_enabled_setreuid(if_true, if_false) if_false
+#define __shim_enabled_setregid(if_true, if_false) if_false
+#define __shim_enabled_getgroups(if_true, if_false) if_false
+#define __shim_enabled_setgroups(if_true, if_false) if_false
+#define __shim_enabled_fchown(if_true, if_false) if_false
+#define __shim_enabled_setresuid(if_true, if_false) if_false
+#define __shim_enabled_getresuid(if_true, if_false) if_false
+#define __shim_enabled_setresgid(if_true, if_false) if_false
+#define __shim_enabled_getresgid(if_true, if_false) if_false
+#define __shim_enabled_chown(if_true, if_false) if_false
+#define __shim_enabled_setuid(if_true, if_false) if_false
+#define __shim_enabled_setgid(if_true, if_false) if_false
+#define __shim_enabled_setfsuid(if_true, if_false) if_false
+#define __shim_enabled_setfsgid(if_true, if_false) if_false
+#define __shim_enabled_pivot_root(if_true, if_false) if_false
+#define __shim_enabled_mincore(if_true, if_false) if_false
+#define __shim_enabled_madvise(if_true, if_false) if_false
+#define __shim_enabled_getdents64(if_true, if_false) if_false
+#define __shim_enabled_readahead(if_true, if_false) if_false
+#define __shim_enabled_setxattr(if_true, if_false) if_false
+#define __shim_enabled_lsetxattr(if_true, if_false) if_false
+#define __shim_enabled_fsetxattr(if_true, if_false) if_false
+#define __shim_enabled_getxattr(if_true, if_false) if_false
+#define __shim_enabled_lgetxattr(if_true, if_false) if_false
+#define __shim_enabled_fgetxattr(if_true, if_false) if_false
+#define __shim_enabled_listxattr(if_true, if_false) if_false
+#define __shim_enabled_llistxattr(if_true, if_false) if_false
+#define __shim_enabled_flistxattr(if_true, if_false) if_false
+#define __shim_enabled_removexattr(if_true, if_false) if_false
+#define __shim_enabled_lremovexattr(if_true, if_false) if_false
+#define __shim_enabled_fremovexattr(if_true, if_false) if_false
+#define __shim_enabled_gettid(if_true, if_false) if_false
+#define __shim_enabled_tkill(if_true, if_false) if_false
+#define __shim_enabled_futex(if_true, if_false) if_false
+#define __shim_enabled_sched_setaffinity(if_true, if_false) if_false
+#define __shim_enabled_sched_getaffinity(if_true, if_false) if_false
+#define __shim_enabled_tgkill(if_true, if_false) if_false
+#define __shim_enabled_io_setup(if_true, if_false) if_false
+#define __shim_enabled_io_destroy(if_true, if_false) if_false
+#define __shim_enabled_io_getevents(if_true, if_false) if_false
+#define __shim_enabled_io_submit(if_true, if_false) if_false
+#define __shim_enabled_io_cancel(if_true, if_false) if_false
+#define __shim_enabled_exit_group(if_true, if_false) if_false
+#define __shim_enabled_epoll_create(if_true, if_false) if_false
+#define __shim_enabled_epoll_ctl(if_true, if_false) if_false
+#define __shim_enabled_epoll_wait(if_true, if_false) if_false
+#define __shim_enabled_set_tid_address(if_true, if_false) if_false
+#define __shim_enabled_fadvise64(if_true, if_false) if_false
+#define __shim_enabled_timer_create(if_true, if_false) if_false
+#define __shim_enabled_timer_settime(if_true, if_false) if_false
+#define __shim_enabled_timer_gettime(if_true, if_false) if_false
+#define __shim_enabled_timer_getoverrun(if_true, if_false) if_false
+#define __shim_enabled_timer_delete(if_true, if_false) if_false
+#define __shim_enabled_clock_settime(if_true, if_false) if_false
+#define __shim_enabled_clock_gettime(if_true, if_false) if_false
+#define __shim_enabled_clock_getres(if_true, if_false) if_false
+#define __shim_enabled_clock_nanosleep(if_true, if_false) if_false
+#define __shim_enabled_statfs64(if_true, if_false) if_false
+#define __shim_enabled_fstatfs64(if_true, if_false) if_false
+#define __shim_enabled_remap_file_pages(if_true, if_false) if_false
+#define __shim_enabled_mbind(if_true, if_false) if_false
+#define __shim_enabled_get_mempolicy(if_true, if_false) if_false
+#define __shim_enabled_set_mempolicy(if_true, if_false) if_false
+#define __shim_enabled_mq_open(if_true, if_false) if_false
+#define __shim_enabled_mq_unlink(if_true, if_false) if_false
+#define __shim_enabled_mq_timedsend(if_true, if_false) if_false
+#define __shim_enabled_mq_timedreceive(if_true, if_false) if_false
+#define __shim_enabled_mq_notify(if_true, if_false) if_false
+#define __shim_enabled_mq_getsetattr(if_true, if_false) if_false
+#define __shim_enabled_kexec_load(if_true, if_false) if_false
+#define __shim_enabled_add_key(if_true, if_false) if_false
+#define __shim_enabled_request_key(if_true, if_false) if_false
+#define __shim_enabled_keyctl(if_true, if_false) if_false
+#define __shim_enabled_waitid(if_true, if_false) if_false
+#define __shim_enabled_ioprio_set(if_true, if_false) if_false
+#define __shim_enabled_ioprio_get(if_true, if_false) if_false
+#define __shim_enabled_inotify_init(if_true, if_false) if_false
+#define __shim_enabled_inotify_add_watch(if_true, if_false) if_false
+#define __shim_enabled_inotify_rm_watch(if_true, if_false) if_false
+#define __shim_enabled_migrate_pages(if_true, if_false) if_false
+#define __shim_enabled_openat(if_true, if_false) if_false
+#define __shim_enabled_mkdirat(if_true, if_false) if_false
+#define __shim_enabled_mknodat(if_true, if_false) if_false
+#define __shim_enabled_fchownat(if_true, if_false) if_false
+#define __shim_enabled_futimesat(if_true, if_false) if_false
+#define __shim_enabled_newfstatat(if_true, if_false) if_false
+#define __shim_enabled_unlinkat(if_true, if_false) if_false
+#define __shim_enabled_renameat(if_true, if_false) if_false
+#define __shim_enabled_linkat(if_true, if_false) if_false
+#define __shim_enabled_symlinkat(if_true, if_false) if_false
+#define __shim_enabled_readlinkat(if_true, if_false) if_false
+#define __shim_enabled_fchmodat(if_true, if_false) if_false
+#define __shim_enabled_faccessat(if_true, if_false) if_false
+#define __shim_enabled_pselect6(if_true, if_false) if_false
+#define __shim_enabled_ppoll(if_true, if_false) if_false
+#define __shim_enabled_unshare(if_true, if_false) if_false
+#define __shim_enabled_set_robust_list(if_true, if_false) if_false
+#define __shim_enabled_get_robust_list(if_true, if_false) if_false
+#define __shim_enabled_splice(if_true, if_false) if_false
+#define __shim_enabled_sync_file_range(if_true, if_false) if_false
+#define __shim_enabled_tee(if_true, if_false) if_false
+#define __shim_enabled_vmsplice(if_true, if_false) if_false
+#define __shim_enabled_move_pages(if_true, if_false) if_false
+#define __shim_enabled_getcpu(if_true, if_false) if_false
+#define __shim_enabled_epoll_pwait(if_true, if_false) if_false
+#define __shim_enabled_utimes(if_true, if_false) if_false
+#define __shim_enabled_fallocate(if_true, if_false) if_false
+#define __shim_enabled_utimensat(if_true, if_false) if_false
+#define __shim_enabled_signalfd(if_true, if_false) if_false
+#define __shim_enabled_timerfd(if_true, if_false) if_false
+#define __shim_enabled_eventfd(if_true, if_false) if_false
+#define __shim_enabled_timerfd_create(if_true, if_false) if_false
+#define __shim_enabled_timerfd_settime(if_true, if_false) if_false
+#define __shim_enabled_timerfd_gettime(if_true, if_false) if_false
+#define __shim_enabled_signalfd4(if_true, if_false) if_false
+#define __shim_enabled_eventfd2(if_true, if_false) if_false
+#define __shim_enabled_inotify_init1(if_true, if_false) if_false
+#define __shim_enabled_pipe2(if_true, if_false) if_false
+#define __shim_enabled_dup3(if_true, if_false) if_false
+#define __shim_enabled_epoll_create1(if_true, if_false) if_false
+#define __shim_enabled_preadv(if_true, if_false) if_false
+#define __shim_enabled_pwritev(if_true, if_false) if_false
+#define __shim_enabled_rt_tgsigqueueinfo(if_true, if_false) if_false
+#define __shim_enabled_perf_event_open(if_true, if_false) if_false
+#define __shim_enabled_fanotify_init(if_true, if_false) if_false
+#define __shim_enabled_fanotify_mark(if_true, if_false) if_false
+#define __shim_enabled_prlimit64(if_true, if_false) if_false
+#define __shim_enabled_name_to_handle_at(if_true, if_false) if_false
+#define __shim_enabled_open_by_handle_at(if_true, if_false) if_false
+#define __shim_enabled_clock_adjtime(if_true, if_false) if_false
+#define __shim_enabled_syncfs(if_true, if_false) if_false
+#define __shim_enabled_setns(if_true, if_false) if_false
+#define __shim_enabled_process_vm_readv(if_true, if_false) if_false
+#define __shim_enabled_process_vm_writev(if_true, if_false) if_false
+#define __shim_enabled_s390_runtime_instr(if_true, if_false) if_false
+#define __shim_enabled_kcmp(if_true, if_false) if_false
+#define __shim_enabled_finit_module(if_true, if_false) if_false
+#define __shim_enabled_sched_setattr(if_true, if_false) if_false
+#define __shim_enabled_sched_getattr(if_true, if_false) if_false
+#define __shim_enabled_renameat2(if_true, if_false) if_false
+#define __shim_enabled_seccomp(if_true, if_false) if_false
+#define __shim_enabled_getrandom(if_true, if_false) if_false
+#define __shim_enabled_memfd_create(if_true, if_false) if_false
+#define __shim_enabled_bpf(if_true, if_false) if_false
+#define __shim_enabled_s390_pci_mmio_write(if_true, if_false) if_false
+#define __shim_enabled_s390_pci_mmio_read(if_true, if_false) if_false
+#define __shim_enabled_execveat(if_true, if_false) if_false
+#define __shim_enabled_userfaultfd(if_true, if_false) if_false
+#define __shim_enabled_membarrier(if_true, if_false) if_false
+#define __shim_enabled_recvmmsg(if_true, if_false) if_false
+#define __shim_enabled_sendmmsg(if_true, if_false) if_false
+#define __shim_enabled_socket(if_true, if_false) if_false
+#define __shim_enabled_socketpair(if_true, if_false) if_false
+#define __shim_enabled_bind(if_true, if_false) if_false
+#define __shim_enabled_connect(if_true, if_false) if_false
+#define __shim_enabled_listen(if_true, if_false) if_false
+#define __shim_enabled_accept4(if_true, if_false) if_false
+#define __shim_enabled_getsockopt(if_true, if_false) if_false
+#define __shim_enabled_setsockopt(if_true, if_false) if_false
+#define __shim_enabled_getsockname(if_true, if_false) if_false
+#define __shim_enabled_getpeername(if_true, if_false) if_false
+#define __shim_enabled_sendto(if_true, if_false) if_false
+#define __shim_enabled_sendmsg(if_true, if_false) if_false
+#define __shim_enabled_recvfrom(if_true, if_false) if_false
+#define __shim_enabled_recvmsg(if_true, if_false) if_false
+#define __shim_enabled_shutdown(if_true, if_false) if_false
+#define __shim_enabled_mlock2(if_true, if_false) if_false
+#define __shim_enabled_copy_file_range(if_true, if_false) if_false
+#define __shim_enabled_preadv2(if_true, if_false) if_false
+#define __shim_enabled_pwritev2(if_true, if_false) if_false
+#define __shim_enabled_s390_guarded_storage(if_true, if_false) if_false
+#define __shim_enabled_statx(if_true, if_false) if_false
+#define __shim_enabled_s390_sthyi(if_true, if_false) if_false
+
+#define __shim_enabled_opendir(if_true, if_false) if_false
 
 #endif /* _ASM_ZOS_BPX_OFFSETS_H */

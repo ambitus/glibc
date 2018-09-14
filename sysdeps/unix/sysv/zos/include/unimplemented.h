@@ -40,7 +40,6 @@ extern void __libc_fatal (const char *__message)
 
 #define __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED			 \
   __libc_fatal("not yet implemented in the z/OS port"		 \
-	       "in func: " ___GLIBC_ZOS_STRINGIFY(__FUNCTION__)	 \
 	       " in file " ___GLIBC_ZOS_STRINGIFY(__FILE__)	 \
 	       ":"	   ___GLIBC_ZOS_STRINGIFY(__LINE__))
 

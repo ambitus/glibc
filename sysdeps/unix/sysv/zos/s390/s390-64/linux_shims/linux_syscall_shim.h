@@ -49,6 +49,9 @@ typedef uintptr_t ptr31ptr_t;
 /* Look up proto from our unholy table of protos */
 #define SHIM_DECL(syscall_name) \
   _SHIM_CAT (__sys_proto_, syscall_name) (SHIM_NAME(syscall_name))
+/* preform action if we have implemented syscall_name, for debugging.  */
+#define SHIM_IF_ENABLED(syscall_name, action_if_true, action_if_false) \
+  _SHIM_CAT (__shim_enabled_, syscall_name) (action_if_true, action_if_false)
 
 /*************************************************************
  * macros and inline functions useful for implementing shims
@@ -56,7 +59,6 @@ typedef uintptr_t ptr31ptr_t;
 #include <errno.h>  /* for __set_errno */
 #include <sys/cdefs.h>	/* for __glibc_likely/unlikely */
 
-extern void __libc_fatal (const char *__message) __attribute__ ((__noreturn__));
 #define BPX_CALL(name, ftype, args...) \
   ((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args)
 

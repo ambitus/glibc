@@ -44,10 +44,17 @@
 # include "linux_shims/linux_syscall_shim.h"
 /* base syscall implementation */
 # undef INTERNAL_SYSCALL
-# define INTERNAL_SYSCALL(name, err, nr, args...) \
-  ({ \
-    extern SHIM_DECL (name); \
-    SHIM_NAME (name) (&(err), args);   \
+# define INTERNAL_SYSCALL(name, err, nr, args...)	\
+  ({							\
+    SHIM_IF_ENABLED (name,				\
+	extern SHIM_DECL (name);			\
+	SHIM_NAME (name) (&(err), args);		\
+      ,							\
+	__GLIBC_ZOS_RUNTIME_UNIMPLEMENTED;		\
+	/* satisfy type requirements while hopefully */ \
+	/* preventing optimization on this value. */	\
+	(uintptr_t)((volatile void *)0);		\
+      )							\
   })
 
 
@@ -66,7 +73,8 @@
 /* the return code field must be unset before each call, because
    it might not get set at all. */
 # undef INTERNAL_SYSCALL_DECL
-# define INTERNAL_SYSCALL_DECL(err) int err = 0
+# define INTERNAL_SYSCALL_DECL(err) \
+  int err __attribute__ ((unused)) = 0
 
 # undef INTERNAL_SYSCALL_NCS
 # define INTERNAL_SYSCALL_NCS(no, err, nr, args...)  \
