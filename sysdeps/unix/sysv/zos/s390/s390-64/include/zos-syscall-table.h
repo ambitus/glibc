@@ -618,6 +618,17 @@
 #define __BPX_statx      0 /* partially emulate with stat */
 #define __BPX_s390_sthyi 0 /* hold off on implementing for now */
 
+/* some things use these aliases */
+#define __BPX_fcntl64 __BPX_fcntl
+#define __BPX_fadvise64_64 __BPX_fadvise64
+#define __BPX_truncate64 __BPX_truncate
+#define __BPX_ftruncate64 __BPX_ftruncate
+#define __BPX_pwritev64 __BPX_pwritev
+#define __BPX_pwritev64v2 __BPX_pwritev2
+#define __BPX_preadv64 __BPX_preadv
+#define __BPX_preadv64v2 __BPX_preadv2
+
+
 #define __SYS_NR_TO_BPX_OFFSET_HELPER(nr) __SYS_NR_BPX_OFFSET_##nr
 #define __SYS_NR_TO_BPX_OFFSET(nr) __SYS_NR_BPX_OFFSET_HELPER(nr)
 
@@ -1276,6 +1287,17 @@
 #define __sys_proto_statx(decl_name)
 #define __sys_proto_s390_sthyi(decl_name)
 
+/* some things use these aliases */
+#define __sys_proto_fcntl64(decl_name) __sys_proto_fcntl(decl_name)
+#define __sys_proto_fadvise64_64(decl_name) __sys_proto_fadvise64(decl_name)
+#define __sys_proto_truncate64(decl_name) __sys_proto_truncate(decl_name)
+#define __sys_proto_ftruncate64(decl_name) __sys_proto_ftruncate(decl_name)
+#define __sys_proto_pwritev64(decl_name) __sys_proto_pwritev(decl_name)
+#define __sys_proto_pwritev64v2(decl_name) __sys_proto_pwritev2(decl_name)
+#define __sys_proto_preadv64(decl_name) __sys_proto_preadv(decl_name)
+#define __sys_proto_preadv64v2(decl_name) __sys_proto_preadv2(decl_name)
+
+
 /* Prototypes for z/OS-specific syscalls.
    These are the interfaces the syscalls SHOULD have had (minus the first
    param).
@@ -1290,6 +1312,7 @@
    stages of the port. To enable a syscall, define the corresponding macro
    below to 'if_true', and the corresponding macro above to the proper
    proto.  */
+
 #define __shim_enabled_exit(if_true, if_false) if_false
 #define __shim_enabled_fork(if_true, if_false) if_false
 #define __shim_enabled_read(if_true, if_false) if_false
@@ -1617,5 +1640,16 @@
 #define __shim_enabled_s390_sthyi(if_true, if_false) if_false
 
 #define __shim_enabled_opendir(if_true, if_false) if_false
+
+
+/* some things use these aliases */
+#define __shim_enabled_fcntl64(if_true, if_false) __shim_enabled_fcntl(if_true, if_false)
+#define __shim_enabled_fadvise64_64(if_true, if_false) __shim_enabled_fadvise64(if_true, if_false)
+#define __shim_enabled_truncate64(if_true, if_false) __shim_enabled_truncate(if_true, if_false)
+#define __shim_enabled_ftruncate64(if_true, if_false) __shim_enabled_ftruncate(if_true, if_false)
+#define __shim_enabled_pwritev64(if_true, if_false) __shim_enabled_pwritev(if_true, if_false)
+#define __shim_enabled_pwritev64v2(if_true, if_false) __shim_enabled_pwritev2(if_true, if_false)
+#define __shim_enabled_preadv64(if_true, if_false) __shim_enabled_preadv(if_true, if_false)
+#define __shim_enabled_preadv64v2(if_true, if_false) __shim_enabled_preadv2(if_true, if_false)
 
 #endif /* _ASM_ZOS_BPX_OFFSETS_H */
