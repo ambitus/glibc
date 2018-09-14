@@ -88,13 +88,11 @@ struct __bpxystat_struct_name
   __blkcnt_t st_blocks;	      /* Number of blocks allocated */
   __uint32_t st_genvalue;     /* Some random flags */
 /* TODO: decide on better names for these */
-#ifndef __ZOS_STAT_DEF_SENTINEL
 # define __ZOS_STAT_GEN_SHLIB	   0x10
 # define __ZOS_STAT_GEN_NOSHAREAS  0x08
 # define __ZOS_STAT_GEN_APF_AUTH   0x04
 # define __ZOS_STAT_GEN_PROG_CTRL  0x02
 # define __ZOS_STAT_GEN_SYMLINK	   0x01
-#endif /* __ZOS_STAT_DEF_SENTINEL */
   /* TODO: check the types for the rest of the fields */
   __int32_t __short_st_reftime;	     /* TODO: what is this? */
   __uint64_t st_fid;
@@ -103,11 +101,9 @@ struct __bpxystat_struct_name
      one char, but common disagrees.  */
   char st_filefmt;	     /* TODO: what is this? */
   char st_ifsp_flag2;	     /* IFSP_FLAG2 ACL support (?) */
-#ifndef __ZOS_STAT_DEF_SENTINEL
 # define __ZOS_STAT_ACL_ACCESS	  0x80
 # define __ZOS_STAT_ACL_FMODEL	  0x40
 # define __ZOS_STAT_ACL_DMODEL	  0x20
-#endif /* __ZOS_STAT_DEF_SENTINEL */
   char __bpx_reserved3[2];   /* Reserved by IBM */
   /* TODO: check type for this */
   __int32_t st_ctimemsec;    /* Microsecond part of ctime */
@@ -116,21 +112,38 @@ struct __bpxystat_struct_name
   /* End of version 1 fields */
 
   char __bpx_reserved5[4];   /* Reserved by IBM */
-  __time_t st_atime;	     /* 64-bit atime */
-  __time_t st_mtime;	     /* 64-bit mtime */
-  __time_t st_ctime;	     /* 64-bit ctime */
+  __time_t st_bpx_atime;	     /* 64-bit atime */
+  __time_t st_bpx_mtime;	     /* 64-bit mtime */
+  __time_t st_bpx_ctime;	     /* 64-bit ctime */
   __time_t st_createtime;    /* 64-bit creation time */
   __time_t st_reftime;	     /* TODO: what is this? */
   char __bpx_reserved6[16];  /* Reserved by IBM */
   /* End of version 2 fields */
 
   /* Implementation defined additions. Any fields after this are
-      untouched by the actual syscall, must be initialized by us
-      after the syscall returns. These fields are added to add
-      compatibility.  */
+     untouched by the actual syscall, must be initialized by us
+     after the syscall returns. These fields are added to add
+     compatibility.  */
+#ifdef __USE_XOPEN2K8
+  /* Nanosecond resolution timestamps are stored in a format
+    equivalent to 'struct timespec'.  This is the type used
+    whenever possible but the Unix namespace rules do not allow the
+    identifier 'timespec' to appear in the <sys/stat.h> header.
+    Therefore we have to handle the use of this header in strictly
+    standard-compliant sources special.
+    z/OS TODO: initialize these.  */
+    struct timespec st_atim;		/* Time of last access.  */
+    struct timespec st_mtim;		/* Time of last modification.  */
+    struct timespec st_ctim;		/* Time of last status change.  */
+# define st_atime st_atim.tv_sec	/* Backward compatibility.  */
+# define st_mtime st_mtim.tv_sec
+# define st_ctime st_ctim.tv_sec
+#else
+    __time_t st_atime;			/* Time of last access.  */
+    unsigned long int st_atimensec;	/* Nscecs of last access.  */
+    __time_t st_mtime;			/* Time of last modification.  */
+    unsigned long int st_mtimensec;	/* Nsecs of last modification.  */
+    __time_t st_ctime;			/* Time of last status change.  */
+    unsigned long int st_ctimensec;	/* Nsecs of last status change.  */
+#endif
 } __attribute__ ((__aligned__ (8)));
-
-/* This isn't a standard header guard */
-#ifndef __ZOS_STAT_DEF_SENTINEL
-# define __ZOS_STAT_DEF_SENTINEL 1
-#endif /* __ZOS_STAT_DEF_SENTINEL */
