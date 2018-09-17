@@ -1,4 +1,4 @@
-#include <linux_shims/linux_syscall_shim.h>
+#include <linux_syscall_shim.h>
 
 /* race condition? */
 static inline void

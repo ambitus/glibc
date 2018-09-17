@@ -60,7 +60,7 @@ typedef uintptr_t ptr31ptr_t;
 #include <sys/cdefs.h>	/* for __glibc_likely/unlikely */
 
 #define BPX_CALL(name, ftype, args...) \
-  ((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args)
+  (((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args))
 
 /* emit an error at runtime */
 #define _SHIM_NOT_YET_IMPLEMENTED \
@@ -80,17 +80,30 @@ typedef uintptr_t ptr31ptr_t;
 #define SAFE_PATHLEN_OR_FAIL_WITH(pathname, return_value_on_error)  \
   ({								    \
     const char *__pathname = (pathname);			    \
-    int __pathname_len = strnlen(__pathname, PATH_MAX - 1);	    \
-    if (__glibc_unlikely(__pathname_len == PATH_MAX - 1) &&	    \
-	__glibc_likely(__pathname[PATH_MAX - 1] != '\0'))	    \
+    int __pathname_len = strnlen (__pathname, PATH_MAX - 1);	    \
+    if (__glibc_unlikely (__pathname_len == PATH_MAX - 1) &&	    \
+	__glibc_likely (__pathname[PATH_MAX - 1] != '\0'))	    \
       {								    \
-	__set_errno(ENAMETOOLONG);				    \
+	*errcode = ENAMETOOLONG;				    \
 	return (return_value_on_error);				    \
       }								    \
     __pathname_len;						    \
   })
 
-#include <sys/stat.h>
+/* Check if the given value can fit into an unsigned int of the given
+   size in bits.   */
+#define IS_UINT(bitsize, val)					    \
+  ({								    \
+    _Static_assert (__builtin_constant_p (bitsize), "bitsize "	    \
+		    "should be a constant");			    \
+    _Static_assert (bitsize > 0, "uints <= 0 make no sense.");	    \
+    _Static_assert (bitsize <= 64, "this macro can't check "	    \
+		    "integers larger than a uint64_t");		    \
+    __typeof (val) _val = (val);				    \
+    (_val) >= 0 && (_val) < (1ULL << (bitsize));		    \
+  })
+
+#define IS_UINT32(val) IS_UINT (32, val)
 
 #endif /* __ASSEMBLER__ */
 #endif /* _ZOS_LINUX_SYSCALL_SHIM_H */
