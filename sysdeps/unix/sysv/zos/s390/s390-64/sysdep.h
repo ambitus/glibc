@@ -77,8 +77,8 @@
   int err __attribute__ ((unused)) = 0
 
 # undef INTERNAL_SYSCALL_NCS
-# define INTERNAL_SYSCALL_NCS(no, err, nr, args...)  \
-  not yet implemented, choke gcc
+/* we define INTERNAL_SYSCALL_NCS in this file.  */
+# include <internal_syscall_ncs.h>
 
 /* z/OS TODO: this should be something that is always true if
    the syscall returns an error, and can check.
