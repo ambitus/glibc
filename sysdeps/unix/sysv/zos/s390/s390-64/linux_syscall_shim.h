@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <unimplemented.h>
 
+#include <zos-syscall-table.h>
+
 uintptr_t bpx_call_table;
 
 /* a regular (64-bit) pointer to a 31-bit pointer */

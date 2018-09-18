@@ -18,12 +18,6 @@
 
 ifdef in-Makerules
 
-# Do not use any assembly code from sysdeps/unix (and subdirectories).
-# This bypasses all the system call stubs and uses any existing posix or
-# generic C files instead.
-inhibit-sysdep-asm += unix.*
-inhibit-unix-syscalls = yes
-
 # For now, don't try to generate anything from the installed Unix system
 # and its libraries. That is only of use when building for a Unix
 # system, so as to be compatible with some existing binaries for that
@@ -32,6 +26,8 @@ inhibit-unix-syscalls = yes
 # for now we don't bother with it.
 inhibit-glue = yes
 
+ifeq (misc,$(subdir))
 sysdep_routines += syscall_open syscall_write
+endif
 
 endif	# in-Makerules

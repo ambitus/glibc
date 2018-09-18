@@ -32,6 +32,14 @@ ifneq ($(REQUIRED_MAKE_VERSION), \
 Wrong GNU Make version.  See above for the version needed.
 endif
 
+# z/OS debugging, strip this out of any final release
+ifeq (no,yes)  # change this to (yes,yes) to enable
+define print-info
+$(info evaluating $(abspath $(lastword $(MAKEFILE_LIST))))
+$(info cwd: $(shell pwd))
+$(info invoked by: $(lastword $(wordlist 2,$(words $(MAKEFILE_LIST)),dummy $(MAKEFILE_LIST))))
+endef
+endif
 
 ifdef	subdir
 ..	:= ../
