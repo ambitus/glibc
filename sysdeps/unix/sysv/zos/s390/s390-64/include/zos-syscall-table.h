@@ -1300,9 +1300,7 @@
 
 /* Prototypes for z/OS-specific syscalls.
    These are the interfaces the syscalls SHOULD have had (minus the first
-   param).
-   TODO: define better names for the functions themselves.
-   __linux_compat_* isn't really accurate with them.  */
+   param). */
 #define __sys_proto_opendir(decl_name) /* int decl_name (int *errcode, const char*name) */
 
 

@@ -41,7 +41,8 @@
 
 #ifndef __ASSEMBLER__
 # include <assert.h>
-# include "linux_syscall_shim.h"
+# include <zos-syscall-base.h>
+# include <unimplemented.h>
 /* base syscall implementation */
 # undef INTERNAL_SYSCALL
 # define INTERNAL_SYSCALL(name, err, nr, args...)	\

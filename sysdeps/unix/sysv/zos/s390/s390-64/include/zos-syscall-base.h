@@ -3,27 +3,33 @@
 
    Common declarations for linux syscall wrappers.
    */
-#ifndef _ZOS_LINUX_SYSCALL_SHIM_H
-#define _ZOS_LINUX_SYSCALL_SHIM_H 1
+#ifndef _ZOS_SYSCALL_COMMON_H
+#define _ZOS_SYSCALL_COMMON_H 1
 #ifndef __ASSEMBLER__
 
 #include <zos-syscall-table.h>
 
 #include <stdint.h>
-#include <unimplemented.h>
+#include <features.h>
 
-#include <zos-syscall-table.h>
+/* Ideally, at libc initialization time __bpx_call_table should be
+   be set to the result of GET_BPX_FUNCTION_TABLE to shave off a few
+   dereferences from each syscall invocation. However, I don't
+   want to test out how well that works right now, so it is currently
+   unused and GET_BPX_FUNCTION_TABLE is recomputed for every call.
 
-uintptr_t bpx_call_table;
+   __bpx_call_table must be be declared exactly as follows.  */
+uintptr_t __bpx_call_table;
+hidden_proto(__bpx_call_table)
+uintptr_t __bpx_call_table = 0;
+hidden_data_def(__bpx_call_table)
 
-/* a regular (64-bit) pointer to a 31-bit pointer */
-typedef uintptr_t ptr31ptr_t;
 
-/* get a reference to bpx call table
-   use a variant of Michael's macros for now
+/* get a reference to bpx call table.
+   use a variant of Michael's macros for now.
    Follow a series of 31-bit pointers, which is a bit awkward since we
-   are in 64-bit mode. The high bits are all 0 so we don't need to mask it
-   off. */
+   are in 64-bit mode. The high bits are all 0 so we don't need to mask
+   it off. */
 
 #define GET_PTR31_UNSAFE(x) ((uintptr_t)(*(uint32_t *)(x)))
 #define GET_PTR31_SAFE(x) ((uintptr_t)(~(1UL << 31) & *(uint32_t *)(x)))
@@ -32,25 +38,26 @@ typedef uintptr_t ptr31ptr_t;
   GET_PTR31_UNSAFE (GET_PTR31_UNSAFE (GET_PTR31_UNSAFE ( \
   (volatile uintptr_t)(0x10)) + 544) + 24)
 
-/* z/OS TODO: FIXME: this is recomputed for every call right now. */
-#define BPX_FUNCTION_UNTYPED(offset)			  \
-  ({							  \
-    _Static_assert(offset && offset % 4 == 0,		  \
-		   "incorrect offset to BPX service");	  \
-    ((void *)GET_PTR31_UNSAFE (bpx_call_table + offset)); \
+/* Return a pointer to the bpx syscall function that is at offset
+   'offset' from the start of the bpx syscall table.
+
+   z/OS TODO: FIXME: this is recomputed for every call right now.
+   This function should be constant for a given offset and address
+   space. */
+#define BPX_FUNCTION_UNTYPED(offset)				  \
+  ({								  \
+    _Static_assert (offset && offset % 4 == 0,			  \
+		    "incorrect offset to BPX service");		  \
+    ((void *)GET_PTR31_UNSAFE (GET_BPX_FUNCTION_TABLE + offset)); \
   })
 
-/* generic utility macros */
 #define _SHIM_CAT(a, b) _SHIM_INDIR_CAT (a, b)
 #define _SHIM_INDIR_CAT(a, b) a##b
-/* end generic utility macros */
 
-
-
-#define SHIM_NAME(syscall_name) _SHIM_CAT (__linux_compat_, syscall_name)
+#define SHIM_NAME(syscall_name) _SHIM_CAT (__zos_sys_, syscall_name)
 /* Look up proto from our unholy table of protos */
 #define SHIM_DECL(syscall_name) \
-  _SHIM_CAT (__sys_proto_, syscall_name) (SHIM_NAME(syscall_name))
+  _SHIM_CAT (__sys_proto_, syscall_name) (SHIM_NAME (syscall_name))
 /* preform action if we have implemented syscall_name, for debugging.  */
 #define SHIM_IF_ENABLED(syscall_name, action_if_true, action_if_false) \
   _SHIM_CAT (__shim_enabled_, syscall_name) (action_if_true, action_if_false)
@@ -58,15 +65,21 @@ typedef uintptr_t ptr31ptr_t;
 /*************************************************************
  * macros and inline functions useful for implementing shims
  **************************************************************/
-#include <errno.h>  /* for __set_errno */
 #include <sys/cdefs.h>	/* for __glibc_likely/unlikely */
+#include <errno.h>
 
 #define BPX_CALL(name, ftype, args...) \
   (((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args))
 
-/* emit an error at runtime */
-#define _SHIM_NOT_YET_IMPLEMENTED \
-  __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED
+/* fail with ENOSYS.
+   TODO: redefine this to __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED if we
+   can be sure that that won't break anything.
+   */
+#define SHIM_NOT_YET_IMPLEMENTED		\
+  ({						\
+    *errcode = ENOSYS;				\
+    return -1;					\
+  })
 
 /* z/OS TODO: PATH_MAX isn't sufficient. It's historically unreliable.
    Check to see what the maximum possible path that can be made on z/OS
@@ -102,10 +115,10 @@ typedef uintptr_t ptr31ptr_t;
     _Static_assert (bitsize <= 64, "this macro can't check "	    \
 		    "integers larger than a uint64_t");		    \
     __typeof (val) _val = (val);				    \
-    (_val) >= 0 && (_val) < (1ULL << (bitsize));		    \
+    (_val) >= 0 && (bitsize == 64 || (_val) < (1ULL << (bitsize))); \
   })
 
 #define IS_UINT32(val) IS_UINT (32, val)
 
 #endif /* __ASSEMBLER__ */
-#endif /* _ZOS_LINUX_SYSCALL_SHIM_H */
+#endif /* _ZOS_SYSCALL_COMMON_H */

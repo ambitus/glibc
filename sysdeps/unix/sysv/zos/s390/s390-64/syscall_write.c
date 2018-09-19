@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <sys/cdefs.h>
-#include "linux_syscall_shim.h"
+#include <zos-syscall-base.h>
 
 typedef void (*bpx4wrt_t) (const int32_t *fd, const void * const *buf,
 			   const int32_t *buf_alet,
@@ -10,8 +10,8 @@ typedef void (*bpx4wrt_t) (const int32_t *fd, const void * const *buf,
 			   int32_t *reason_code);
 
 ssize_t
-__linux_compat_write (int *errcode, int fd,
-		      const void *buf, size_t nbytes)
+__zos_sys_write (int *errcode, int fd,
+		 const void *buf, size_t nbytes)
 {
   int32_t retval, reason_code;
   uint32_t count;
@@ -29,3 +29,4 @@ __linux_compat_write (int *errcode, int fd,
   /* TODO: check important reason codes */
   return retval;
 }
+hidden_def (__zos_sys_write)
