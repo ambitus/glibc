@@ -28,7 +28,7 @@ inhibit-glue = yes
 
 # Add all the syscall wrappers to io, so they all get linked in properly
 # where necessary.
-ifeq ($(subdir),io)
+ifneq (,$(filter $(subdir),io nptl))
 sysdep_routines += syscall_open syscall_write
 endif
 
