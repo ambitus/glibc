@@ -102,6 +102,12 @@ __ieee754_jn (int n, double x)
 	    double s;
 	    double c;
 	    __sincos (x, &s, &c);
+	    /* gcc gives us warnings if temp isn't explicitly
+	     * initialized here, even though it will always be set by
+	     * the following switch statement. The optimizer should
+	     * remove this pointless assignment.
+	     */
+	    temp = 0;
 	    switch (n & 3)
 	      {
 	      case 0: temp = c + s; break;
@@ -309,6 +315,12 @@ __ieee754_yn (int n, double x)
 	double c;
 	double s;
 	__sincos (x, &s, &c);
+	/* gcc gives us warnings if temp isn't explicitly
+	 * initialized here, even though it will always be set by
+	 * the following switch statement. The optimizer should
+	 * remove this pointless assignment.
+	 */
+	temp = 0;
 	switch (n & 3)
 	  {
 	  case 0: temp = s - c; break;

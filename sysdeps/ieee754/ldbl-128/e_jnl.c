@@ -135,6 +135,12 @@ __ieee754_jnl (int n, _Float128 x)
 	    _Float128 s;
 	    _Float128 c;
 	    __sincosl (x, &s, &c);
+	    /* gcc gives us warnings if temp isn't explicitly
+	     * initialized here, even though it will always be set by
+	     * the following switch statement. The optimizer should
+	     * remove this pointless assignment.
+	     */
+	    temp = 0;
 	    switch (n & 3)
 	      {
 	      case 0:
@@ -371,6 +377,12 @@ __ieee754_ynl (int n, _Float128 x)
 	_Float128 s;
 	_Float128 c;
 	__sincosl (x, &s, &c);
+	/* gcc gives us warnings if temp isn't explicitly
+	 * initialized here, even though it will always be set by
+	 * the following switch statement. The optimizer should
+	 * remove this pointless assignment.
+	 */
+	temp = 0;
 	switch (n & 3)
 	  {
 	  case 0:
