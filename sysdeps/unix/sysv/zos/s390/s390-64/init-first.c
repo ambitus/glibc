@@ -4,7 +4,7 @@
 static __always_inline void
 __setup_bpx_table_ptr (void)
 {
-  __bpx_call_table = GET_BPX_FUNCTION_TABLE;
+  /* __bpx_call_table = GET_BPX_FUNCTION_TABLE; */
 }
 
 /* co-opt VDSO_SETUP to do our initialization, since we aren't
