@@ -73,8 +73,9 @@
 #ifndef __O_PATH
 # define __O_PATH       __GLIBC_ZOS_INTERNAL_UNIMPLEMENTED
 #endif
+/* dummy this out by aliasing O_DSYNC to O_SYNC */
 #ifndef __O_DSYNC
-# define __O_DSYNC      __GLIBC_ZOS_INTERNAL_UNIMPLEMENTED
+# define __O_DSYNC      O_SYNC
 #endif
 /* #ifndef __O_TMPFILE */
 /* # define __O_TMPFILE    __GLIBC_ZOS_INTERNAL_UNIMPLEMENTED */
