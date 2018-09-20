@@ -48,7 +48,6 @@
 # define INTERNAL_SYSCALL(name, err, nr, args...)	\
   ({							\
     SHIM_IF_ENABLED (name,				\
-	extern SHIM_DECL (name);			\
 	SHIM_NAME (name) (&(err), args);		\
       ,							\
 	__GLIBC_ZOS_RUNTIME_UNIMPLEMENTED;		\
@@ -60,15 +59,15 @@
 
 
 # undef INLINE_SYSCALL
-# define INLINE_SYSCALL(name, nr, args...)				\
-  ({									\
-    INTERNAL_SYSCALL_DECL (_sc_err);					\
-    long _ret = INTERNAL_SYSCALL (name, _sc_err, nr, args);		\
-    if (INTERNAL_SYSCALL_ERROR_P (_ret, _sc_err))			\
-      {									\
-	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, _sc_err));		\
-	_ret = -1;  /* always return -1 on err */			\
-      }									\
+# define INLINE_SYSCALL(name, nr, args...)			\
+  ({								\
+    INTERNAL_SYSCALL_DECL (_sc_err);				\
+    long _ret = INTERNAL_SYSCALL (name, _sc_err, nr, args);	\
+    if (INTERNAL_SYSCALL_ERROR_P (_ret, _sc_err))		\
+      {								\
+	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, _sc_err));	\
+	_ret = -1;  /* always return -1 on err */		\
+      }								\
     _ret; })
 
 /* the return code field must be unset before each call, because

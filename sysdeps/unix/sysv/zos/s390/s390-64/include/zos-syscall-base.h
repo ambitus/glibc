@@ -8,6 +8,7 @@
 #ifndef __ASSEMBLER__
 
 #include <zos-syscall-table.h>
+#include <zos-syscall-impl.h>
 
 #include <stdint.h>
 #include <features.h>
@@ -19,10 +20,7 @@
    unused and GET_BPX_FUNCTION_TABLE is recomputed for every call.
 
    __bpx_call_table must be be declared exactly as follows.  */
-uintptr_t __bpx_call_table;
-hidden_proto(__bpx_call_table)
-uintptr_t __bpx_call_table = 0;
-hidden_data_def(__bpx_call_table)
+extern uintptr_t __bpx_call_table attribute_hidden;
 
 
 /* get a reference to bpx call table.
