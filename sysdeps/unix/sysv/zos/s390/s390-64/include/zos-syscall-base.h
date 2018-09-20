@@ -8,7 +8,6 @@
 #ifndef __ASSEMBLER__
 
 #include <zos-syscall-table.h>
-#include <zos-syscall-impl.h>
 
 #include <stdint.h>
 #include <features.h>
@@ -117,6 +116,9 @@ extern uintptr_t __bpx_call_table attribute_hidden;
   })
 
 #define IS_UINT32(val) IS_UINT (32, val)
+
+/* all the syscall implementations. */
+#include <zos-syscall-impl.h>
 
 #endif /* __ASSEMBLER__ */
 #endif /* _ZOS_SYSCALL_COMMON_H */
