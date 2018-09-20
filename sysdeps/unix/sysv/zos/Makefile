@@ -26,7 +26,9 @@ ifdef in-Makerules
 # for now we don't bother with it.
 inhibit-glue = yes
 
-ifeq (misc,$(subdir))
+# Add all the syscall wrappers to io, so they all get linked in properly
+# where necessary.
+ifeq ($(subdir),io)
 sysdep_routines += syscall_open syscall_write
 endif
 
