@@ -103,7 +103,7 @@ extern uintptr_t __bpx_call_table attribute_hidden;
   })
 
 /* Check if the given value can fit into an unsigned int of the given
-   size in bits.   */
+   size in bits. This is imperfect, but good enough for us.  */
 #define IS_UINT(bitsize, val)					    \
   ({								    \
     _Static_assert (__builtin_constant_p (bitsize), "bitsize "	    \
