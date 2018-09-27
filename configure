@@ -5663,6 +5663,7 @@ if test $libc_cv_have_sdata_section = yes; then
 
 fi
 
+libc_cv_ctors_header=yes
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use .ctors/.dtors header and trailer" >&5
 $as_echo_n "checking whether to use .ctors/.dtors header and trailer... " >&6; }
 if ${libc_cv_ctors_header+:} false; then :
