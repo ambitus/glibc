@@ -101,7 +101,7 @@ before-compile := $(filter $(common-objpfx)mach% $(common-objpfx)hurd%,\
 			       $(before-compile))
 
 # Even before that, we need abi-versions.h which is generated right here.
-ifeq ($(build-shared),yes)
+#ifeq ($(build-shared),yes)
 ifndef avoid-generated
 before-compile := $(common-objpfx)abi-versions.h $(before-compile)
 $(common-objpfx)abi-versions.h: $(..)scripts/abi-versions.awk \
@@ -121,7 +121,7 @@ before-compile := $(common-objpfx)first-versions.h \
 $(common-objpfx)first-versions.h: $(common-objpfx)versions.stmp
 $(common-objpfx)ldbl-compat-choose.h: $(common-objpfx)versions.stmp
 endif # avoid-generated
-endif # $(build-shared) = yes
+#endif # $(build-shared) = yes
 
 ifndef avoid-generated
 ifneq (,$(CXX))
@@ -317,7 +317,7 @@ $(objpfx)test-as-const-%.c: $(..)scripts/gen-as-const.awk $(..)Makerules \
 	mv -f $@T $@
 endif
 
-ifeq (yes,$(build-shared))
+#ifeq (yes,$(build-shared))
 # Generate the header containing the names of all shared libraries.
 # We use a stamp file to avoid unnecessary recompilations.
 before-compile += $(common-objpfx)gnu/lib-names.h
@@ -378,7 +378,7 @@ $(common-objpfx)$(lib-names-stmp-abi): $(..)scripts/lib-names.awk \
 	touch $@
 endif
 common-generated += $(lib-names-h-abi) $(lib-names-stmp-abi)
-endif
+#endif
 
 ###############################################################################
 # NOTE!  Everything adding to before-compile needs to come before this point! #
@@ -456,7 +456,7 @@ endif
 
 # Generate version maps, but wait until sysdep-subdirs is known
 ifeq ($(sysd-sorted-done),t)
-ifeq ($(build-shared),yes)
+#ifeq ($(build-shared),yes)
 -include $(common-objpfx)sysd-versions
 $(addprefix $(common-objpfx),$(version-maps)): $(common-objpfx)sysd-versions
 common-generated += $(version-maps)
@@ -501,7 +501,7 @@ $(common-objpfx)versions.stmp: $(common-objpfx)Versions.all \
 	mv -f $(common-objpfx)sysd-versionsT $(common-objpfx)sysd-versions
 	touch $@
 endif # avoid-generated
-endif # $(build-shared) = yes
+#endif # $(build-shared) = yes
 endif # sysd-sorted-done
 
 # Generate .dT files as we compile.

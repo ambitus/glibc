@@ -1078,7 +1078,7 @@ subdir-srcdirs = $(foreach dir,$(subdirs),\
 	sed '/^[ 	]*#/d;/^[ 	]*$$/d' $< > $@T
 	mv -f $@T $@
 
-ifeq (yes, $(build-shared))
+#ifeq (yes, $(build-shared))
 
 # To generate a header to support more than one ABI for different
 # architecture variants, the CPU/Makefile defines abi-variants to be a
@@ -1141,7 +1141,7 @@ $(common-objpfx)libc-modules.stmp: $(..)scripts/gen-libc-modules.awk \
 	$(move-if-change) ${@:stmp=T} ${@:stmp=h}
 	touch $@
 
-endif
+#endif
 
 # Build the tunables list header early since it could be used by any module in
 # glibc.
