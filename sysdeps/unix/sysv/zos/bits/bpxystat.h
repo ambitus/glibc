@@ -62,9 +62,9 @@ struct __bpxystat_struct_name
   __gid_t st_gid;	      /* File owner's GID */
   __off_t st_size;	      /* File size in bytes */
   /* obsolete fields */
-  __int32_t __short_st_atime; /* 32-bit atime */
-  __int32_t __short_st_mtime; /* 32-bit mtime */
-  __int32_t __short_st_ctime; /* 32-bit ctime */
+  __int32_t _bpx_atime32;     /* 32-bit atime */
+  __int32_t _bpx_mtime32;     /* 32-bit mtime */
+  __int32_t _bpx_ctime32;     /* 32-bit ctime */
   /* end obsolete fields */
   /* first halfword is major, second is minor */
   __dev_t st_rdev;	      /* Device numbers */
@@ -72,7 +72,7 @@ struct __bpxystat_struct_name
   __uint32_t st_useraudit;    /* User audit info */
   __blksize_t st_blksize;     /* File block size */
   /* TODO: check this type */
-  __int32_t __short_st_createtime; /* 32-bit creation time */
+  __int32_t _bpx_createtime32; /* 32-bit creation time */
   char st_auditid[16];	      /* RACF File ID */
   char __bpx_reserved1[4];    /* Reserved by IBM */
   __uint16_t st_ccsid;        /* File Tag CCSID */
@@ -94,7 +94,7 @@ struct __bpxystat_struct_name
 # define __ZOS_STAT_GEN_PROG_CTRL  0x02
 # define __ZOS_STAT_GEN_SYMLINK	   0x01
   /* TODO: check the types for the rest of the fields */
-  __int32_t __short_st_reftime;	     /* TODO: what is this? */
+  __int32_t _bpx_reftime32;   /* TODO: what is this? */
   __uint64_t st_fid;
   /* TODO: I don't understand the sizes for the following two,
      I think the docs indicate that they should be merged into
@@ -112,9 +112,9 @@ struct __bpxystat_struct_name
   /* End of version 1 fields */
 
   char __bpx_reserved5[4];   /* Reserved by IBM */
-  __time_t st_bpx_atime;	     /* 64-bit atime */
-  __time_t st_bpx_mtime;	     /* 64-bit mtime */
-  __time_t st_bpx_ctime;	     /* 64-bit ctime */
+  __time_t _bpx_atime64;     /* 64-bit atime */
+  __time_t _bpx_mtime64;     /* 64-bit mtime */
+  __time_t _bpx_ctime64;     /* 64-bit ctime */
   __time_t st_createtime;    /* 64-bit creation time */
   __time_t st_reftime;	     /* TODO: what is this? */
   char __bpx_reserved6[16];  /* Reserved by IBM */
@@ -126,24 +126,23 @@ struct __bpxystat_struct_name
      compatibility.  */
 #ifdef __USE_XOPEN2K8
   /* Nanosecond resolution timestamps are stored in a format
-    equivalent to 'struct timespec'.  This is the type used
-    whenever possible but the Unix namespace rules do not allow the
-    identifier 'timespec' to appear in the <sys/stat.h> header.
-    Therefore we have to handle the use of this header in strictly
-    standard-compliant sources special.
-    z/OS TODO: initialize these.  */
-    struct timespec st_atim;		/* Time of last access.  */
-    struct timespec st_mtim;		/* Time of last modification.  */
-    struct timespec st_ctim;		/* Time of last status change.  */
+     equivalent to 'struct timespec'.  This is the type used
+     whenever possible but the Unix namespace rules do not allow the
+     identifier 'timespec' to appear in the <sys/stat.h> header.
+     Therefore we have to handle the use of this header in strictly
+     standard-compliant sources special.  */
+  struct timespec st_atim;		/* Time of last access.	 */
+  struct timespec st_mtim;		/* Time of last modification.  */
+  struct timespec st_ctim;		/* Time of last status change.	*/
 # define st_atime st_atim.tv_sec	/* Backward compatibility.  */
 # define st_mtime st_mtim.tv_sec
 # define st_ctime st_ctim.tv_sec
 #else
-    __time_t st_atime;			/* Time of last access.  */
-    unsigned long int st_atimensec;	/* Nscecs of last access.  */
-    __time_t st_mtime;			/* Time of last modification.  */
-    unsigned long int st_mtimensec;	/* Nsecs of last modification.  */
-    __time_t st_ctime;			/* Time of last status change.  */
-    unsigned long int st_ctimensec;	/* Nsecs of last status change.  */
+  __time_t st_atime;			/* Time of last access.	 */
+  unsigned long int st_atimensec;	/* Nscecs of last access.  */
+  __time_t st_mtime;			/* Time of last modification.  */
+  unsigned long int st_mtimensec;	/* Nsecs of last modification.	*/
+  __time_t st_ctime;			/* Time of last status change.	*/
+  unsigned long int st_ctimensec;	/* Nsecs of last status change.	 */
 #endif
 } __attribute__ ((__aligned__ (8)));
