@@ -46,12 +46,19 @@
 #include <string.h>
 
 #include <limits.h>  /* for PATH_MAX */
+#include <sys/mman.h>  /* for user-facing mmap constant values.  */
+
+#include <bpxk-constants.h>
+
+static inline ssize_t
+__zos_sys_write (int *errcode, int fd,
+		 const void *buf, size_t nbytes);
 
 /* There is ambiguity in the USS callable services documentation.
-   The __kernel_32_t type serves as an indicator of where that ambiguity
+   The __bpxk_32_t type serves as an indicator of where that ambiguity
    is. This type is mostly just an annotation for us.
 
-   Any parameter of type __kernel_32_t indicates a parameter for which
+   Any parameter of type __bpxk_32_t indicates a parameter for which
    several things are true:
        (1) The associated value is 32 bits wide.
        (2) The associated value SHOULD be unsigned.
@@ -64,11 +71,11 @@
    TODO: This type exists as an indication that we have not yet done
    the work to determine how the kernel handles the associated
    parameter. We must definitively determine how the kernel handles
-   each __kernel_32_t type and replace __kernel_32_t with uint32_t or
+   each __bpxk_32_t type and replace __bpxk_32_t with uint32_t or
    int32_t in the syscall declaration parameter list as appropriate,
    and if necessary add in the body of the associated syscall
    wrapper.  */
-typedef uint32_t __kernel_32_t;
+typedef uint32_t __bpxk_32_t;
 
 /***************************************************
  * Utility functions/macros
@@ -138,10 +145,25 @@ __initialize_times (struct stat *statbuf)
 
 /* The first parameter to all of these should be an int *errcode.  */
 
+
+/* Base I/O syscalls.  */
+
 typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
 			     const char * const *pathname,
 			     const int32_t *options,
-			     const __kernel_32_t *mode,
+			     const __bpxk_32_t *mode,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+/* TODO: the 'count' parameter of bpx4wrt seems to be interpreted as a
+   signed quantity by the kernel, for some utterly inexplicable reason.
+   It appears to do the necessary consistency checking itself, so all
+   we need to do is make sure it fits into 32 bits. Confirm this
+   behavior definitively.  */
+
+typedef void (*__bpx4wrt_t) (const int32_t *fd, const void * const *buf,
+			     const int32_t *buf_alet,
+			     const __bpxk_32_t *count,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
@@ -151,7 +173,7 @@ __zos_sys_open (int *errcode, const char *pathname,
 {
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
-  __kernel_32_t kernel_mode = mode;
+  __bpxk_32_t kernel_mode = mode;
   BPX_CALL (open, __bpx4opn_t, &pathname_len, &pathname, &flags,
 	    &kernel_mode, &retval, errcode, &reason_code);
   /* TODO: check important reason codes. */
@@ -165,27 +187,16 @@ __zos_sys_openat (int *errcode, int dirfd, const char *pathname,
 {
   if (dirfd == AT_FDCWD || *pathname == '/')
     return __zos_sys_open (errcode, pathname, flags, mode);
-  SHIM_NOT_YET_IMPLEMENTED;
+  SHIM_NOT_YET_IMPLEMENTED_FATAL ("openat not implemnted", -1);
 }
 
-/* TODO: the 'count' parameter seems to be interpreted as a signed
-   quantity by the kernel, for some utterly inexplicable reason.
-   It appears to do the necessary consistency checking itself, so all
-   we need to do is make sure it fits into 32 bits. Confirm this
-   behavior definitively.  */
-
-typedef void (*__bpx4wrt_t) (const int32_t *fd, const void * const *buf,
-			     const int32_t *buf_alet,
-			     const __kernel_32_t *count,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
 
 static inline ssize_t
 __zos_sys_write (int *errcode, int fd,
 		 const void *buf, size_t nbytes)
 {
   int32_t retval, reason_code;
-  __kernel_32_t count;
+  __bpxk_32_t count;
   const int32_t alet = 0;
   if (!IS_UINT32 (nbytes))
     {
@@ -200,6 +211,9 @@ __zos_sys_write (int *errcode, int fd,
   /* TODO: check important reason codes  */
   return retval;
 }
+
+
+/* stat and related syscalls.  */
 
 typedef void (*__bpx4sta_t) (const uint32_t *pathname_len,
 			     const char * const *pathname,
@@ -221,6 +235,7 @@ static const uint32_t __bpxystat_len = sizeof (struct stat) -
 				       (sizeof (__time_t) +
 					sizeof (unsigned long int)) * 3;
 
+
 static inline int
 __zos_sys_stat (int *errcode, const char *pathname,
 		struct stat *statbuf)
@@ -236,6 +251,7 @@ __zos_sys_stat (int *errcode, const char *pathname,
 
 /* This is exactly the same as __zos_sys_stat except for the
    BPX_CALL. */
+
 static inline int
 __zos_sys_lstat (int *errcode, const char *pathname,
 		 struct stat *statbuf)
@@ -248,6 +264,7 @@ __zos_sys_lstat (int *errcode, const char *pathname,
   __initialize_times (statbuf);
   return retval;
 }
+
 
 static inline int
 __zos_sys_fstat (int *errcode, int fd, struct stat *statbuf)
@@ -262,4 +279,183 @@ __zos_sys_fstat (int *errcode, int fd, struct stat *statbuf)
 
 /* For z/OS, stat64 is exactly equivalent to stat, so wrappers for any
    of the *stat64 calls shouldn't be necessary.	 */
+
+
+/* mmap and related syscalls.  */
+
+/* ret_map_addr below is actualy a void *, but glibc expects it to
+   be a long (or long-compatible type).  */
+typedef void (*__bpx4mmp_t) (void * const *addr,
+			     const uint64_t *length,
+			     const int32_t *protect_opts,
+			     const int32_t *map_type,
+			     const int32_t *fd,
+			     const int64_t *offset,
+			     int64_t *ret_map_addr,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef void (*__bpx4mun_t) (void * const *addr,
+			     const uint64_t *length,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef void (*__bpx4mpr_t) (void * const *addr,
+			     const uint64_t *length,
+			     const int32_t *protect_opts,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline long
+__zos_sys_mmap (int *errcode, void *addr, size_t length, int prot,
+		int flags, int fd, off64_t offset)
+{
+  int32_t retval, reason_code;
+  int32_t protect_opts, map_type = 0;
+  int64_t retmap;
+
+  /* Convert prot from a linux-compatible format into the format
+     expected by the mmap syscall.  */
+  if (prot == PROT_NONE)
+    protect_opts = ZOS_SYS_PROT_NONE;
+  else
+    {
+      protect_opts = 0;
+      if ((prot & PROT_READ) == PROT_READ)
+	protect_opts |= ZOS_SYS_PROT_READ;
+      if ((prot & PROT_WRITE) == PROT_WRITE)
+	protect_opts |= ZOS_SYS_PROT_WRITE;
+      if ((prot & PROT_WRITE) == PROT_WRITE)
+	protect_opts |= ZOS_SYS_PROT_EXEC;
+      /* Linux accepts arbitrary other bits being set in the flags
+	 argument, and it's safe for us to do the same because these
+	 are only three flags that actually do anything on linux
+	 (aside from PROT_SAO, which is powerpc-specific, and will
+	 not be present in portable programs).  */
+    }
+
+  /* Convert flags from a linux-compatible format into the format
+     expected by the mmap syscall.
+
+     TODO: This section is very sketchy at the moment. Do we want to
+     emulate exactly the behavior of the S390 mmap syscall, or do we
+     want to emulate the behavior of the x86_64 mmap c library
+     function? Do we want to handle every possible flag for mmap?
+
+     TODO: Take advantage of MAP_MEGA somehow.  */
+
+  /* Downgrade MAP_SHARED_VALIDATE to MAP_SHARED.  */
+  if ((flags & MAP_SHARED_VALIDATE) == MAP_SHARED_VALIDATE)
+    map_type |= ZOS_SYS_MAP_SHARED;
+  /* Downgrade MAP_FIXED_NOREPLACE to MAP_FIXED.  */
+  if ((flags & MAP_FIXED_NOREPLACE) == MAP_FIXED_NOREPLACE)
+    map_type |= ZOS_SYS_MAP_FIXED;
+
+  if ((flags & MAP_SHARED) == MAP_SHARED)
+    map_type |= ZOS_SYS_MAP_SHARED;
+  if ((flags & MAP_PRIVATE) == MAP_PRIVATE)
+    map_type |= ZOS_SYS_MAP_SHARED;
+  if ((flags & MAP_FIXED) == MAP_FIXED)
+    map_type |= ZOS_SYS_MAP_SHARED;
+
+  /* TODO: This is very, very bad. z/OS mmap doesn't support
+     MAP_ANONYMOUS.  */
+  if ((flags & MAP_ANONYMOUS) == MAP_ANONYMOUS)
+    SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_ANONYMOUS support!",
+				    (long)MAP_FAILED);
+  /* TODO: There is no way for us to support MAP_GROWSDOWN without
+     kernel-level support, I think, but we should make sure.  */
+  if ((flags & MAP_GROWSDOWN) == MAP_GROWSDOWN)
+    SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_GROWSDOWN support",
+				    (long)MAP_FAILED);
+  /* TODO: There might be a way to implement a subset of MAP_HUGETLB's
+     behavior using MAP_MEGA.  */
+  if ((flags & MAP_HUGETLB) == MAP_HUGETLB)
+    SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_HUGETLB support",
+				    (long)MAP_FAILED);
+  /* TODO: See mlock.  */
+  if ((flags & MAP_HUGETLB) == MAP_HUGETLB)
+    SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_LOCKED support",
+				    (long)MAP_FAILED);
+  /* We just can't support this one.  */
+  if ((flags & MAP_NORESERVE) == MAP_NORESERVE)
+    SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_NORESERVE support",
+				    (long)MAP_FAILED);
+  /* TODO: this one's relatively easy. Read(?) on byte from each
+     page.  */
+  if ((flags & MAP_POPULATE) == MAP_POPULATE)
+    SHIM_NOT_YET_IMPLEMENTED_FATAL ("MAP_POPULATE unimplemented",
+				    (long)MAP_FAILED);
+  /* We probably just can't support this one.  */
+  if ((flags & MAP_SYNC) == MAP_SYNC)
+    SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_SYNC support",
+				    (long)MAP_FAILED);
+
+
+  if (flags & MAP_HUGE_MASK)
+    {
+      *errcode = EINVAL;
+      return (long)MAP_FAILED;
+    }
+
+  /* Ignore MAP_DENYWRITE, MAP_EXECUTABLE, MAP_FILE, and MAP_STACK
+     because they are noops.  */
+
+  /* TODO: should we try to support MAP_32BIT? What about
+     MAP_UNINITIALIZED (which doesn't have a glibc-provided
+     declaration)?  */
+
+  BPX_CALL (mmap, __bpx4mmp_t, &addr, &length, &protect_opts, &map_type,
+	    &fd, &offset, &retmap, &retval, errcode, &reason_code);
+  return (long)retmap;
+}
+
+
+static inline int
+__zos_sys_munmap (int *errcode, void *addr, size_t length)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (munmap, __bpx4mun_t, &addr, &length, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+static inline int
+__zos_sys_mprotect (int *errcode, void *addr, size_t length, int prot)
+{
+  int32_t retval, reason_code;
+  int32_t protect_opts;
+  /* Convert prot from a linux-compatible format into the format
+     expected by the munmap syscall.  */
+  if (prot == PROT_NONE)
+    protect_opts = ZOS_SYS_PROT_NONE;
+  else
+    {
+      protect_opts = 0;
+      if ((prot & PROT_READ) == PROT_READ)
+	protect_opts |= ZOS_SYS_PROT_READ;
+      if ((prot & PROT_WRITE) == PROT_WRITE)
+	protect_opts |= ZOS_SYS_PROT_WRITE;
+      if ((prot & PROT_WRITE) == PROT_WRITE)
+	protect_opts |= ZOS_SYS_PROT_EXEC;
+      /* TODO: Unless we can query mappings, we can't support this.  */
+      if ((prot & PROT_GROWSUP) == PROT_GROWSUP)
+	SHIM_NOT_YET_IMPLEMENTED_FATAL ("PROT_GROWSUP unsupported",
+					-1);
+      /* TODO: Unless we can query mappings, we can't support this.  */
+      if ((prot & PROT_GROWSDOWN) == PROT_GROWSDOWN)
+	SHIM_NOT_YET_IMPLEMENTED_FATAL ("PROT_GROWSDOWN unsupported",
+					-1);
+      /* Linux accepts arbitrary other bits being set in the flags
+	 argument, and it's safe for us to do the same because these
+	 are only three flags that actually do anything on linux
+	 (aside from PROT_SAO, which is powerpc-specific, and will
+	 not be present in portable programs).  */
+    }
+
+  BPX_CALL (mprotect, __bpx4mpr_t, &addr, &length, &protect_opts,
+	    &retval, errcode, &reason_code);
+  return retval;
+}
+
 #endif /* _ZOS_DECL_H */

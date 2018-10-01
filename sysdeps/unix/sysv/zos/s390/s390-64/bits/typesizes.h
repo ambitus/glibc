@@ -40,6 +40,8 @@
 #define __INO64_T_TYPE		__U32_TYPE
 #define __MODE_T_TYPE		__U32_TYPE
 #define __NLINK_T_TYPE		__U32_TYPE
+/* The BPX services always use signed 64-bit values for file offsets,
+   which is actually very nice.  */
 #define __OFF_T_TYPE		__S64_TYPE
 #define __OFF64_T_TYPE		__S64_TYPE
 #define __PID_T_TYPE		__S32_TYPE

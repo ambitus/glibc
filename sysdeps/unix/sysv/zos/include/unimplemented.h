@@ -33,14 +33,15 @@
 #define __GLIBC_ZOS_BUILDTIME_UNIMPLEMENTED \
   __GLIBC_ZOS_CHOKE_COMPILER_UNIMPLEMENTED
 
-#ifndef _STDIO_H
-extern void __libc_fatal (const char *__message)
-  __attribute__ ((__noreturn__));
-#endif /* _STDIO_H  */
-
-#define __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED			 \
-  __libc_fatal("not yet implemented in the z/OS port"		 \
-	       " in file " ___GLIBC_ZOS_STRINGIFY(__FILE__)	 \
-	       ":"	   ___GLIBC_ZOS_STRINGIFY(__LINE__))
+#define __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED(msg)				\
+  ({									\
+    extern void __libc_fatal (const char *__message)			\
+      __attribute__ ((__noreturn__));					\
+    __libc_fatal("Essential functionality in the z/OS port of glibc "	\
+		 "has not yet been implemented. Unimplemented at "	\
+		 ___GLIBC_ZOS_STRINGIFY (__FILE__) ":"			\
+		 ___GLIBC_ZOS_STRINGIFY (__LINE__) "\n"			\
+		 "Additional info: " msg);				\
+  })
 
 #endif /* _ZOS_UNIMPLEMENTED_H  */

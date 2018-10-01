@@ -29,7 +29,8 @@
 /* this file is based on sysdeps/unix/sysv/linux/s390/s390-64/sysdep.h */
 
 #undef SYS_ify
-#define ZOS_SYSDEP_CAT(a, b) a##b
+#define _ZOS_SYSDEP_CAT(a, b) a##b
+#define ZOS_SYSDEP_CAT(a, b) _ZOS_SYSDEP_CAT (a, b)
 #define SYS_ify(syscall_name)	ZOS_SYSDEP_CAT(__NR_, syscall_name)
 #define __NR_syscall 0
 
@@ -50,7 +51,12 @@
     SHIM_IF_ENABLED (name,				\
 	SHIM_NAME (name) (&(err), args);		\
       ,							\
-	__GLIBC_ZOS_RUNTIME_UNIMPLEMENTED;		\
+	__GLIBC_ZOS_RUNTIME_UNIMPLEMENTED (		\
+	    #name " syscall unimplemented");		\
+	/* Avoid unused variable warnings :)  */	\
+	void ZOS_SYSDEP_CAT (eval, __LINE__)		\
+	(int a, ...) { asm volatile ("" :: "rm" (a));}	\
+	ZOS_SYSDEP_CAT (eval, __LINE__) (0, ## args);	\
 	/* satisfy type requirements while hopefully */ \
 	/* preventing optimization on this value. */	\
 	(uintptr_t)((volatile void *)0);		\
@@ -62,7 +68,7 @@
 # define INLINE_SYSCALL(name, nr, args...)			\
   ({								\
     INTERNAL_SYSCALL_DECL (_sc_err);				\
-    long _ret = INTERNAL_SYSCALL (name, _sc_err, nr, args);	\
+    long _ret = INTERNAL_SYSCALL (name, _sc_err, nr, ## args);	\
     if (INTERNAL_SYSCALL_ERROR_P (_ret, _sc_err))		\
       {								\
 	__set_errno (INTERNAL_SYSCALL_ERRNO (_ret, _sc_err));	\

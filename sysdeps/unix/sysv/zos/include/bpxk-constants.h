@@ -1,0 +1,356 @@
+/* Definitions for constants used by the z/OS syscalls.
+   Copyright (C) 2018 Rocket Software
+   This file is part of the GNU C Library.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, see
+   <http://www.gnu.org/licenses/>.  */
+
+/* On z/OS, we sometimes separate the actual, user-facing flags that are
+   passed to our functions from the actual flags that get sent to the
+   kernel, we map from the userspace representation to the kernel
+   representation in the associated syscall wrapper. This allows us
+   to maintain complete source compatibility with applications
+   designed for Linux.
+
+   See the official USS Assembler Callable Services documentation for the
+   meanings of individual constants.  */
+
+#ifndef BPXK_CONSTANTS_H
+#define BPXK_CONSTANTS_H 1
+
+#define ZOS_SYS_DFLT_ARG_MAX 1048576
+#define ZOS_SYS_DFLT_CHILD_MAX 6
+#define ZOS_SYS_DFLT_CLK_TCK 100
+#define ZOS_SYS_DFLT_NGROUPS_MAX 8191
+#define ZOS_SYS_DFLT_OPEN_MAX 16
+#define ZOS_SYS_DFLT_TZNAME_MAX 9
+#define ZOS_SYS_DFLT_JOB_CONTROL 1
+#define ZOS_SYS_DFLT_SAVED_IDS 1
+#define ZOS_SYS_DFLT_VERSION 199009
+#define ZOS_SYS_DFLT_THREAD_TASKS_MAX_NP 50
+#define ZOS_SYS_DFLT_USERIDLEN_MAX 8
+#define ZOS_SYS_DFLT_PASSWDLEN_MAX 8
+#define ZOS_SYS_DFLT_PASSWDPHRLEN_MAX 100
+#define ZOS_SYS_DFLT_2_CHAR_TERM 1
+
+#define ZOS_SYS_SC_ARG_MAX 1
+#define ZOS_SYS_SC_CHILD_MAX 2
+#define ZOS_SYS_SC_CLK_TCK 3
+#define ZOS_SYS_SC_JOB_CONTROL 4
+#define ZOS_SYS_SC_NGROUPS_MAX 5
+#define ZOS_SYS_SC_OPEN_MAX 6
+#define ZOS_SYS_SC_SAVED_IDS 7
+#define ZOS_SYS_SC_TZNAME_MAX 9
+#define ZOS_SYS_SC_VERSION 10
+#define ZOS_SYS_SC_THREAD_TASKS_MAX_NP 11
+#define ZOS_SYS_SC_2_CHAR_TERM 12
+#define ZOS_SYS_SC_THREADS_MAX_NP 13
+#define ZOS_SYS_SC_MMAP_MEM_MAX_NP 14
+#define ZOS_SYS_SC_TTY_GROUP 15
+#define ZOS_SYS_SC_PAGESIZE 16
+#define ZOS_SYS_SC_PAGE_SIZE 16
+
+#define ZOS_SYS__WAIT3 1
+#define ZOS_SYS__WAITID 2
+
+#define ZOS_SYS_WNOHANG 1
+#define ZOS_SYS_WUNTRACED 2
+#define ZOS_SYS_WCONTINUED 4
+#define ZOS_SYS_WEXITED 8
+#define ZOS_SYS_WSTOPPED 16
+#define ZOS_SYS_WNOWAIT 32
+
+#define ZOS_SYS_P_PID 0
+#define ZOS_SYS_P_PGID 1
+#define ZOS_SYS_P_ALL 2
+
+#define ZOS_SYS_PTEXITTHREAD 0
+#define ZOS_SYS_PTGETNEWTHREAD 1
+#define ZOS_SYS_PTFAILIFLASTTHREAD 2
+
+#define ZOS_SYS_QUIESCE_TERM 1
+#define ZOS_SYS_QUIESCE_FORCE 2
+#define ZOS_SYS_QUIESCE_QUERY 3
+#define ZOS_SYS_PTHREAD_QUERY 3
+#define ZOS_SYS_QUIESCE_FREEZE 4
+#define ZOS_SYS_QUIESCE_UNFREEZE 5
+#define ZOS_SYS_FREEZE_THIS_THREAD 6
+
+#define ZOS_SYS_FREEZE_EXIT 8
+#define ZOS_SYS_QUIESCE_SRB 9
+
+#define ZOS_SYS_PTHREAD_INTR_ENABLE_ 0
+#define ZOS_SYS_PTHREAD_INTR_DISABLE_ 1
+#define ZOS_SYS_PTHREAD_INTR_CONTROLLED_ 0
+#define ZOS_SYS_PTHREAD_INTR_ASYNCHRONOUS_ 1
+
+#define ZOS_SYS_STDIN_FILENO 0
+#define ZOS_SYS_STDOUT_FILENO 1
+#define ZOS_SYS_STDERR_FILENO 2
+
+#define ZOS_SYS_DUBTHREAD 0
+#define ZOS_SYS_DUBPROCESS 1
+#define ZOS_SYS_DUBTASKACEE 2
+#define ZOS_SYS_DUBPROCESSDEFER 4
+#define ZOS_SYS_DUBNOSIGNALS 8
+#define ZOS_SYS_DUBJOBPERM 16
+#define ZOS_SYS_DUBNOJSTUNDUB 32
+#define ZOS_SYS_DUBABENDCALLS 64
+#define ZOS_SYS_DUBUNIQUEACEE 128
+#define ZOS_SYS_DUBFAILNOTREADY 256
+
+#define ZOS_SYS_STL_MAX_TASKS 1
+#define ZOS_SYS_STL_MAX_THREADS 2
+#define ZOS_SYS_STL_SET_BOTH 3
+
+#define ZOS_SYS_NICE_ZERO 20
+
+#define ZOS_SYS_PRIO_PROCESS 1
+#define ZOS_SYS_PRIO_PGRP 2
+#define ZOS_SYS_PRIO_USER 3
+
+#define ZOS_SYS_CPRIO_ABSOLUTE 1
+#define ZOS_SYS_CPRIO_RELATIVE 2
+
+#define ZOS_SYS_PROT_READ 1
+#define ZOS_SYS_PROT_WRITE 2
+#define ZOS_SYS_PROT_NONE 4
+#define ZOS_SYS_PROT_EXEC 8
+
+#define ZOS_SYS_MAP_PRIVATE 1
+#define ZOS_SYS_MAP_SHARED 2
+#define ZOS_SYS_MAP_FIXED 4
+#define ZOS_SYS_MAP_MEGA 8
+
+#define ZOS_SYS_MS_SYNC 1
+#define ZOS_SYS_MS_ASYNC 2
+#define ZOS_SYS_MS_INVALIDATE 4
+
+#define ZOS_SYS_SPAWN_FDCLOSED -1
+
+#define ZOS_SYS_RLIMIT_CORE 4
+#define ZOS_SYS_RLIMIT_CPU 0
+#define ZOS_SYS_RLIMIT_FSIZE 1
+#define ZOS_SYS_RLIMIT_NOFILE 6
+#define ZOS_SYS_RLIMIT_AS 5
+#define ZOS_SYS_RLIMIT_MEMLIMIT 7
+
+#define ZOS_SYS_RLIM_INFINITY 2147483647
+
+#define ZOS_SYS_RUSAGE_SELF 0
+#define ZOS_SYS_RUSAGE_CHILDREN -1
+
+#define ZOS_SYS_QDB_DUBBED_FIRST 1
+#define ZOS_SYS_QDB_DUBBED 2
+#define ZOS_SYS_QDB_DUB_MAY_FAIL 4
+#define ZOS_SYS_QDB_DUB_OKAY 8
+#define ZOS_SYS_QDB_DUB_AS_PROCESS 16
+#define ZOS_SYS_QDB_DUB_AS_THREAD 32
+
+#define ZOS_SYS_ENQWAIT_PROCESS 1
+#define ZOS_SYS_FREEZE_EXIT_REG 2
+#define ZOS_SYS_MVS_USERID 3
+#define ZOS_SYS_ENV_TOGGLE_SEC 4
+#define ZOS_SYS_DFP_CLEANUP_EXIT_REG 5
+#define ZOS_SYS_BPXK_PARAMETER 6
+#define ZOS_SYS_ENV_STOR_SERVICE 7
+#define ZOS_SYS_QUICK_FREEZE_EXIT_REG 8
+#define ZOS_SYS_SHUTDOWN_REG 9
+#define ZOS_SYS_WRITE_DOWN 10
+#define ZOS_SYS_PIDXFER_QUERY 11
+#define ZOS_SYS_QUERY_MODE 12
+#define ZOS_SYS_MUST_STAY_CLEAN 13
+
+#define ZOS_SYS_BPX_SWAP 1
+#define ZOS_SYS_BPX_NONSWAP 2
+
+#define ZOS_SYS_MSC_QUERY 0
+#define ZOS_SYS_MSC_ENABLE 1
+
+#define ZOS_SYS_MSC_DISABLED 0
+#define ZOS_SYS_MSC_ENABLED 1
+#define ZOS_SYS_MSC_ENABLED_COND 2
+
+#define ZOS_SYS_WD_OUERY 0
+#define ZOS_SYS_WD_ACTIVATE 1
+#define ZOS_SYS_WD_INACTIVATE 2
+#define ZOS_SYS_WD_RESET 3
+
+#define ZOS_SYS_WD_SCOPE_AS 1
+#define ZOS_SYS_WD_SCOPE_THD 2
+
+#define ZOS_SYS_WD_IS_ACTIVE 1
+#define ZOS_SYS_WD_IS_INACTIVE 0
+
+#define ZOS_SYS_BIT24_MODE 1
+#define ZOS_SYS_BIT31_MODE 2
+#define ZOS_SYS_BIT64_MODE 3
+#define ZOS_SYS_AMODE_INITIALIZING 4
+
+#define ZOS_SYS_ENV_REGISTERBLOCK 1
+#define ZOS_SYS_ENV_REGISTERPERMP 2
+#define ZOS_SYS_ENV_DEREGISTERBLOCK 3
+#define ZOS_SYS_ENV_DEREGISTERPERM 4
+#define ZOS_SYS_ENV_REGISTERNOTIFY 5
+#define ZOS_SYS_ENV_DEREGISTERNOTIFY 6
+#define ZOS_SYS_ENV_REGISTERJOB 1
+#define ZOS_SYS_ENV_REGISTERPROC 2
+
+#define ZOS_SYS_PIDXFER_YES 1
+#define ZOS_SYS_PIDXFER_NO 2
+
+#define ZOS_SYS_OSMF_VER_HOM1110 1
+#define ZOS_SYS_OSMF_VER_HOM1120 2
+#define ZOS_SYS_OSMF_VER_HOM1130 3
+
+#define ZOS_SYS_TLS_CREATE_THREAD_SEC_ 1
+#define ZOS_SYS_TLS_DELETE_THREAD_SEC_ 2
+#define ZOS_SYS_TLS_TASK_ACEE_ 3
+#define ZOS_SYS_TLS_TASK_ACEE_USP_ 4
+#define ZOS_SYS_TLS_DAEMON_THREAD_SEC_ 5
+#define ZOS_SYS_TLS_IDENTITY_USERID_ 1
+#define ZOS_SYS_TLS_IDENTITY_UID_ 2
+#define ZOS_SYS_TLS_IDENTITY_CERT_ 4
+
+#define ZOS_SYS_SECURITY_CREATE_ 1
+#define ZOS_SYS_SECURITY_CERTREG_ 2
+#define ZOS_SYS_SECURITY_CERTDEREG_ 3
+#define ZOS_SYS_SECURITY_CERTAUTH_ 4
+
+#define ZOS_SYS_SECURITY_USERID_ 1
+#define ZOS_SYS_SECURITY_CERTIFICATE_ 2
+
+
+#define ZOS_SYS_CID_GET_UUID_ 1
+#define ZOS_SYS_CID_GET_USERID_ 2
+
+
+#define ZOS_SYS_PAF_ADD_PID_ 1
+#define ZOS_SYS_PAF_DELETE_PID_ 2
+
+
+#define ZOS_SYS_ACK_READ_ 1
+#define ZOS_SYS_ACK_UPDATE_ 2
+#define ZOS_SYS_ACK_CONTROL_ 3
+#define ZOS_SYS_ACK_ALTER_ 4
+
+#define ZOS_SYS__CMID_LOW 0000
+#define ZOS_SYS__CMID_HI 8447
+
+#define ZOS_SYS_CC_MAX_MSG_LENGTH 17850
+#define ZOS_SYS_CC_MAX_MSG_LENGTH_NONSU 17780
+#define ZOS_SYS_CC_MODIFY_BUFFER_LENGTH 128
+#define ZOS_SYS_CONSOLE_MODIFY 1
+#define ZOS_SYS_CONSOLE_STOP 2
+
+#define ZOS_SYS_SRV_WORKMGR 1
+#define ZOS_SYS_SRV_QUEUEMGR 2
+#define ZOS_SYS_SRV_SERVERMGR 4
+#define ZOS_SYS_SRV_SERVERMGRDYNAMIC 8
+
+#define ZOS_SYS_SRV_PUT_NEWWRK 1
+#define ZOS_SYS_SRV_PUT_SUBWRK 2
+#define ZOS_SYS_SRV_TRANSFER_WRK 4
+#define ZOS_SYS_SRV_GET_WRK 8
+#define ZOS_SYS_SRV_REFRESH_WRK 16
+#define ZOS_SYS_SRV_END_WRK 32
+#define ZOS_SYS_SRV_DEL_ENC 64
+#define ZOS_SYS_SRV_DISCONNECT 128
+#define ZOS_SYS_SRV_DISCONNECT_COND 256
+
+#define ZOS_SYS_SLK_OBTAIN 1
+#define ZOS_SYS_SLK_OBTAIN_COND 2
+#define ZOS_SYS_SLK_INIT 4
+#define ZOS_SYS_SLK_DESTROY 8
+#define ZOS_SYS_SLK_RELEASE 16
+
+#define ZOS_SYS_SLK_NORMAL 1
+#define ZOS_SYS_SLK_ERRORCHECK 2
+#define ZOS_SYS_SLK_RECURSIVE 4
+
+#define ZOS_SYS_SLK_EXCLUSIVE 1
+#define ZOS_SYS_SLK_SHARED 2
+
+#define ZOS_SYS_PC_ADDFILE 0x80000007
+#define ZOS_SYS_PC_DELETEFILE 0x80000008
+#define ZOS_SYS_PC_PURGECACHE 0x8000000A
+#define ZOS_SYS_PC_REFRESHCACHE 0x80000009
+#define ZOS_SYS_PC_SHUTDOWNFILESYS 0x8000000B
+#define ZOS_SYS_PC_PfsRecycle 0x8000000C
+#define ZOS_SYS_PC_PfsRestart 0x8000000D
+
+#define ZOS_SYS_PC_SETIBMASYIO 0xC0000006
+#define ZOS_SYS_PC_SETIBMOPTCMD 0xC0000005
+#define ZOS_SYS_PC_ERRORTEXT 0xC000000B
+
+#define ZOS_SYS_PC_SYSNAMES 0xC000000E
+#define ZOS_SYS_PC_TDNAMES 0xC000000F
+#define ZOS_SYS_PC_HFSSTATS 0xC0000010
+#define ZOS_SYS_PC_BRLMSRVR 0xC0000011
+#define ZOS_SYS_PC_SFSDIAG 0x80000012
+#define ZOS_SYS_PC_USERSIGNAL 0xC0000013
+#define ZOS_SYS_PC_DIRGETHOST 0xC0000014
+#define ZOS_SYS_PC_SHUTTINGDOWNFS 0xC0000015
+#define ZOS_SYS_PC_RECYCLEDONE 0xC0000016
+#define ZOS_SYS_PC_GETVNODETOKEN 0x80000017
+
+#define ZOS_SYS_PC_ISSRCADDR 0xC0000018
+
+#define ZOS_SYS_PC_OWNEROK 0xC000001C
+#define ZOS_SYS_PC_MODIFYPFS 0xC000001D
+#define ZOS_SYS_PC_THREADUNDUB 0xC000001E
+#define ZOS_SYS_PC_EnablePgmAuth 0xC000001F
+#define ZOS_SYS_PC_DisablePgmAuth 0xC0000020
+#define ZOS_SYS_PC_ETDESC 0x0000
+#define ZOS_SYS_PC_ETACTION 0x0001
+#define ZOS_SYS_PC_ETMODNAME 0x0002
+
+#define ZOS_SYS_PC_ETREASON 0x0000
+#define ZOS_SYS_PC_ETERRNO 0x0001
+
+#define ZOS_SYS_PC_TYPEFILESYS 0x00000001
+#define ZOS_SYS_PC_TYPEFILEOWNER 0x00000002
+#define ZOS_SYS_PC_TYPEOMVS 0x00000003
+
+#define ZOS_SYS_LOD_ERROR_ST_EXLINK 0x80000000
+#define ZOS_SYS_LOD_IGNORE_STICKY 0x40000000
+
+#define ZOS_SYS_LOD_DIRECTED 0x20000000
+
+/* TODO: the following is a struct used by bpx4ldx/lod.
+   Find a place for it.
+struct zos_sys_directed_load_ret_parms {
+  uint64_t length;
+  void *start;
+  void *entrypoint;
+}; */
+
+#define ZOS_SYS_SW_SIGDLV_ENABLE_ 1
+#define ZOS_SYS_SW_SIGDLV_DISABLE_ 2
+
+#define ZOS_SYS_OSENV_GET 1
+#define ZOS_SYS_OSENV_SET 2
+#define ZOS_SYS_OSENV_UNSET 4
+#define ZOS_SYS_OSENV_PERSIST 8
+#define ZOS_SYS_OSENV_UNPERSIST 16
+
+#define ZOS_SYS_OSENV_WLM 1
+#define ZOS_SYS_OSENV_SECURITY 2
+
+#define ZOS_SYS_THDQ_FREEZE 2
+
+#define ZOS_SYS_THDQ_UNFREEZE_ALL 8
+#define ZOS_SYS_THDQ_GET_STATE 1
+
+#endif /* BPXK_CONSTANTS_H */

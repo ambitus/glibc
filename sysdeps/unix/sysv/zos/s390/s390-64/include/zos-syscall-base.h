@@ -50,6 +50,8 @@ extern uintptr_t __bpx_call_table attribute_hidden;
 
 #define _SHIM_CAT(a, b) _SHIM_INDIR_CAT (a, b)
 #define _SHIM_INDIR_CAT(a, b) a##b
+#define _SHIM_STRINGIFY(a) _SHIM_INDIR_STRINGIFY (a)
+#define _SHIM_INDIR_STRINGIFY(a) #a
 
 #define SHIM_NAME(syscall_name) _SHIM_CAT (__zos_sys_, syscall_name)
 /* Look up proto from our unholy table of protos */
@@ -64,19 +66,40 @@ extern uintptr_t __bpx_call_table attribute_hidden;
  **************************************************************/
 #include <sys/cdefs.h>	/* for __glibc_likely/unlikely */
 #include <errno.h>
+#include <unimplemented.h>
 
 #define BPX_CALL(name, ftype, args...) \
   (((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args))
 
-/* fail with ENOSYS.
-   TODO: redefine this to __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED if we
-   can be sure that that won't break anything.
-   */
-#define SHIM_NOT_YET_IMPLEMENTED		\
+#define SHIM_RETURN_UNSUPPORTED(retval)		\
   ({						\
     *errcode = ENOSYS;				\
-    return -1;					\
+    return (retval);				\
   })
+
+#define ZOS_DEBUG 0
+
+/* TODO: This isn't perfect. We ideally want something like
+   __libc_fatal, but without a dependency on all of stdio. And assuming
+   that fd 2 is always stderr is not great. Users can close stderr.  */
+
+#if ZOS_DEBUG == 1
+# define SHIM_NOT_YET_IMPLEMENTED(msg)					\
+  ({									\
+    const char __errmsg[] =						\
+      "Some functionality in the z/OS port of glibc has not yet been "	\
+      "fully implemented. Unimplemented at "				\
+      _SHIM_STRINGIFY (__FILE__) ":" _SHIM_STRINGIFY (__LINE__) "\n"	\
+      "Additional info: " msg;						\
+    __zos_sys_write (2, __errmsg, sizeof (__errmsg));			\
+  })
+# define SHIM_NOT_YET_IMPLEMENTED_FATAL(msg, retval) \
+  __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED (msg)
+#else
+# define SHIM_NOT_YET_IMPLEMENTED(msg) do { } while (0)
+# define SHIM_NOT_YET_IMPLEMENTED_FATAL(msg, retval) \
+  SHIM_RETURN_UNSUPPORTED (retval)
+#endif
 
 /* z/OS TODO: PATH_MAX isn't sufficient. It's historically unreliable.
    Check to see what the maximum possible path that can be made on z/OS
