@@ -26,4 +26,9 @@ ifdef in-Makerules
 # for now we don't bother with it.
 inhibit-glue = yes
 
+ifeq ($(subdir),misc)
+# Install bits/bpxystat.h, which is required by our stat.h
+sysdep_headers += bits/bpxystat.h
+endif
+
 endif	# in-Makerules
