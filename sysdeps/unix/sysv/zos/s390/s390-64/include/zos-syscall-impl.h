@@ -50,6 +50,29 @@
 
 #include <bpxk-constants.h>
 
+/* some things use these aliases  */
+#define __zos_sys_fcntl64      __zos_sys_fcntl
+#define __zos_sys_fadvise64_64 __zos_sys_fadvise64
+#define __zos_sys_truncate64   __zos_sys_truncate
+#define __zos_sys_ftruncate64  __zos_sys_ftruncate
+#define __zos_sys_pwritev64    __zos_sys_pwritev
+#define __zos_sys_pwritev64v2  __zos_sys_pwritev2
+#define __zos_sys_preadv64     __zos_sys_preadv
+#define __zos_sys_preadv64v2   __zos_sys_preadv2
+
+/* TODO: We could absolutely implement some sort of strace equivalent by
+   adding hooks to the wrapper functions in this file.  */
+
+/* TODO: We have not even started trying to map the errnos from the ones
+   returned by the bpx services to the ones that would be returned in
+   the same situation on linux. In many cases, those two sets are
+   actually the same or effectively the same for typical use cases,
+   but relying on that is dangerous.  */
+
+/* TODO: Decide whether to implement the *at functions by implementing
+   the underlying syscalls here, or by directly implementing  the C
+   functions. The implementation logic will be the same regardless.  */
+
 static inline ssize_t
 __zos_sys_write (int *errcode, int fd,
 		 const void *buf, size_t nbytes);
@@ -151,7 +174,7 @@ __initialize_times (struct stat *statbuf)
 typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
 			     const char * const *pathname,
 			     const int32_t *options,
-			     const __bpxk_32_t *mode,
+			     const int32_t *mode,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
@@ -167,16 +190,20 @@ typedef void (*__bpx4wrt_t) (const int32_t *fd, const void * const *buf,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
+
 static inline int
 __zos_sys_open (int *errcode, const char *pathname,
 		int flags, mode_t mode)
 {
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
-  __bpxk_32_t kernel_mode = mode;
+  /* We actually just use the native mode flags format for the bpx
+     services, we don't need to do any translation for mode here.  */
+  int32_t kernel_mode = mode;
   BPX_CALL (open, __bpx4opn_t, &pathname_len, &pathname, &flags,
 	    &kernel_mode, &retval, errcode, &reason_code);
   /* TODO: check important reason codes. */
+  /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
 
@@ -196,7 +223,6 @@ __zos_sys_write (int *errcode, int fd,
 		 const void *buf, size_t nbytes)
 {
   int32_t retval, reason_code;
-  __bpxk_32_t count;
   const int32_t alet = 0;
   if (!IS_UINT32 (nbytes))
     {
@@ -205,10 +231,11 @@ __zos_sys_write (int *errcode, int fd,
       *errcode = EINVAL;
       return -1;
     }
-  count = nbytes;
+  __bpxk_32_t count = nbytes;
   BPX_CALL (write, __bpx4wrt_t, &fd, &buf, &alet, &count,
 	    &retval, errcode, &reason_code);
   /* TODO: check important reason codes  */
+  /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
 
@@ -222,19 +249,19 @@ typedef void (*__bpx4sta_t) (const uint32_t *pathname_len,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-typedef __bpx4sta_t __bpx4lst_t;
-
 typedef void (*__bpx4fst_t) (const int32_t *fd,
 			     const uint32_t *statbuf_len,
 			     struct stat *statbuf,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
+typedef __bpx4sta_t __bpx4lst_t;
+
+
 /* TODO: Check that this is correct.  */
 static const uint32_t __bpxystat_len = sizeof (struct stat) -
 				       (sizeof (__time_t) +
 					sizeof (unsigned long int)) * 3;
-
 
 static inline int
 __zos_sys_stat (int *errcode, const char *pathname,
@@ -246,6 +273,20 @@ __zos_sys_stat (int *errcode, const char *pathname,
   BPX_CALL (stat, __bpx4sta_t, &pathname_len, &pathname, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
   __initialize_times (statbuf);
+  /* TODO: confirm retvals are in line with what linux gives.  */
+  return retval;
+}
+
+
+static inline int
+__zos_sys_fstat (int *errcode, int fd, struct stat *statbuf)
+{
+  int32_t retval, reason_code;
+  uint32_t statbuf_len = __bpxystat_len;
+  BPX_CALL (fstat, __bpx4fst_t, &fd, &statbuf_len, statbuf, &retval,
+	    errcode, &reason_code);
+  __initialize_times (statbuf);
+  /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
 
@@ -262,18 +303,7 @@ __zos_sys_lstat (int *errcode, const char *pathname,
   BPX_CALL (lstat, __bpx4lst_t, &pathname_len, &pathname, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
   __initialize_times (statbuf);
-  return retval;
-}
-
-
-static inline int
-__zos_sys_fstat (int *errcode, int fd, struct stat *statbuf)
-{
-  int32_t retval, reason_code;
-  uint32_t statbuf_len = __bpxystat_len;
-  BPX_CALL (fstat, __bpx4fst_t, &fd, &statbuf_len, statbuf, &retval,
-	    errcode, &reason_code);
-  __initialize_times (statbuf);
+  /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
 
@@ -305,6 +335,7 @@ typedef void (*__bpx4mpr_t) (void * const *addr,
 			     const int32_t *protect_opts,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
+
 
 static inline long
 __zos_sys_mmap (int *errcode, void *addr, size_t length, int prot,
@@ -407,6 +438,7 @@ __zos_sys_mmap (int *errcode, void *addr, size_t length, int prot,
 
   BPX_CALL (mmap, __bpx4mmp_t, &addr, &length, &protect_opts, &map_type,
 	    &fd, &offset, &retmap, &retval, errcode, &reason_code);
+  /* TODO: confirm retvals are in line with what linux gives.  */
   return (long)retmap;
 }
 
@@ -417,12 +449,15 @@ __zos_sys_munmap (int *errcode, void *addr, size_t length)
   int32_t retval, reason_code;
   BPX_CALL (munmap, __bpx4mun_t, &addr, &length, &retval, errcode,
 	    &reason_code);
+  /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
+
 
 static inline int
 __zos_sys_mprotect (int *errcode, void *addr, size_t length, int prot)
 {
+  /* TODO: Reexamine how z/OS mprotect works.  */
   int32_t retval, reason_code;
   int32_t protect_opts;
   /* Convert prot from a linux-compatible format into the format
@@ -455,6 +490,400 @@ __zos_sys_mprotect (int *errcode, void *addr, size_t length, int prot)
 
   BPX_CALL (mprotect, __bpx4mpr_t, &addr, &length, &protect_opts,
 	    &retval, errcode, &reason_code);
+  /* TODO: confirm retvals are in line with what linux gives.  */
+  return retval;
+}
+
+
+/* Core Unix syscalls with trivial wrappers.  */
+
+typedef void (*__bpx4chm_t) (const uint32_t *pathname_len,
+			     const char * const *pathname,
+			     const int32_t *mode,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef void (*__bpx4fcm_t) (const int32_t *fd,
+			     const int32_t *mode,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_chmod (int *errcode, const char *pathname, mode_t mode)
+{
+  /* TODO: Figure out how to avoid IBM's S_ISVTX executable behavior.  */
+  int32_t retval, reason_code;
+  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  /* TODO: this mask might be unnecessary. Linux allows extra bits
+     to be set in chmod's mode. We haven't tested to see whether
+     or not the bpx services do the same, so we mask to be safe.  */
+  int32_t kernel_mode = mode & 0x0fff;
+  BPX_CALL (chmod, __bpx4chm_t, &pathname_len, &pathname, &kernel_mode,
+	    &retval, errcode, &reason_code);
+  /* retvals are the same as for linux.  */
+  return retval;
+}
+
+
+static inline int
+__zos_sys_fchmod (int *errcode, int fd, mode_t mode)
+{
+  /* TODO: Figure out how to avoid IBM's S_ISVTX exacutable behavior.  */
+  int32_t retval, reason_code;
+  /* TODO: this mask might be unnecessary. Linux allows extra bits
+     to be set in chmod's mode. We haven't tested to see whether
+     or not the bpx services do the same, so we mask to be safe.  */
+  int32_t kernel_mode = mode & 0x0fff;
+  BPX_CALL (fchmod, __bpx4fcm_t, &fd, &kernel_mode, &retval, errcode,
+	    &reason_code);
+  /* retvals are the same as for linux.  */
+  return retval;
+}
+
+
+static inline int
+__zos_sys_fchmodat (int *errcode, int dirfd, const char *pathname,
+		    mode_t mode)
+{
+  /* We can ignore flags entirely, since the only supported value,
+     AT_SYMLINK_NOFOLLOW, is unimplemented.  */
+  if (dirfd == AT_FDCWD || *pathname == '/')
+    return __zos_sys_chmod (errcode, pathname, mode);
+  SHIM_NOT_YET_IMPLEMENTED_FATAL ("fchmodat not implemented", -1);
+}
+
+
+typedef void (*__bpx4cho_t) (const uint32_t *pathname_len,
+			     const char * const *pathname,
+			     const uint32_t *owner_uid,
+			     const uint32_t *group_id,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef void (*__bpx4fco_t) (const int32_t *fd,
+			     const uint32_t *owner_uid,
+			     const uint32_t *group_id,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef __bpx4cho_t __bpx4lco_t;
+
+
+static inline int
+__zos_sys_chown (int *errcode, const char *pathname, uid_t owner,
+		 gid_t group)
+{
+  int32_t retval, reason_code;
+  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  uint32_t owner_uid = owner, group_id = group;
+  BPX_CALL (chown, __bpx4cho_t, &pathname_len, &pathname, &owner_uid,
+	    &group_id, &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_fchown (int *errcode, int fd, uid_t owner, gid_t group)
+{
+  int32_t retval, reason_code;
+  uint32_t owner_uid = owner, group_id = group;
+  BPX_CALL (fchown, __bpx4fco_t, &fd, &owner_uid, &group_id, &retval,
+	    errcode, &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_lchown (int *errcode, const char *pathname, uid_t owner,
+		  gid_t group)
+{
+  int32_t retval, reason_code;
+  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  uint32_t owner_uid = owner, group_id = group;
+  BPX_CALL (lchown, __bpx4lco_t, &pathname_len, &pathname, &owner_uid,
+	    &group_id, &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_fchownat (int *errcode, int dirfd, const char *pathname,
+		    uid_t owner, gid_t group, int flags)
+{
+  int32_t retval, reason_code;
+  if ((flags & AT_EMPTY_PATH) && *pathname == '\0')
+    {
+      if (dirfd == AT_FDCWD)
+	/* TODO: Is this okay? "." can't be a symlink, right?  */
+	return __zos_sys_chown (errcode, ".", owner, group);
+      return __zos_sys_fchown (errcode, dirfd, owner, group);
+    }
+  if (dirfd == AT_FDCWD || *pathname == '/')
+    {
+      if (flags & AT_SYMLINK_NOFOLLOW)
+	return __zos_sys_lchown (errcode, pathname, owner, group);
+      return __zos_sys_chown (errcode, pathname, owner, group);
+    }
+  SHIM_NOT_YET_IMPLEMENTED_FATAL ("fchownat not implemented", -1);
+}
+
+
+typedef void (*__bpx4chd_t) (const uint32_t *pathname_len,
+			     const char * const *pathname,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef void (*__bpx4fcd_t) (const int32_t *dfd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_chdir (int *errcode, const char *path)
+{
+  int32_t retval, reason_code;
+  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (path, -1);
+  BPX_CALL (chdir, __bpx4chd_t, &pathname_len, &path, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_fchdir (int *errcode, int fd)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (fchdir, __bpx4fcd_t, &fd, &retval, errcode, &reason_code);
+  return retval;
+}
+
+/* TODO: ftruncate on linux can be used to set the size of a shared
+   memory object. Put in some handling for that, because z/OS ftruncate
+   sure can't do that. Do that once we figure out how to support POSIX
+   shared memory objects.  */
+
+typedef void (*__bpx4tru_t) (const uint32_t *pathname_len,
+			     const char * const *pathname,
+			     uint64_t *file_length,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef void (*__bpx4ftr_t) (const int32_t *fd,
+			     uint64_t *file_length,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_truncate (int *errcode, const char *path, off_t length)
+{
+  int32_t retval, reason_code;
+  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (path, -1);
+  if (length < 0)
+    {
+      *errcode = EINVAL;
+      return -1;
+    }
+  uint64_t file_length = length;
+  BPX_CALL (truncate, __bpx4tru_t, &pathname_len, &path, &file_length,
+	    &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_ftruncate (int *errcode, int fd, off_t length)
+{
+  int32_t retval, reason_code;
+  if (length < 0)
+    {
+      *errcode = EINVAL;
+      return -1;
+    }
+  uint64_t file_length = length;
+  BPX_CALL (ftruncate, __bpx4ftr_t, &fd, &file_length, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4mkd_t) (const uint32_t *pathname_len,
+			     const char * const *pathname,
+			     uint32_t *mode,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_mkdir (int *errcode, const char *pathname, mode_t mode)
+{
+  int32_t retval, reason_code;
+  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  uint32_t dmode = mode;
+  BPX_CALL (mkdir, __bpx4mkd_t, &pathname_len, &pathname, &dmode,
+	    &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_mkdirat (int *errcode, int dirfd, const char *pathname,
+		   mode_t mode)
+{
+  if (dirfd == AT_FDCWD || *pathname == '/')
+    return __zos_sys_mkdir (errcode, pathname, mode);
+  SHIM_NOT_YET_IMPLEMENTED_FATAL ("mkdirat not implemented", -1);
+}
+
+
+typedef void (*__bpx4rmd_t) (const uint32_t *pathname_len,
+			     const char * const *pathname,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_rmdir (int *errcode, const char *pathname)
+{
+  int32_t retval, reason_code;
+  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  BPX_CALL (rmdir, __bpx4rmd_t, &pathname_len, &pathname, &retval,
+	    errcode, &reason_code);
+  return retval;
+}
+
+
+/* Notice that these have different prototypes from all the other
+   syscalls.  */
+typedef void (*__bpx4uid_t) (const uint32_t *);
+
+typedef __bpx4uid_t __bpx4geu_t;
+typedef __bpx4uid_t __bpx4gid_t;
+typedef __bpx4uid_t __bpx4geg_t;
+
+
+static inline int
+__zos_sys_getuid (int *errcode __attribute__ ((unused)))
+{
+  uint32_t ret_id;
+  BPX_CALL (getuid, __bpx4uid_t, &ret_id);
+  return ret_id;
+}
+
+
+static inline int
+__zos_sys_geteuid (int *errcode __attribute__ ((unused)))
+{
+  uint32_t ret_id;
+  BPX_CALL (geteuid, __bpx4geu_t, &ret_id);
+  return ret_id;
+}
+
+
+static inline int
+__zos_sys_getgid (int *errcode __attribute__ ((unused)))
+{
+  uint32_t ret_id;
+  BPX_CALL (getgid, __bpx4gid_t, &ret_id);
+  return ret_id;
+}
+
+
+static inline int
+__zos_sys_getegid (int *errcode __attribute__ ((unused)))
+{
+  uint32_t ret_id;
+  BPX_CALL (getegid, __bpx4geg_t, &ret_id);
+  return ret_id;
+}
+
+
+typedef void (*__bpx4umk_t) (const uint32_t *file_mode_creation_mask,
+			     uint32_t *ret_mask);
+
+
+static inline mode_t
+__zos_sys_umask (int *errcode, mode_t mask)
+{
+  /* TODO: See if umask works with ACLs the same way as it does on
+     linux.  */
+  uint32_t file_mode_creation_mask = mask, ret_mask;
+  BPX_CALL (umask, __bpx4umk_t, &file_mode_creation_mask, &ret_mask);
+  return (mode_t)ret_mask;
+}
+
+
+/* setuid/setgid, etc.
+
+   TODO: setuid and setgid programs interact in some way with the MVS
+   permission system. Figure out exactly how they interact.
+
+   TODO: Can we emulate the _POSIX_SAVED_IDS feature, which the linux
+   version implements? Can we implement setresuid/setresgid
+   meaningfully?
+
+   TODO: The linux threading implementation requires special handling
+   for these. Remember that when implementing whatever threading
+   implemenation we decide on.
+
+   TODO: Why do the bpx services have dedicated seteuid/gid syscalls?
+   They are meaningless given setreuid/gid syscalls. */
+
+typedef void (*__bpx4sui_t) (const uint32_t *,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef __bpx4sui_t __bpx4sgi_t;
+
+typedef void (*__bpx4sru_t) (const uint32_t *ruid,
+			     const uint32_t *euid,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+typedef __bpx4sru_t __bpx4srg_t;
+
+
+static inline int
+__zos_sys_setuid (int *errcode, uid_t uid)
+{
+  int32_t retval, reason_code;
+  uint32_t user_id = uid;
+  BPX_CALL (setuid, __bpx4sui_t, &user_id, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_setgid (int *errcode, gid_t gid)
+{
+  int32_t retval, reason_code;
+  uint32_t group_id = gid;
+  BPX_CALL (setgid, __bpx4sgi_t, &group_id, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_setreuid (int *errcode, uid_t ruid, uid_t euid)
+{
+  int32_t retval, reason_code;
+  uint32_t ruser_id = ruid, euser_id = euid;
+  BPX_CALL (setreuid, __bpx4sru_t, &ruser_id, &euser_id, &retval,
+	    errcode, &reason_code);
+  return retval;
+}
+
+
+static inline int
+__zos_sys_setregid (int *errcode, gid_t rgid, gid_t egid)
+{
+  int32_t retval, reason_code;
+  uint32_t rgroup_id = rgid, egroup_id = egid;
+  BPX_CALL (setregid, __bpx4srg_t, &rgroup_id, &egroup_id, &retval,
+	    errcode, &reason_code);
   return retval;
 }
 

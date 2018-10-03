@@ -73,7 +73,13 @@
 
 #define	__S_ISUID	04000	/* Set user ID on execution.  */
 #define	__S_ISGID	02000	/* Set group ID on execution.  */
-#define	__S_ISVTX	01000	/* Save swapped text after use (sticky).  */
+#define	__S_ISVTX	01000	/* Save swapped text after use (sticky).
+				   NOTE: IBM has decided to add some
+				   very incompatible behavior for
+				   this flag.
+				   TODO: figure out exactly what it
+				   does. What is normal MVS search
+				   order?  */
 #define	__S_IREAD	0400	/* Read by owner.  */
 #define	__S_IWRITE	0200	/* Write by owner.  */
 #define	__S_IEXEC	0100	/* Execute by owner.  */
