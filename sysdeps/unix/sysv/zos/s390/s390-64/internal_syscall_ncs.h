@@ -18,45 +18,81 @@
    <http://www.gnu.org/licenses/>.
 
    TODO: This is only here to get glibc working, its an absolute kludge.
-   This whole mechanism will need to be reworked seriously, because
-   inlining anything of this size cannot be good for cache or code size.
-   The only user of this macro seems to be nptl, and it probably only
-   requires a very small subset of sycalls, so the size of the table
-   could be reduced dramatically. Of course, we might just end up
-   dummying the files/caller functions altogether.
+   This whole mechanism might need to be reworked. The only user of this
+   macro seems to be nptl, and it probably only requires a very small
+   subset of sycalls. Of course, we might just end up dummying out the
+   files/caller functions altogether.
 
    They seem to only be used to support the nptl SIGSETXID signal
-   system, so only the _id syscalls need to be implemented.  */
+   system, so only the _id syscalls need to be implemented.
 
-# define INTERNAL_SYSCALL_NCS(no, err, nr, args...)		\
+   The setpgid, setfsuid, and setfsgid cases don't seem to ever get
+   used.  */
+
+#include <unimplemented.h>
+
+#define __ZOS_NCS_NARGS_setpgid   2
+#define __ZOS_NCS_NARGS_setreuid  2
+#define __ZOS_NCS_NARGS_setregid  2
+#define __ZOS_NCS_NARGS_setgroups 2
+#define __ZOS_NCS_NARGS_setresuid 3
+#define __ZOS_NCS_NARGS_setresgid 3
+#define __ZOS_NCS_NARGS_setuid    1
+#define __ZOS_NCS_NARGS_setgid    1
+#define __ZOS_NCS_NARGS_setfsuid  1
+#define __ZOS_NCS_NARGS_setfsgid  1
+
+/* All of the arguments to these syscalls are integral, except for the
+   second argument to setgroups(), which requires a cast.  */
+#define __ZOS_NCS_MAYBE_CAST_setpgid
+#define __ZOS_NCS_MAYBE_CAST_setreuid
+#define __ZOS_NCS_MAYBE_CAST_setregid
+#define __ZOS_NCS_MAYBE_CAST_setgroups (void *)
+#define __ZOS_NCS_MAYBE_CAST_setresuid
+#define __ZOS_NCS_MAYBE_CAST_setresgid
+#define __ZOS_NCS_MAYBE_CAST_setuid
+#define __ZOS_NCS_MAYBE_CAST_setgid
+#define __ZOS_NCS_MAYBE_CAST_setfsuid
+#define __ZOS_NCS_MAYBE_CAST_setfsgid
+
+#define __ZOS_NCS_CAT(a, b) a##b
+
+/* These calls will have at most 3 args and at least 1.  */
+#define __ZOS_NCS_TRUNC_ARGS(name, args...)			\
+  __ZOS_NCS_TRUNC_ARGS_X (name, __ZOS_NCS_NARGS_##name, args, 0, 0)
+#define __ZOS_NCS_TRUNC_ARGS_X(name, num, a, b, c, rest...)	\
+  __ZOS_NCS_CAT (__ZOS_NCS_TRUNC_ARGS, num)			\
+    (a, (__ZOS_NCS_MAYBE_CAST_##name b), c)
+
+#define __ZOS_NCS_TRUNC_ARGS1(a, b, c) a
+#define __ZOS_NCS_TRUNC_ARGS2(a, b, c) a, b
+#define __ZOS_NCS_TRUNC_ARGS3(a, b, c) a, b, c
+
+#define __ZOS_NCS_CASE(name, err, args...)			\
+  case __NR_##name: _ret =					\
+    INTERNAL_SYSCALL (name, err, __ZOS_NCS_NARGS_##name,	\
+		      __ZOS_NCS_TRUNC_ARGS (name, args));	\
+  break;
+
+
+#define INTERNAL_SYSCALL_NCS(no, err, nr, args...)		\
   ({								\
     long _ret;							\
     switch (no)							\
     {								\
-    case 20: _ret = INTERNAL_SYSCALL (getpid, err, nr, args); break;  \
-    case 57: _ret = INTERNAL_SYSCALL (setpgid, err, nr, args); break; \
-    case 64: _ret = INTERNAL_SYSCALL (getppid, err, nr, args); break;	\
-    case 66: _ret = INTERNAL_SYSCALL (setsid, err, nr, args); break;	\
-    case 112: _ret = INTERNAL_SYSCALL (idle, err, nr, args); break;	\
-    case 132: _ret = INTERNAL_SYSCALL (getpgid, err, nr, args); break;	\
-    case 147: _ret = INTERNAL_SYSCALL (getsid, err, nr, args); break;	\
-    case 199: _ret = INTERNAL_SYSCALL (getuid, err, nr, args); break;	\
-    case 200: _ret = INTERNAL_SYSCALL (getgid, err, nr, args); break;	\
-    case 201: _ret = INTERNAL_SYSCALL (geteuid, err, nr, args); break;	\
-    case 202: _ret = INTERNAL_SYSCALL (getegid, err, nr, args); break;	\
-    case 203: _ret = INTERNAL_SYSCALL (setreuid, err, nr, args); break; \
-    case 204: _ret = INTERNAL_SYSCALL (setregid, err, nr, args); break; \
-    case 208: _ret = INTERNAL_SYSCALL (setresuid, err, nr, args); break; \
-    case 209: _ret = INTERNAL_SYSCALL (getresuid, err, nr, args); break; \
-    case 210: _ret = INTERNAL_SYSCALL (setresgid, err, nr, args); break; \
-    case 211: _ret = INTERNAL_SYSCALL (getresgid, err, nr, args); break; \
-    case 213: _ret = INTERNAL_SYSCALL (setuid, err, nr, args); break;	\
-    case 214: _ret = INTERNAL_SYSCALL (setgid, err, nr, args); break;	\
-    case 215: _ret = INTERNAL_SYSCALL (setfsuid, err, nr, args); break; \
-    case 216: _ret = INTERNAL_SYSCALL (setfsgid, err, nr, args); break; \
-    case 236: _ret = INTERNAL_SYSCALL (gettid, err, nr, args); break;	\
-    case 252: _ret = INTERNAL_SYSCALL (set_tid_address, err, nr, args); break; \
-    case 281: _ret = INTERNAL_SYSCALL (waitid, err, nr, args); break;	\
-    default: _ret = 0xdeadbeef; break; /* control should never reach here */ \
-    }									\
+    __ZOS_NCS_CASE (setpgid, err, args)				\
+    __ZOS_NCS_CASE (setreuid, err, args)			\
+    __ZOS_NCS_CASE (setregid, err, args)			\
+    __ZOS_NCS_CASE (setgroups, err, args)			\
+    __ZOS_NCS_CASE (setresuid, err, args)			\
+    __ZOS_NCS_CASE (setresgid, err, args)			\
+    __ZOS_NCS_CASE (setuid, err, args)				\
+    __ZOS_NCS_CASE (setgid, err, args)				\
+    __ZOS_NCS_CASE (setfsuid, err, args)			\
+    __ZOS_NCS_CASE (setfsgid, err, args)			\
+    default: _ret = -1;						\
+      __GLIBC_ZOS_RUNTIME_UNIMPLEMENTED				\
+	("unexpected setxid syscall");				\
+      break; /* control should never reach here */		\
+    }								\
     _ret; })
