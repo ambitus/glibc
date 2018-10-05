@@ -24,7 +24,15 @@ ifdef in-Makerules
 # system. It might allow us to maintain some compatibility with LE in
 # the future, if we ever figure out exactly what this option does, but
 # for now we don't bother with it.
-inhibit-glue = yes
+override inhibit-glue = yes
+
+# Do not use any assembly code from sysdeps/unix/sysv/linux (and
+# subdirectories). This bypasses all the system call stubs and uses
+# any existing posix or generic C files instead.
+# For now, we also prevent the use of any assembly in sysdeps/s390,
+# because it uses the wrong calling convention.
+inhibit-sysdep-asm += unix/sysv/linux.* s390.*
+override inhibit-unix-syscalls = yes
 
 ifeq ($(subdir),misc)
 # Install bits/bpxystat.h, which is required by our stat.h
