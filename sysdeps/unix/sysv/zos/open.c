@@ -25,8 +25,6 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
-#include <sysdep-cancel.h>
-
 /* Open FILE with access OFLAG.  If O_CREAT or O_TMPFILE is in OFLAG,
    a third argument is the file protection.  */
 int
@@ -42,7 +40,7 @@ __libc_open (const char *file, int oflag, ...)
       va_end (arg);
     }
 
-  return SYSCALL_CANCEL (open, file, oflag, mode);
+  return INLINE_SYSCALL_CALL (open, file, oflag, mode);
 }
 libc_hidden_def (__libc_open)
 
