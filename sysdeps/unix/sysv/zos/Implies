@@ -1,5 +1,7 @@
 unix/sysv/linux
+# Yes, we need to specifically imply unix right here.
 unix
+unix/sysv/linux/generic
 
 # This is a psuedo-dependency which should come after all other
 # dependencies. The late-zos directory only contains a Makefile,

@@ -14,6 +14,7 @@ zos-filter-out-misc := umount2 readahead setfsuid setfsgid \
 		       epoll_pwait signalfd eventfd eventfd_read \
 		       eventfd_write prlimit personality \
 		       tee vmsplice splice open_by_handle_at \
-		       mlock2 pkey_mprotect pkey_set pkey_get sysctl
+		       mlock2 pkey_mprotect pkey_set pkey_get sysctl \
+		       epoll_create inotify_init
 sysdep_routines := $(filter-out $(zos-filter-out-misc),$(sysdep_routines))
 endif
