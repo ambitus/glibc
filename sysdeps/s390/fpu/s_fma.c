@@ -24,7 +24,7 @@ double
 __fma (double x, double y, double z)
 {
   double r;
-  __asm__ ("madbr %0,%1,%2" : "=f" (r) : "%f" (x), "fR" (y), "0" (z));
+  __asm__ ("madbr %0,%1,%2" : "=f" (r) : "%f" (x), "f" (y), "0" (z));
   return r;
 }
 #ifndef __fma

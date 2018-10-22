@@ -24,7 +24,7 @@ float
 __fmaf (float x, float y, float z)
 {
   float r;
-  __asm__ ("maebr %0,%1,%2" : "=f" (r) : "%f" (x), "fR" (y), "0" (z));
+  __asm__ ("maebr %0,%1,%2" : "=f" (r) : "%f" (x), "f" (y), "0" (z));
   return r;
 }
 #ifndef __fmaf
