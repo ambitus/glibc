@@ -69,10 +69,6 @@
    actually the same or effectively the same for typical use cases,
    but relying on that is dangerous.  */
 
-/* TODO: Decide whether to implement the *at functions by implementing
-   the underlying syscalls here, or by directly implementing  the C
-   functions. The implementation logic will be the same regardless.  */
-
 static inline ssize_t
 __zos_sys_write (int *errcode, int fd,
 		 const void *buf, size_t nbytes);
@@ -607,28 +603,6 @@ __zos_sys_lchown (int *errcode, const char *pathname, uid_t owner,
 }
 
 
-static inline int
-__zos_sys_fchownat (int *errcode, int dirfd, const char *pathname,
-		    uid_t owner, gid_t group, int flags)
-{
-  int32_t retval, reason_code;
-  if ((flags & AT_EMPTY_PATH) && *pathname == '\0')
-    {
-      if (dirfd == AT_FDCWD)
-	/* TODO: Is this okay? "." can't be a symlink, right?  */
-	return __zos_sys_chown (errcode, ".", owner, group);
-      return __zos_sys_fchown (errcode, dirfd, owner, group);
-    }
-  if (dirfd == AT_FDCWD || *pathname == '/')
-    {
-      if (flags & AT_SYMLINK_NOFOLLOW)
-	return __zos_sys_lchown (errcode, pathname, owner, group);
-      return __zos_sys_chown (errcode, pathname, owner, group);
-    }
-  SHIM_NOT_YET_IMPLEMENTED_FATAL ("fchownat not implemented", -1);
-}
-
-
 typedef void (*__bpx4chd_t) (const uint32_t *pathname_len,
 			     const char * const *pathname,
 			     int32_t *retval, int32_t *retcode,
@@ -724,16 +698,6 @@ __zos_sys_mkdir (int *errcode, const char *pathname, mode_t mode)
   BPX_CALL (mkdir, __bpx4mkd_t, &pathname_len, &pathname, &dmode,
 	    &retval, errcode, &reason_code);
   return retval;
-}
-
-
-static inline int
-__zos_sys_mkdirat (int *errcode, int dirfd, const char *pathname,
-		   mode_t mode)
-{
-  if (dirfd == AT_FDCWD || *pathname == '/')
-    return __zos_sys_mkdir (errcode, pathname, mode);
-  SHIM_NOT_YET_IMPLEMENTED_FATAL ("mkdirat not implemented", -1);
 }
 
 

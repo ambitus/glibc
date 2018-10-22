@@ -16,14 +16,13 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <sys/types.h>
 #include <sysdep.h>
 
-/* Change the permissions of the file referenced by FD to MODE.  */
+/* Change the current directory to PATH.  */
 int
-__fchmod (int fd, mode_t mode)
+__chdir (const char *path)
 {
   /* TODO: Avoid this stack frame.  */
-  return INLINE_SYSCALL_CALL (fchmod, fd, mode);
+  return INLINE_SYSCALL_CALL (chdir, path);
 }
-weak_alias (__fchmod, fchmod)
+weak_alias (__chdir, chdir)

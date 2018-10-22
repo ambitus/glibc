@@ -19,11 +19,11 @@
 #include <sys/types.h>
 #include <sysdep.h>
 
-/* Change the permissions of the file referenced by FD to MODE.  */
+/* Change the owner and group of the file referred to by FD.  */
 int
-__fchmod (int fd, mode_t mode)
+__fchown (int fd, uid_t owner, gid_t group)
 {
   /* TODO: Avoid this stack frame.  */
-  return INLINE_SYSCALL_CALL (fchmod, fd, mode);
+  return INLINE_SYSCALL_CALL (fchown, fd, owner, group);
 }
-weak_alias (__fchmod, fchmod)
+weak_alias (__fchown, fchown)

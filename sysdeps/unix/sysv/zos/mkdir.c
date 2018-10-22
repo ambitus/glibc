@@ -13,17 +13,18 @@
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
+   License along with the GNU C Library.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
 #include <sys/types.h>
 #include <sysdep.h>
 
-/* Change the permissions of the file referenced by FD to MODE.  */
+/* Create a directory named PATH with protections MODE.  */
 int
-__fchmod (int fd, mode_t mode)
+__mkdir (const char *path, mode_t mode)
 {
-  /* TODO: Avoid this stack frame.  */
-  return INLINE_SYSCALL_CALL (fchmod, fd, mode);
+  return INLINE_SYSCALL_CALL (mkdir, path, mode);
 }
-weak_alias (__fchmod, fchmod)
+
+libc_hidden_def (__mkdir)
+weak_alias (__mkdir, mkdir)
