@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 #include <features.h>
+#include <zos-utils.h>
 
 /* Ideally, at libc initialization time __bpx_call_table should be
    be set to the result of GET_BPX_FUNCTION_TABLE to shave off a few
@@ -21,15 +22,6 @@
    __bpx_call_table must be be declared exactly as follows.  */
 extern uintptr_t __bpx_call_table attribute_hidden;
 
-
-/* get a reference to bpx call table.
-   use a variant of Michael's macros for now.
-   Follow a series of 31-bit pointers, which is a bit awkward since we
-   are in 64-bit mode. The high bits are all 0 so we don't need to mask
-   it off. */
-
-#define GET_PTR31_UNSAFE(x) ((uintptr_t)(*(uint32_t *)(x)))
-#define GET_PTR31_SAFE(x) ((uintptr_t)(~(1UL << 31) & *(uint32_t *)(x)))
 
 #define GET_BPX_FUNCTION_TABLE \
   GET_PTR31_UNSAFE (GET_PTR31_UNSAFE (GET_PTR31_UNSAFE ( \

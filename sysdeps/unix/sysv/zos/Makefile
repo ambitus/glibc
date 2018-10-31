@@ -35,6 +35,7 @@ inhibit-sysdep-asm += unix/sysv/linux.* s390.*
 override inhibit-unix-syscalls = yes
 
 ifeq ($(subdir),misc)
+sysdep_routines += storage
 # Install bits/bpxystat.h, which is required by our stat.h
 sysdep_headers += bits/bpxystat.h
 endif
