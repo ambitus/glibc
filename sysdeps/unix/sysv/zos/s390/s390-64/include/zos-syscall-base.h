@@ -58,6 +58,7 @@ extern uintptr_t __bpx_call_table attribute_hidden;
  **************************************************************/
 #include <sys/cdefs.h>	/* for __glibc_likely/unlikely */
 #include <errno.h>
+#include <string.h>  /* for strnlen.  */
 #include <unimplemented.h>
 
 #define BPX_CALL(name, ftype, args...) \
@@ -107,7 +108,7 @@ extern uintptr_t __bpx_call_table attribute_hidden;
 #define SAFE_PATHLEN_OR_FAIL_WITH(pathname, return_value_on_error)  \
   ({								    \
     const char *__pathname = (pathname);			    \
-    int __pathname_len = strnlen (__pathname, PATH_MAX - 1);	    \
+    int __pathname_len = __strnlen (__pathname, PATH_MAX - 1);	    \
     if (__glibc_unlikely (__pathname_len == PATH_MAX - 1) &&	    \
 	__glibc_likely (__pathname[PATH_MAX - 1] != '\0'))	    \
       {								    \
