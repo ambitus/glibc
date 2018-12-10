@@ -108,6 +108,13 @@ apply_irel (void)
 
 #include <libc-start.h>
 
+#ifndef ARCH_SPECIAL_SETUP
+# define ARCH_SPECIAL_SETUP()
+#endif
+#ifndef ARCH_SPECIAL_TEARDOWN
+# define ARCH_SPECIAL_TEARDOWN(res)
+#endif
+
 STATIC int LIBC_START_MAIN (int (*main) (int, char **, char **
 					 MAIN_AUXVEC_DECL),
 			    int argc,
@@ -231,6 +238,9 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   __pointer_chk_guard_local = pointer_chk_guard;
 # endif
 
+  /* Miscellaneous platform-specific early setup.  */
+  ARCH_SPECIAL_SETUP ();
+
 #endif /* !SHARED  */
 
   /* Register the destructor of the dynamic linker if there is any.  */
@@ -338,6 +348,8 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Nothing fancy, just call the function.  */
   result = main (argc, argv, __environ MAIN_AUXVEC_PARAM);
 #endif
+
+  ARCH_SPECIAL_TEARDOWN (result);
 
   exit (result);
 }

@@ -32,15 +32,18 @@
    anon maps.  */
 
 extern void *__create_anon_mmap (void *addr, size_t len, int prot,
-				 int flags) attribute_hidden;
-extern int __unmap_anon_mmap (void *addr, size_t length)
-  attribute_hidden;
+				 int flags);
+extern int __unmap_anon_mmap (void *addr, size_t length);
 extern int __set_protections_anon_mmap (void *addr, size_t length,
-					int prot) attribute_hidden;
-extern int __mlock_anon_mmap (void *addr, size_t length)
-  attribute_hidden;
-extern int __munlock_anon_mmap (void *addr, size_t length)
-  attribute_hidden;
+					int prot);
+extern int __mlock_anon_mmap (void *addr, size_t length);
+extern int __munlock_anon_mmap (void *addr, size_t length);
+
+libc_hidden_proto (__create_anon_mmap)
+libc_hidden_proto (__unmap_anon_mmap)
+libc_hidden_proto (__set_protections_anon_mmap)
+libc_hidden_proto (__mlock_anon_mmap)
+libc_hidden_proto (__munlock_anon_mmap)
 
 
 #endif /* _ZOS_MMAP_H  */
