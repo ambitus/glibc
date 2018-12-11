@@ -88,7 +88,7 @@ hidden_data_def (__ipt_zos_tcb)
    many available, the choice of specific subpool number is
    arbitrary.
    The storage key is ignored for the subpools we are using.  */
-#define STORAGE_SUBPOOL 100
+#define STORAGE_SUBPOOL 72
 
 
 /* This does the actual storage request. Returns zero on failure,
