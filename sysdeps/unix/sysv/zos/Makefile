@@ -31,7 +31,7 @@ override inhibit-glue = yes
 # any existing posix or generic C files instead.
 # For now, we also prevent the use of any assembly in sysdeps/s390,
 # because it uses the wrong calling convention.
-inhibit-sysdep-asm += unix/sysv/linux.* s390.*
+inhibit-sysdep-asm += unix/sysv/linux.*
 override inhibit-unix-syscalls = yes
 
 ifeq ($(subdir),misc)

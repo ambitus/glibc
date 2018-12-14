@@ -29,6 +29,7 @@
        .text
 ENTRY(__mempcpy)
 	.machine "z900"
+	OS_SAVE_AND_LOAD (5, 3)
 	lgr     %r1,%r2             # Use as dest
 	la      %r2,0(%r4,%r2)      # Return dest + n
 	j	.L_Z900_start
@@ -41,6 +42,7 @@ libc_hidden_builtin_def (mempcpy)
 
 ENTRY(memcpy)
 	.machine "z900"
+	OS_SAVE_AND_LOAD (5, 3)
 	lgr     %r1,%r2             # r1: Use as dest ; r2: Return dest
 .L_Z900_start:
 	ltgr    %r4,%r4
@@ -53,7 +55,7 @@ ENTRY(memcpy)
 	larl    %r5,.L_Z900_15
 	ex      %r4,0(%r5)
 .L_Z900_4:
-	br      %r14
+	RETURN (5, %r14)
 .L_Z900_13:
 	cghi	%r5,4096            # Switch to mvcle for copies >1MB
 	jh      __memcpy_mvcle
@@ -70,6 +72,9 @@ END(memcpy)
 libc_hidden_builtin_def (memcpy)
 #endif
 
+/* No OS_SAVE_AND_LOAD here because this should never be called by
+   anything besides the above code or the other parts of the memcpy
+   implementation.  */
 ENTRY(__memcpy_mvcle)
 	# Using as standalone function will result in unexpected
 	# results since the length field is incremented by 1 in order to
@@ -84,5 +89,5 @@ ENTRY(__memcpy_mvcle)
 	mvcle   %r2,%r4,0           # thats it, MVCLE is your friend
 	jo      .L_MVCLE_1
 	lgr     %r2,%r0             # return destination address
-	br      %r14
+	RETURN (5, %r14)
 END(__memcpy_mvcle)

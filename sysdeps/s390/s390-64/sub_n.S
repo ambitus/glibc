@@ -28,8 +28,12 @@
 #include "asm-syntax.h"
 
 ENTRY(__mpn_sub_n)
+#ifndef __ZOS__
         stg    %r6,48(%r15)   # save register 6
 	cfi_offset (%r6,-112)
+#else
+	OS_SAVE_AND_LOAD (6, 4)
+#endif /* __ZOS__  */
         sgr    %r1,%r1
         lghi   %r0,1          # cannot use ahi to add carry, use slr
 .L0:	lg     %r6,0(%r1,%r3) # .L0 -> no carry from last sub
@@ -55,6 +59,11 @@ ENTRY(__mpn_sub_n)
 	la     %r1,8(%r1)
 	brct   %r5,.L2
 	lgr    %r2,%r0	      # return last carry
-.Lexit: lg     %r6,48(%r15)   # restore register 6
+.Lexit:
+#ifndef __ZOS__
+	lg     %r6,48(%r15)   # restore register 6
 	br     %r14
+#else
+	RETURN (6, %r14)
+#endif /* __ZOS__  */
 END(__mpn_sub_n)

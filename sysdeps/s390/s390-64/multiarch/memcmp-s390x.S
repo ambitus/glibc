@@ -31,6 +31,7 @@
 
 ENTRY(__memcmp_z196)
 	.machine "z196"
+	OS_SAVE_AND_LOAD (4, 3)
 	ltgr    %r4,%r4
 	je      .L_Z196_4
 	aghi    %r4,-1
@@ -43,7 +44,7 @@ ENTRY(__memcmp_z196)
 	ipm     %r2
 	sllg    %r2,%r2,34
 	srag    %r2,%r2,62
-	br      %r14
+	RETURN (4, %r14)
 .L_Z196_17:
 	la      %r3,256(%r3)
 	la      %r2,256(%r2)
@@ -57,13 +58,14 @@ ENTRY(__memcmp_z196)
 	ipm     %r2
 	sllg    %r2,%r2,34
 	srag    %r2,%r2,62
-	br      %r14
+	RETURN (4, %r14)
 .L_Z196_14:
 	clc     0(1,%r3),0(%r2)
 END(__memcmp_z196)
 
 ENTRY(__memcmp_z10)
 	.machine "z10"
+	OS_SAVE_AND_LOAD (4, 3)
 	ltgr    %r4,%r4
 	je      .L_Z10_4
 	aghi    %r4,-1
@@ -75,7 +77,7 @@ ENTRY(__memcmp_z10)
 	ipm     %r2
 	sllg    %r2,%r2,34
 	srag    %r2,%r2,62
-	br      %r14
+	RETURN (4, %r14)
 .L_Z10_12:
 	pfd     1,512(%r3)
 	pfd     1,512(%r2)

@@ -21,6 +21,7 @@
 #define _ZOS_SYSDEP_H 1
 
 #include <sysdeps/generic/sysdep.h>
+#include <sysdeps/s390/s390-64/sysdep.h>
 #include <sysdeps/unix/sysdep.h>
 #include <sysdeps/unix/sysv/linux/sysdep.h>
 #include <dl-sysdep.h>	/* For RTLD_PRIVATE_ERRNO.  */
@@ -102,65 +103,7 @@
 # undef INTERNAL_SYSCALL_ERRNO
 # define INTERNAL_SYSCALL_ERRNO(val, err)	((void) (val), (err))
 
-#else /* __ASSEMBLER__ */
-/* dummy out or use the z/Linux decls for now, we dont need assembler
-   support yet.  */
-
-# define ALIGNARG(log2) 1<<log2
-# define ASM_SIZE_DIRECTIVE(name) .size name,.-name;
-
-/* TODO: should we 16-bit align everything?  */
-
-/* Define an entry point visible from C. */
-# define ENTRY(name)				\
-  .globl C_SYMBOL_NAME (name);			\
-  .type C_SYMBOL_NAME (name),@function;		\
-  .align ALIGNARG (3);				\
-  C_LABEL (name)				\
-  cfi_startproc;				\
-  CALL_MCOUNT
-
-#undef END
-#define END(name)				\
-  cfi_endproc;					\
-  ASM_SIZE_DIRECTIVE (name)
-
-/* Since C identifiers are not normally prefixed with an underscore
-   on this system, the asm identifier `syscall_error' intrudes on the
-   C name space.  Make sure we use an innocuous name.  */
-#define	syscall_error	__syscall_error
-#define mcount		_mcount
-
-/* If compiled for profiling, call `mcount' at the start of each
-   function.  */
-#ifdef	PROF
-#define CALL_MCOUNT		/* TODO: mcount.  */
-#else
-#define CALL_MCOUNT		/* Do nothing.  */
-#endif
-
-#undef JUMPTARGET
-#ifdef SHARED
-#define JUMPTARGET(name)	name##@PLT
-#define SYSCALL_PIC_SETUP	/* TODO: PIC.  */
-#else
-#define JUMPTARGET(name)	name
-#define SYSCALL_PIC_SETUP	/* Nothing.  */
-#endif
-
-/* Local label name for asm code. */
-#ifndef L
-#define L(name)		.L##name
-#endif
-
-#undef PSEUDO
-#undef PSEUDO_END
-#undef PSEUDO_NOERRNO
-#undef PSEUDO_END_NOERRNO
-#undef PSEUDO_ERRVAL
-#undef PSEUDO_END_ERRVAL
-
-#endif /* __ASSEMBLER__ */
+#endif /* !__ASSEMBLER__ */
 
 
 #if IS_IN (rtld)

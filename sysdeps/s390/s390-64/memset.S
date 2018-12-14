@@ -34,6 +34,7 @@ ENTRY(__memset_default)
 ENTRY(memset)
 #endif
 	.machine "z900"
+	OS_SAVE_AND_LOAD (4, 3)
 	ltgr    %r4,%r4
 	je      .L_Z900_4
 	stc     %r3,0(%r2)
@@ -48,7 +49,7 @@ ENTRY(memset)
 	larl    %r3,.L_Z900_18
 	ex      %r4,0(%r3)
 .L_Z900_4:
-	br      %r14
+	RETURN (5, %r14)
 .L_Z900_14:
 	mvc     1(256,%r1),0(%r1)
 	la      %r1,256(%r1)

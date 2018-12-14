@@ -27,6 +27,7 @@
 
 	.text
 ENTRY(__bcopy)
+	OS_SAVE_AND_LOAD (5, 3)
 	ltgr	%r1,%r4		    # zero bcopy ?
 	jz	.L4
 	clgr	%r2,%r3		    # check against destructive overlap
@@ -56,11 +57,18 @@ ENTRY(__bcopy)
 	lgr	%r3,%r5             # destination length = source length
 .L6:	mvcle	%r2,%r4,0           # thats it, MVCLE is your friend
 	jo	.L6
-	br	%r14
+	RETURN (5, %r14)
 .L7:				    # destructive overlay, can not use mvcle
+#ifndef __ZOS__
 	lgr	%r1,%r2		    # bcopy is called with source,dest
 	lgr	%r2,%r3		    # memmove with dest,source! Oh, well...
 	lgr	%r3,%r1
+#else
+	lg      %r1,32(%r13)        # swap them
+	stg     %r2,8(%r1)          # we can reuse our parameter list
+	stg     %r3,0(%r1)          # z/OS TODO: Right?
+	lmg     %r2,%r5,40(%r13)    # restore the rest of our regs
+#endif /* __ZOS__  */
 	jg	HIDDEN_BUILTIN_JUMPTARGET(memmove)
 
 END(__bcopy)

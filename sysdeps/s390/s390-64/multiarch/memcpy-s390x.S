@@ -31,6 +31,7 @@
 
 ENTRY(____mempcpy_z196)
 	.machine "z196"
+	OS_SAVE_AND_LOAD (5, 3)
 	lgr     %r1,%r2         # Use as dest
 	la      %r2,0(%r4,%r2)  # Return dest + n
 	j	.L_Z196_start
@@ -38,6 +39,7 @@ END(____mempcpy_z196)
 
 ENTRY(__memcpy_z196)
 	.machine "z196"
+	OS_SAVE_AND_LOAD (5, 3)
 	lgr     %r1,%r2         # r1: Use as dest ; r2: Return dest
 .L_Z196_start:
 	ltgr    %r4,%r4
@@ -49,7 +51,7 @@ ENTRY(__memcpy_z196)
 .L_Z196_3:
 	exrl    %r4,.L_Z196_14
 .L_Z196_4:
-	br      %r14
+	RETURN (5, %r14)
 .L_Z196_5:
 	cgfi    %r5,262144      # Switch to mvcle for copies >64MB
 	jh      __memcpy_mvcle
@@ -68,6 +70,7 @@ END(__memcpy_z196)
 
 ENTRY(____mempcpy_z10)
 	.machine "z10"
+	OS_SAVE_AND_LOAD (5, 3)
 	lgr     %r1,%r2         # Use as dest
 	la      %r2,0(%r4,%r2)  # Return dest + n
 	j	.L_Z10_start
@@ -84,7 +87,7 @@ ENTRY(__memcpy_z10)
 .L_Z10_3:
 	exrl    %r4,.L_Z10_15
 .L_Z10_4:
-	br      %r14
+	RETURN (5, %r14)
 .L_Z10_13:
 	cgfi    %r5,65535	# Switch to mvcle for copies >16MB
 	jh      __memcpy_mvcle

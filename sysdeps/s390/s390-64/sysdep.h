@@ -27,6 +27,23 @@
 #define ALIGNARG(log2) 1<<log2
 #define ASM_SIZE_DIRECTIVE(name) .size name,.-name;
 
+#undef	END
+#define END(name)				\
+  cfi_endproc;					\
+  ASM_SIZE_DIRECTIVE(name)			\
+
+/* Since C identifiers are not normally prefixed with an underscore
+   on this system, the asm identifier `syscall_error' intrudes on the
+   C name space.  Make sure we use an innocuous name.  */
+#define	syscall_error	__syscall_error
+#define mcount		_mcount
+
+/* Local label name for asm code. */
+#ifndef L
+#define L(name)		.L##name
+#endif
+
+#ifndef __ZOS__
 
 /* Define an entry point visible from C. */
 #define	ENTRY(name)							      \
@@ -36,11 +53,6 @@
   C_LABEL(name)								      \
   cfi_startproc;							      \
   CALL_MCOUNT
-
-#undef	END
-#define END(name)							      \
-  cfi_endproc;								      \
-  ASM_SIZE_DIRECTIVE(name)						      \
 
 /* If compiled for profiling, call `mcount' at the start of each function.  */
 #ifdef	PROF
@@ -56,12 +68,6 @@
 #else
 #define CALL_MCOUNT		/* Do nothing.  */
 #endif
-
-/* Since C identifiers are not normally prefixed with an underscore
-   on this system, the asm identifier `syscall_error' intrudes on the
-   C name space.  Make sure we use an innocuous name.  */
-#define	syscall_error	__syscall_error
-#define mcount		_mcount
 
 #undef PSEUDO
 #define	PSEUDO(name, syscall_name, args) \
@@ -86,9 +92,43 @@ lose: SYSCALL_PIC_SETUP			\
 #define SYSCALL_PIC_SETUP	/* Nothing.  */
 #endif
 
-/* Local label name for asm code. */
-#ifndef L
-#define L(name)		.L##name
+#else /* __ZOS__  */
+
+/* Define an entry point visible from C. */
+#define	ENTRY(name)							\
+  .globl C_SYMBOL_NAME (name);						\
+  .type C_SYMBOL_NAME (name),@function;					\
+  .align ALIGNARG (3);							\
+  C_LABEL (name)							\
+  cfi_startproc;							\
+  CALL_MCOUNT
+
+/* If compiled for profiling, call `mcount' at the start of each function.  */
+#ifdef	PROF
+#ifdef PIC
+#define CALL_MCOUNT /* z/OS TODO: mcount pic.  */
+#else
+#define CALL_MCOUNT /* z/OS TODO: mcount.  */
+#endif
+#else
+#define CALL_MCOUNT		/* Do nothing.  */
 #endif
 
+#undef PSEUDO
+#undef PSEUDO_END
+#undef PSEUDO_NOERRNO
+#undef PSEUDO_END_NOERRNO
+#undef PSEUDO_ERRVAL
+#undef PSEUDO_END_ERRVAL
+
+#undef JUMPTARGET
+#ifdef SHARED
+#define JUMPTARGET(name)	name##@PLT
+#define SYSCALL_PIC_SETUP	/* z/OS TODO: PIC.  */
+#else
+#define JUMPTARGET(name)	name
+#define SYSCALL_PIC_SETUP	/* Nothing.  */
+#endif
+
+#endif /* __ZOS__  */
 #endif	/* __ASSEMBLER__ */

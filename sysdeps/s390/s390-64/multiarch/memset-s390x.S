@@ -31,6 +31,7 @@
 
 ENTRY(__memset_z196)
 	.machine "z196"
+	OS_SAVE_AND_LOAD (5, 3)
 	ltgr    %r4,%r4
 	je      .L_Z196_4
 	stc     %r3,0(%r2)
@@ -44,7 +45,7 @@ ENTRY(__memset_z196)
 .L_Z196_3:
 	exrl    %r4,.L_Z196_17
 .L_Z196_4:
-	br      %r14
+	RETURN (5, %r14)
 .L_Z196_1:
 	cgfi	%r5,1048576
 	jh	__memset_mvcle	   # Switch to mvcle for >256MB
@@ -61,6 +62,7 @@ END(__memset_z196)
 
 ENTRY(__memset_z10)
 	.machine "z10"
+	OS_SAVE_AND_LOAD (5, 3)
 	cgije   %r4,0,.L_Z10_4
 	stc     %r3,0(%r2)
 	lgr     %r1,%r2
@@ -71,7 +73,7 @@ ENTRY(__memset_z10)
 .L_Z10_3:
 	exrl    %r4,.L_Z10_18
 .L_Z10_4:
-	br      %r14
+	RETURN (5, %r14)
 .L_Z10_15:
 	cgfi	%r5,163840          # Switch to mvcle for >40MB
 	jh	__memset_mvcle
@@ -85,6 +87,9 @@ ENTRY(__memset_z10)
 	mvc     1(1,%r1),0(%r1)
 END(__memset_z10)
 
+/* No OS_SAVE_AND_LOAD here because this should never be called by
+   anything besides the above code or the other parts of the memcpy
+   implementation. z/OS TODO: Is that correct here?  */
 ENTRY(__memset_mvcle)
 	aghi	%r4,2               # take back the change done by the caller
 	lgr	%r0,%r2		    # save source address
@@ -96,7 +101,7 @@ ENTRY(__memset_mvcle)
 	jo	.L0
 	lgr	%r2,%r0		    # return value is source address
 .L1:
-	br	%r14
+	RETURN (5, %r14)
 END(__memset_mvcle)
 
 #endif /* IS_IN (libc) */

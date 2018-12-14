@@ -28,7 +28,11 @@
 
 ENTRY(strncpy)
 	.text
+#ifndef __ZOS__
 	stg   %r2,48(%r15)	    # save dst pointer
+#else
+	OS_SAVE_AND_LOAD (5, 3)
+#endif /* __ZOS__  */
 	slgr  %r2,%r3		    # %r3 points to src, %r2+%r3 to dst
 	lghi  %r1,7
 	ngr   %r1,%r4		    # last 3 bits of # bytes
@@ -84,7 +88,13 @@ ENTRY(strncpy)
 	slgr  %r5,%r5
 .L13:	mvcle %r2,%r4,0		    # pad dst with zeroes
 	jo    .L13
-.Lexit: lg    %r2,48(%r15)	    # return dst pointer
+.Lexit:
+#ifndef __ZOS__
+	lg    %r2,48(%r15)	    # return dst pointer
+#else
+	lmg   %r1,%r5,32(%r1)	    # restore regs
+	lg    %r15,0(%r1)	    # return dst pointer
+#endif /* __ZOS__  */
 	br    %r14
 END(strncpy)
 libc_hidden_builtin_def (strncpy)

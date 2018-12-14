@@ -32,6 +32,7 @@ ENTRY(__memcmp_default)
 ENTRY(memcmp)
 #endif
 	.machine "z900"
+	OS_SAVE_AND_LOAD (4, 3)
 	ltgr    %r4,%r4
 	je      .L_Z900_4
 	aghi    %r4,-1
@@ -45,7 +46,7 @@ ENTRY(memcmp)
 	ipm     %r2
 	sllg    %r2,%r2,34
 	srag    %r2,%r2,62
-	br      %r14
+	RETURN (4, %r14)
 .L_Z900_12:
 	clc     0(256,%r3),0(%r2)
 	jne     .L_Z900_4

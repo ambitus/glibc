@@ -1,7 +1,5 @@
-/* Definitions for testing PLT entry/exit auditing.  S/390 64-bit version.
-
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
-
+/* strcpy - copy a string from source to destination.  64 bit z/OS version.
+   Copyright (C) 2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,21 +13,32 @@
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library.  If not, see
+   License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#ifndef __ZOS__
-#define pltenter la_s390_64_gnu_pltenter
-#define pltexit la_s390_64_gnu_pltexit
-#define La_regs La_s390_64_regs
-#define La_retval La_s390_64_retval
-#define int_retval lrv_r2
-#else
-/* z/OS TODO: This.  */
-#define pltenter
-#define pltexit
-#define La_regs
-#define La_retval
-#define int_retval
-#endif /* __ZOS__  */
+/* Inputs:
+     1: address of destination
+     2: address of source  */
 
+#include "sysdep.h"
+#include "asm-syntax.h"
+
+        .text
+ENTRY(strcpy)
+	slgr  %r0,%r0		# set end char to \0
+
+	lg    %r15,0(%r1)
+
+	# z/OS TODO: if we aren't saving r1, remove this store
+	stmg  %r1,%r2,32(%r13)
+	lg    %r1,8(%r1)
+
+	lgr   %r2,%r15
+0:	mvst  %r2,%r1
+	jo    0b
+
+	# z/OS TODO: if we aren't saving r1, remove this load
+	lmg   %r1,%r2,32(%r13)
+	br    %r14
+END(strcpy)
+libc_hidden_builtin_def (strcpy)
