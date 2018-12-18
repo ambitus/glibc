@@ -61,7 +61,7 @@ typedef uintmax_t uatomic_max_t;
    instruction.  */
 #define USE_ATOMIC_COMPILER_BUILTINS 1
 
-#ifdef __s390x__
+#if defined (__s390x__) || defined (__ZOS__)
 # define __HAVE_64B_ATOMICS 1
 #else
 # define __HAVE_64B_ATOMICS 0
