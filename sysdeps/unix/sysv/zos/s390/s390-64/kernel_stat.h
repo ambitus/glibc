@@ -18,11 +18,10 @@
 
 /* #include <bits/wordsize.h> */
 
-#define STAT_IS_KERNEL_STAT 1
 #define XSTAT_IS_XSTAT64 1
 #define STATFS_IS_STATFS64 1
 
-/* Get the kernel_stat definition */
-#define __bpxystat_struct_name kernel_stat
+struct kernel_stat
+{
 #include <bits/bpxystat.h>
-#undef __bpxystat_struct_name
+};

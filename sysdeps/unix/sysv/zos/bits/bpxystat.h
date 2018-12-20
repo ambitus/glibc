@@ -16,23 +16,16 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.
 
-   this file is designed to be included multiple times, once to
-   define struct stat, once for struct stat64, and once for
-   kernel_stat, which should all be identical.	*/
+   This file is designed to be included multiple times, and only to be,
+   included from within a structure declaration. This is used to allow
+   struct stat to have the same first elements as struct kernel_stat
+   so struct stat can be initialized via a memcopy from a struct
+   kernel_stat, without making a struct kernel_stat a member of struct
+   stat.  */
 
-/* TODO: determine if we even need to define kernel_stat */
-
-/* Allow defining __bpxystat_struct_name to override the standard bits
-   include guard.  */
-#if !defined _BITS_STAT_H && !defined __bpxystat_struct_name
+#if !defined _BITS_STAT_H
 # error "Never include <bits/bpxystat.h> directly; use <sys/stat.h> instead."
 #endif
-
-#ifndef __bpxystat_struct_name
-# error "You need to define __bpxystat_struct_name before including <bits/bpxystat.h>."
-#endif
-
-#include <bits/types.h>
 
 
 /* TODO: figure out padding, if any is necessary.
@@ -49,8 +42,6 @@
    problem is the lack of nanosecond time fields. Of course, we can't
    actually get that information anyway on this platform right now...
    TODO: we will use this structure as struct stat for the moment.  */
-struct __bpxystat_struct_name
-{
   char st_eye[4];	      /* 'STAT' in EBCDIC */
   __uint16_t st_length;	      /* sizeof(struct bpxystat) */
   __uint16_t st_version;      /* bpxystat version */
@@ -117,32 +108,8 @@ struct __bpxystat_struct_name
   __time_t _bpx_ctime64;     /* 64-bit ctime */
   __time_t st_createtime;    /* 64-bit creation time */
   __time_t st_reftime;	     /* TODO: what is this? */
-  char __bpx_reserved6[16];  /* Reserved by IBM */
+  char __bpx_reserved6[16]  /* Reserved by IBM */
+  __attribute__ ((__aligned__ (8)));  /* Make sure we always force this
+					 structure to be 8-byte
+					 aligned.  */
   /* End of version 2 fields */
-
-  /* Implementation defined additions. Any fields after this are
-     untouched by the actual syscall, must be initialized by us
-     after the syscall returns. These fields are added to add
-     compatibility.  */
-#ifdef __USE_XOPEN2K8
-  /* Nanosecond resolution timestamps are stored in a format
-     equivalent to 'struct timespec'.  This is the type used
-     whenever possible but the Unix namespace rules do not allow the
-     identifier 'timespec' to appear in the <sys/stat.h> header.
-     Therefore we have to handle the use of this header in strictly
-     standard-compliant sources special.  */
-  struct timespec st_atim;		/* Time of last access.	 */
-  struct timespec st_mtim;		/* Time of last modification.  */
-  struct timespec st_ctim;		/* Time of last status change.	*/
-# define st_atime st_atim.tv_sec	/* Backward compatibility.  */
-# define st_mtime st_mtim.tv_sec
-# define st_ctime st_ctim.tv_sec
-#else
-  __time_t st_atime;			/* Time of last access.	 */
-  unsigned long int st_atimensec;	/* Nscecs of last access.  */
-  __time_t st_mtime;			/* Time of last modification.  */
-  unsigned long int st_mtimensec;	/* Nsecs of last modification.	*/
-  __time_t st_ctime;			/* Time of last status change.	*/
-  unsigned long int st_ctimensec;	/* Nsecs of last status change.	 */
-#endif
-} __attribute__ ((__aligned__ (8)));

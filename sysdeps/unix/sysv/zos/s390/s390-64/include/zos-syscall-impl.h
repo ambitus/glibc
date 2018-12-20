@@ -72,6 +72,18 @@
 static inline ssize_t
 __zos_sys_write (int *errcode, int fd,
 		 const void *buf, size_t nbytes);
+static inline int
+__zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg);
+
+static inline int
+__zos_sys_lstat (int *errcode, const char *pathname,
+		 struct stat *statbuf);
+
+static inline int
+__zos_sys_fstat (int *errcode, int fd, struct stat *statbuf);
+
+static inline int
+__zos_sys_close (int *errcode, int fd);
 
 /* There is ambiguity in the USS callable services documentation.
    The __bpxk_32_t type serves as an indicator of where that ambiguity
@@ -185,28 +197,29 @@ __map_common_oflags (int flags)
   switch (uflags & O_ACCMODE)
   {
   case O_RDONLY:
+  default:
+    /* On linux, the 0x3 value actually results in open returning a
+       file descriptor that cannot be used for reading or writing. I
+       don't know how to emulate that behavior, so we make it return
+       a readonly fd.  */
     zflags = ZOS_SYS_O_RDONLY;
   case O_WRONLY:
     zflags = ZOS_SYS_O_WRONLY;
   case O_RDWR:
-  default:
-    /* The technically invalid value 0x3 actually results in the
-       same behavior as O_RDWR on linux.  */
     zflags = ZOS_SYS_O_RDWR;
   }
 
   /* Get the bit we want and shift it to where we want it.
      TODO: The shift stuff is really here to avoid branches, which may or
      may not be less efficient.  */
-#define zosify(s) ZOS_SYS_##s
 #define validate_shift(larger, smaller)					\
   ({ const int _sh = __builtin_ctz (larger) - __builtin_ctz (smaller);	\
     _Static_assert (_sh > 0, "bad flag values");			\
     _sh; })
 #define shift_up(flg) \
-  zflags |= uflags & (flg) << validate_shift (zosify (flg))
+  zflags |= uflags & (flg) << validate_shift (ZOS_SYS_##flg, (flg))
 #define shift_down(flg) \
-  zflags |= uflags & (flg) >> validate_shift (zosify (flg))
+  zflags |= uflags & (flg) >> validate_shift ((flg), ZOS_SYS_##flg)
 
   shift_up (O_CREAT);
   shift_down (O_EXCL);
@@ -220,16 +233,12 @@ __map_common_oflags (int flags)
   if (O_DSYNC & uflags) zflags |= ZOS_SYS_O_SYNC;
 
   /* TODO: Allow O_NOLARGEFILE.  */
-#undef zosify
 #undef validate_shift
 #undef shift_up
 #undef shift_down
 
   return (int32_t) zflags;
 }
-
-static inline int
-__zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg);
 
 typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
 			     const char * const *pathname,
@@ -285,10 +294,10 @@ __zos_sys_open (int *errcode, const char *pathname,
       SHIM_NOT_YET_IMPLEMENTED_FATAL ("O_PATH", -1);
     }
 
-  if (flags & O_DIRECTORY)
+  if (flags & O_TMPFILE)
     {
       /* TODO: This! */
-      SHIM_NOT_YET_IMPLEMENTED_FATAL ("O_DIRECTORY", -1);
+      SHIM_NOT_YET_IMPLEMENTED_FATAL ("O_TMPFILE", -1);
     }
 
   if (flags & O_ASYNC)
@@ -299,28 +308,33 @@ __zos_sys_open (int *errcode, const char *pathname,
       SHIM_NOT_YET_IMPLEMENTED_FATAL ("O_ASYNC", -1);
     }
 
-  bool not_creating;
+  int tmp_err;
+  bool not_creating = false;
   struct stat path_target;
 
-  /* Poor man's O_NOFOLLOW emulation.  */
-  if (flags & O_NOFOLLOW)
+  /* Poor man's O_NOFOLLOW and O_DIRECTORY emulation.  */
+  if (flags & (O_NOFOLLOW | O_DIRECTORY))
     {
-      int tmp_err;
-
-      /* Check if the target path is a link, if not, try opening it.
-         TODO: If we're trying to O_CREAT a file that doesn't exist
+      /* Try an lstat. If it works, check that the target path is the
+	 correct type of file. If it is not, then fail.
+	 TODO: If we're trying to O_CREAT a file that doesn't exist
 	 the first stat will always fail, and having failure all the
 	 time in the syscall trace is less than desireable.  */
       if (__zos_sys_lstat (&tmp_err, pathname, &path_target) == 0)
 	{
-	  if (S_ISLNK (target.st_mode))
+	  if ((flags & O_NOFOLLOW) && S_ISLNK (path_target.st_mode))
 	    {
 	      *errcode = ELOOP;
 	      return -1;
 	    }
+	  if ((flags & O_DIRECTORY) && !S_ISDIR (path_target.st_mode))
+	    {
+	      *errcode = ENOTDIR;
+	      return -1;
+	    }
 	  not_creating = true;
 	}
-      else if (!((flags & O_CREAT) && tmp_err == ENOENT))
+      else if (!(flags & O_CREAT) || tmp_err != ENOENT)
 	{
 	  *errcode = tmp_err;
 	  return -1;
@@ -339,16 +353,32 @@ __zos_sys_open (int *errcode, const char *pathname,
   if (retval == -1)
     return retval;
 
-  if ((flags & O_NOFOLLOW) && not_creating)
+  if ((flags & (O_NOFOLLOW | O_DIRECTORY)) && not_creating)
     {
       struct stat fd_target;
 
-      /* While we already checked once that the path we were opening
-	 was not a symbolic link, that alone is not sufficient. It's
-	 still possible someone removed the file that we checked and
-	 replaced it with something else, so now we check that the
-	 inode and dev numbers of the file we eneded up opening are
-	 the same as the file we checked, if not, then fail.
+      /* While we already checked the path we were opening once, that
+	 alone is not sufficient. It's still possible someone removed
+	 the file that we checked and replaced it with something else, so
+	 now we do an fstat on whatever we actually ended up opening to
+	 see if it seems okay.  */
+      if (__zos_sys_fstat (&tmp_err, retval, &fd_target) == -1)
+	{
+	  __zos_sys_close (errcode, retval);
+	  *errcode = tmp_err;
+	  return -1;
+	}
+
+      if ((flags & O_DIRECTORY) && !S_ISDIR (fd_target.st_mode))
+	{
+	  __zos_sys_close (errcode, retval);
+	  *errcode = ENOTDIR;
+	  return -1;
+	}
+
+      /* For O_NOFOLLOW, check that the inode and dev numbers of the file
+	 we eneded up opening are the same as the file we checked, if
+	 not, then fail.
 
 	 Unfortunately, if O_TRUNC was used then damage may have already
 	 been done and there's not a lot we can do about it. Also, if
@@ -356,8 +386,7 @@ __zos_sys_open (int *errcode, const char *pathname,
 	 checked the path, then we have nothing to compare to.
 	 TODO: Can we do better? Also, ask IBM to add these flags.
 	 TODO: Should we fail here, or should we retry?  */
-
-      if (__zos_sys_fstat (&tmp_err, fd, &fd_target) == -1
+      if ((flags & O_NOFOLLOW)
 	  || fd_target.st_ino != path_target.st_ino
 	  || fd_target.st_dev != path_target.st_dev)
 	{
@@ -378,8 +407,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 	 while then checks it again, if it has been incremented then wait
 	 again, but if that happens too many times just go ahead and fork
 	 anyway. Decrement it after we've done the cloexec call.  */
-      if (__glibc_unlikely (__zos_sys_fcntl (&tmp_err, fd, F_SETFD,
-					     FD_CLOEXEC) == -1)
+      if (__glibc_unlikely (__zos_sys_fcntl (&tmp_err, retval, F_SETFD,
+					     (void *) FD_CLOEXEC) == -1))
 	{
 	  /* TODO: should we report this error to the user, or silently
 	      ignore it? It might be confusing, and a failure here would
@@ -405,8 +434,7 @@ __zos_sys_openat (int *errcode, int dirfd, const char *pathname,
 
 
 static inline ssize_t
-__zos_sys_write (int *errcode, int fd,
-		 const void *buf, size_t nbytes)
+__zos_sys_write (int *errcode, int fd, const void *buf, size_t nbytes)
 {
   int32_t retval, reason_code;
   const int32_t alet = 0;
@@ -496,8 +524,22 @@ __zos_sys_lstat (int *errcode, const char *pathname,
 /* For z/OS, stat64 is exactly equivalent to stat, so wrappers for any
    of the *stat64 calls shouldn't be necessary.	 */
 
+
+typedef void (*__bpx4clo_t) (const int32_t *fd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_close (int *errcode, int fd)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (close, __bpx4clo_t, &fd, &retval, errcode, &reason_code);
+  return retval;
+}
+
+
 typedef void (*__bpx4fct_t) (const int32_t *fd,
-			     const uint32_t *action,
+			     const int32_t *action,
 			     intptr_t *argument,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
@@ -510,9 +552,9 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
 {
   int32_t retval, reason_code;
   bool set_cloexec_after = false;
-  intptr_t zcmd;
+  int32_t zcmd;
 
-  int real_arg;
+  intptr_t real_arg;
 
   /* Map linux fcntl commands to z/OS commands. Do a racy emulation
      of the ones we can emulate, and return ENOSYS for the rest.  */
@@ -556,12 +598,12 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
   case F_GETFL:
   case F_SETFL:
 
+  /* case F_GETLK64:  */
   case F_GETLK:
-  case F_GETLK64:
+  /* case F_SETLK64:  */
   case F_SETLK:
-  case F_SETLK64:
+  /* case F_SETLKW64:  */
   case F_SETLKW:
-  case F_SETLKW64:
 
   case F_GETOWN:
   case F_SETOWN:
@@ -572,7 +614,7 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
   case F_GETSIG:
   case F_SETSIG:
 
-  case F_GETOWNER_UIDS:
+  case 17 /* F_GETOWNER_UIDS  */:
 
   case F_OFD_GETLK:
   case F_OFD_SETLK:
@@ -588,10 +630,6 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
 
   case F_ADD_SEALS:
   case F_GET_SEALS:
-  case F_SEAL_SEALS:
-  case F_SEAL_SHRINK:
-  case F_SEAL_GROW:
-  case F_SEAL_WRITE:
 
   case F_GET_RW_HINT:
   case F_SET_RW_HINT:
@@ -602,7 +640,7 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
     SHIM_NOT_YET_IMPLEMENTED_FATAL ("SOME F_* flag", -1);
   }
 
-  BPX_CALL (fcntl64, __bpx4fst_t, &fd, &zcmd, &real_arg, &retval,
+  BPX_CALL (fcntl, __bpx4fct_t, &fd, &zcmd, &real_arg, &retval,
 	    errcode, &reason_code);
   /* TODO: confirm retvals are in line with what linux gives.  */
 
@@ -610,7 +648,7 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
     {
       int tmp_err;
       if (__glibc_unlikely (__zos_sys_fcntl (&tmp_err, fd, F_SETFD,
-					     (void *) FD_CLOEXEC) == -1)
+					     (void *) FD_CLOEXEC) == -1))
 	{
 	  /* TODO: should we report this error to the user, or silently
 	     ignore it? It might be confusing, and a failure here would
@@ -631,15 +669,22 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
   default:
     break;
   }
+
   return retval;
 }
 
+
 static inline int
-__zos_sys_dup2 (int oldfd, int newfd)
+__zos_sys_dup2 (int *errcode, int oldfd, int newfd)
 {
-  /* TODO: This.  */
-  /* dupfd2  */
+  int32_t retval, reason_code;
+  intptr_t nfd = newfd;
+  const int32_t fcntl_cmd = ZOS_SYS_F_DUPFD2;
+  BPX_CALL (fcntl, __bpx4fct_t, &oldfd, &fcntl_cmd, &nfd, &retval,
+	    errcode, &reason_code);
+  return retval;
 }
+
 
 /* mmap and related syscalls.  */
 
