@@ -103,24 +103,8 @@ _IO_new_proc_open (FILE *fp, const char *command, const char *mode)
      after creating the child process.  (In the child process, the
      parent end should be closed on execve, so O_CLOEXEC remains set
      there.)  */
-#ifdef O_CLOEXEC
   if (__pipe2 (pipe_fds, O_CLOEXEC) < 0)
     return NULL;
-#else
-  /* We can't do it atomically without O_CLOEXEC.  */
-  if (__pipe2 (pipe_fds, 0) < 0)
-    return NULL;
-  /* z/OS TODO: FIXME: There is a race condition here. */
-  if (__builtin_expect (__fcntl64_nocancel (pipe_fds[0], F_SETFD,
-					    FD_CLOEXEC), 0) < 0
-      || __builtin_expect (__fcntl64_nocancel (pipe_fds[1], F_SETFD,
-					       FD_CLOEXEC), 0) < 0)
-    {
-      __close_nocancel (pipe_fds[0]);
-      __close_nocancel (pipe_fds[1]);
-      return NULL;
-    }
-#endif /* O_CLOEXEC */
 
   if (do_read)
     {

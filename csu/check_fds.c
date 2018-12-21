@@ -103,16 +103,7 @@ __libc_check_standard_fds (void)
      is really paranoid but some people actually are.  If /dev/null
      should happen to be a symlink to somewhere else and not the
      device commonly known as "/dev/null" we bail out.  */
-#ifdef O_NOFOLLOW
   check_one_fd (STDIN_FILENO, O_WRONLY | O_NOFOLLOW);
   check_one_fd (STDOUT_FILENO, O_RDONLY | O_NOFOLLOW);
   check_one_fd (STDERR_FILENO, O_RDONLY | O_NOFOLLOW);
-#else
-  /* z/OS TODO: without O_NOFOLLOW, there's no easy way to atomically
-     check for a symlink and open, there will always be a race
-     condition, so at the moment we don't even try.  */
-  check_one_fd (STDIN_FILENO, O_WRONLY);
-  check_one_fd (STDOUT_FILENO, O_RDONLY);
-  check_one_fd (STDERR_FILENO, O_RDONLY);
-#endif
 }

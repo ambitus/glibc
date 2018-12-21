@@ -325,11 +325,7 @@ _dl_start_profile (void)
   *cp++ = '/';
   __stpcpy (__stpcpy (cp, GLRO(dl_profile)), ".profile");
 
-  fd = __open64_nocancel (filename, O_RDWR|O_CREAT
-#ifdef O_NOFOLLOW
-			  |O_NOFOLLOW
-#endif
-			  , DEFFILEMODE);
+  fd = __open64_nocancel (filename, O_RDWR|O_CREAT|O_NOFOLLOW, DEFFILEMODE);
   if (fd == -1)
     {
       char buf[400];

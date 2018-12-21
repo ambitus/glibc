@@ -35,13 +35,6 @@
 
 #include <kernel-features.h>
 
-#ifndef O_CLOEXEC
-/* z/OS TODO: is this okay? can we include this here? We need it for
-   fcntl64_nocancel. Do we actually need to use the *_nocancel version
-   specifically?  */
-# include <not-cancel.h>
-#endif
-
 FILE *
 freopen (const char *filename, const char *mode, FILE *fp)
 {
@@ -92,28 +85,14 @@ freopen (const char *filename, const char *mode, FILE *fp)
 	     the file by splitting the buffer allocation operation and VFS
 	     opening (a dup operation may run when a file is still pending
 	     'install' on VFS).  */
-#ifdef O_CLOEXEC
 	  if (__dup3 (_IO_fileno (result), fd,
 		      (result->_flags2 & _IO_FLAGS2_CLOEXEC) != 0
 		      ? O_CLOEXEC : 0) == -1)
-#else
-	  if (__dup3 (_IO_fileno (result), fd, 0) == -1)
-#endif /* O_CLOEXEC */
 	    {
 	      _IO_file_close_it (result);
 	      result = NULL;
 	      goto end;
 	    }
-#ifndef O_CLOEXEC
-	  /* z/OS TODO: FIXME: There might be a race condition here.  */
-	  if ((result->_flags2 & _IO_FLAGS2_CLOEXEC) != 0
-	      && __builtin_expect (__fcntl64_nocancel (fd, F_SETFD,
-						      FD_CLOEXEC), 0) < 0)
-	    {
-	      __close (fd);
-	      goto end;
-	    }
-#endif /* ! O_CLOEXEC */
 	  __close (_IO_fileno (result));
 	  _IO_fileno (result) = fd;
 	}

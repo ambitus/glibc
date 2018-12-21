@@ -30,18 +30,7 @@
 #define MAX_DIR_BUFFER_SIZE 1048576U
 
 enum {
-  opendir_oflags = O_RDONLY|O_NDELAY|O_LARGEFILE
-#ifdef O_DIRECTORY
-  /* Without this there is a race condition and potential DOS.  */
-				    |O_DIRECTORY
-#endif /* O_DIRECTORY  */
-#ifdef O_CLOEXEC
-				    |O_CLOEXEC
-# define HAVE_CLOEXEC true
-#else
-/* z/OS TODO: FIXME: race condition.	*/
-# define HAVE_CLOEXEC false
-#endif /* O_CLOEXEC  */
+  opendir_oflags = O_RDONLY|O_NDELAY|O_DIRECTORY|O_LARGEFILE|O_CLOEXEC
 };
 
 static bool
@@ -77,7 +66,7 @@ opendir_tail (int fd)
       return NULL;
     }
 
-  return __alloc_dir (fd, HAVE_CLOEXEC, 0, &statbuf);
+  return __alloc_dir (fd, true, 0, &statbuf);
 }
 
 

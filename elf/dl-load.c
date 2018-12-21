@@ -1522,19 +1522,7 @@ open_verify (const char *name, int fd,
 
   if (fd == -1)
     /* Open the file.  We always open files read-only.  */
-#ifdef O_CLOEXEC
     fd = __open64_nocancel (name, O_RDONLY | O_CLOEXEC);
-#else
-    {
-      fd = __open64_nocancel (name, O_RDONLY);
-      if (__builtin_expect (__fcntl64_nocancel (fd, F_SETFD,
-						FD_CLOEXEC), 0) < 0)
-	{
-	  __close_nocancel (fd);
-	  fd = -1;
-	}
-    }
-#endif /* O_CLOEXEC */
 
   if (fd != -1)
     {

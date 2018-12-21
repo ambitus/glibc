@@ -500,19 +500,8 @@ nscd_init (void)
 	if (dbs[cnt].persistent)
 	  {
 	    /* Try to open the appropriate file on disk.  */
-#ifdef O_CLOEXEC
 	    int fd = open (dbs[cnt].db_filename, O_RDWR | O_CLOEXEC);
 	    if (fd != -1)
-#else
-	    int fd = open (dbs[cnt].db_filename, O_RDWR);
-	    if (fd != -1)
-	      if (fcntl64 (fd, F_SETFD, FD_CLOEXEC) == -1)
-		{
-		  close (fd);
-		  fd = -1;
-		}
-	    if (fd != -1)
-#endif
 	      {
 		char *msg = NULL;
 		struct stat64 st;
@@ -590,22 +579,12 @@ nscd_init (void)
 		    /* We also need a read-only descriptor.  */
 		    if (dbs[cnt].shared)
 		      {
-#ifdef O_CLOEXEC
 			dbs[cnt].ro_fd = open (dbs[cnt].db_filename,
 					       O_RDONLY | O_CLOEXEC);
 			if (dbs[cnt].ro_fd == -1)
 			  dbg_log (_("\
 cannot create read-only descriptor for \"%s\"; no mmap"),
 				   dbs[cnt].db_filename);
-#else
-			dbs[cnt].ro_fd = open (dbs[cnt].db_filename,
-					       O_RDONLY);
-			if (dbs[cnt].ro_fd == -1)
-			  dbg_log (_("\
-cannot create read-only descriptor for \"%s\"; no mmap"),
-				   dbs[cnt].db_filename);
-			fcntl64 (dbs[cnt].ro_fd, F_SETFD, FD_CLOEXEC);
-#endif
 		      }
 
 		    // XXX Shall we test whether the descriptors actually
@@ -640,67 +619,24 @@ cannot create read-only descriptor for \"%s\"; no mmap"),
 	    int ro_fd = -1;
 	    if (dbs[cnt].persistent)
 	      {
-#ifdef O_CLOEXEC
 		fd = open (dbs[cnt].db_filename,
 			   O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_CLOEXEC,
 			   S_IRUSR | S_IWUSR);
-#else
-		fd = open (dbs[cnt].db_filename,
-			   O_RDWR | O_CREAT | O_EXCL | O_TRUNC,
-			   S_IRUSR | S_IWUSR);
-		if (fd != -1 && fcntl64 (fd, F_SETFD, FD_CLOEXEC) == -1)
-		  {
-		    close (fd);
-		    fd = -1;
-		  }
-#endif
 		if (fd != -1 && dbs[cnt].shared)
-#ifdef O_CLOEXEC
 		  ro_fd = open (dbs[cnt].db_filename,
 				O_RDONLY | O_CLOEXEC);
-#else
-		  {
-		    ro_fd = open (dbs[cnt].db_filename,
-				  O_RDONLY);
-		    if (ro_fd != -1 && fcntl64 (ro_fd, F_SETFD, FD_CLOEXEC) == -1)
-		      {
-			close (ro_fd);
-			ro_fd = -1;
-		      }
-		  }
-#endif
 	      }
 	    else
 	      {
 		char fname[] = _PATH_NSCD_XYZ_DB_TMP;
-#ifdef O_CLOEXEC
 		fd = mkostemp (fname, O_CLOEXEC);
-#else
-		fd = mkostemp (fname, 0);
-		if (fd != -1 && fcntl64 (fd, F_SETFD, FD_CLOEXEC) == -1)
-		  {
-		    close (fd);
-		    fd = -1;
-		  }
-#endif
 
 		/* We do not need the file name anymore after we
 		   opened another file descriptor in read-only mode.  */
 		if (fd != -1)
 		  {
 		    if (dbs[cnt].shared)
-#ifdef O_CLOEXEC
 		      ro_fd = open (fname, O_RDONLY | O_CLOEXEC);
-#else
-		      {
-			ro_fd = open (fname, O_RDONLY);
-			if (ro_fd != -1 && fcntl64 (ro_fd, F_SETFD, FD_CLOEXEC) == -1)
-			  {
-			    close (ro_fd);
-			    ro_fd = -1;
-			  }
-		      }
-#endif
 
 		    unlink (fname);
 		  }

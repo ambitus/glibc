@@ -2673,12 +2673,7 @@ process_envvars (enum mode *modep)
      messages to this file.  */
   else if (any_debug && debug_output != NULL)
     {
-      const int flags = O_WRONLY | O_APPEND | O_CREAT
-#ifdef O_NOFOLLOW
-	/* z/OS TODO: FIXME: at least try */
-					    | O_NOFOLLOW
-#endif
-	;
+      const int flags = O_WRONLY | O_APPEND | O_CREAT | O_NOFOLLOW;
       size_t name_len = strlen (debug_output);
       char buf[name_len + 12];
       char *startp;

@@ -251,23 +251,8 @@ __spawnix (pid_t *pid, const char *file,
   struct posix_spawn_args args;
   int ec;
 
-#ifdef O_CLOEXEC
   if (__pipe2 (args.pipe, O_CLOEXEC))
     return errno;
-#else
-  if (__pipe2 (args.pipe, 0))
-    return errno;
-  /* z/OS TODO: FIXME: There is a race condition here. */
-  if (__builtin_expect (__fcntl64_nocancel (args.pipe[0], F_SETFD,
-					    FD_CLOEXEC), 0) < 0
-      || __builtin_expect (__fcntl64_nocancel (args.pipe[1], F_SETFD,
-					      FD_CLOEXEC), 0) < 0)
-    {
-      __close_nocancel (args.pipe[0]);
-      __close_nocancel (args.pipe[1]);
-      return errno;
-    }
-#endif /* O_CLOEXEC */
 
   /* Disable asynchronous cancellation.  */
   int state;

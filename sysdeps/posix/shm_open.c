@@ -35,14 +35,7 @@ shm_open (const char *name, int oflag, mode_t mode)
 {
   SHM_GET_NAME (EINVAL, -1, "");
 
-  oflag |= 0
-#ifdef O_NOFOLLOW
-	   | O_NOFOLLOW
-#endif
-#ifdef O_CLOEXEC
-	   | O_CLOEXEC
-#endif
-    ;
+  oflag |= O_NOFOLLOW | O_CLOEXEC;
 
   /* Disable asynchronous cancellation.  */
   int state;
@@ -54,11 +47,6 @@ shm_open (const char *name, int oflag, mode_t mode)
        directory names are just another example for unsuitable shared
        object names and the standard does not mention EISDIR.  */
     __set_errno (EINVAL);
-#ifndef O_CLOEXEC
-  else if (fd != -1)
-    if (fcntl64 (fd, F_SETFD, FD_CLOEXEC) == -1)
-      close (fd);
-#endif
 
   pthread_setcancelstate (state, NULL);
 

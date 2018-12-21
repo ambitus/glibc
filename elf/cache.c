@@ -426,12 +426,8 @@ save_cache (const char *cache_name)
   sprintf (temp_name, "%s~", cache_name);
 
   /* Create file.  */
-  int fd = open (temp_name, O_CREAT|O_WRONLY|O_TRUNC
-		 /* z/OS TODO: check for links */
-#ifdef O_NOFOLLOW
-					    |O_NOFOLLOW
-#endif
-		 , S_IRUSR|S_IWUSR);
+  int fd = open (temp_name, O_CREAT|O_WRONLY|O_TRUNC|O_NOFOLLOW,
+		 S_IRUSR|S_IWUSR);
   if (fd < 0)
     error (EXIT_FAILURE, errno, _("Can't create temporary cache file %s"),
 	   temp_name);
@@ -818,12 +814,8 @@ save_aux_cache (const char *aux_cache_name)
     }
 
   /* Create file.  */
-  int fd = open (temp_name, O_CREAT|O_WRONLY|O_TRUNC
-		 /* z/OS TODO: check for links */
-#ifdef O_NOFOLLOW
-					    |O_NOFOLLOW
-#endif
-		 , S_IRUSR|S_IWUSR);
+  int fd = open (temp_name, O_CREAT|O_WRONLY|O_TRUNC|O_NOFOLLOW,
+		 S_IRUSR|S_IWUSR);
   if (fd < 0)
     goto out_fail;
 

@@ -893,21 +893,8 @@ exec_comm (char *comm, char **word, size_t *word_length, size_t *max_length,
   if (!comm || !*comm)
     return 0;
 
-#ifdef O_CLOEXEC
   if (__pipe2 (fildes, O_CLOEXEC) < 0)
     return WRDE_NOSPACE;
-#else
-  if (__pipe2 (fildes, 0) < 0)
-    return WRDE_NOSPACE;
-  /* z/OS TODO: FIXME: There is a race condition here. */
-  if (__builtin_expect (__fcntl (fildes[0], F_SETFD, FD_CLOEXEC), 0) < 0
-      || __builtin_expect (__fcntl (fildes[1], F_SETFD, FD_CLOEXEC), 0) < 0)
-    {
-      __close (fildes[0]);
-      __close (fildes[1]);
-      return WRDE_NOSPACE;
-    }
-#endif /* O_CLOEXEC */
 
  again:
   if ((pid = __fork ()) < 0)

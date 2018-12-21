@@ -44,20 +44,10 @@ _dl_sysdep_read_whole_file (const char *file, size_t *sizep, int prot)
 {
   void *result = MAP_FAILED;
   struct stat64 st;
-  int fd = __open64_nocancel (file, O_RDONLY
-#ifdef O_CLOEXEC
-				    | O_CLOEXEC
-#endif
-			      );
+  int fd = __open64_nocancel (file, O_RDONLY | O_CLOEXEC);
   if (fd >= 0)
     {
-#ifndef O_CLOEXEC
-      if (__builtin_expect (__fcntl64_nocancel (fd, F_SETFD,
-						FD_CLOEXEC), 0) >= 0
-	  && __fxstat64 (_STAT_VER, fd, &st) >= 0)
-#else
       if (__fxstat64 (_STAT_VER, fd, &st) >= 0)
-#endif /* ! O_CLOEXEC */
 	{
 	  *sizep = st.st_size;
 

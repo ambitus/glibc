@@ -281,21 +281,7 @@ __getcwd (char *buf, size_t size)
   while (!(thisdev == rootdev && thisino == rootino))
     {
       if (__have_atfcts >= 0)
-#ifdef O_CLOEXEC
 	  fd = __openat64_nocancel (fd, "..", O_RDONLY | O_CLOEXEC);
-#else
-	{
-	  fd = __openat64_nocancel (fd, "..", O_RDONLY);
-	  /* z/OS TODO: race condition here.  */
-	  if (fd >= 0 &&
-	      __builtin_expect (__fcntl64_nocancel (fd, F_SETFD,
-						    FD_CLOEXEC), 0) < 0)
-	    {
-	      fd_needs_closing = true;
-	      goto lose;
-	    }
-	}
-#endif /* O_CLOEXEC */
       else
 	fd = -1;
       if (fd >= 0)
