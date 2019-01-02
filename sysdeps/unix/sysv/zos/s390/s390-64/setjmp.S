@@ -40,6 +40,7 @@
 #include <bits/setjmp.h>
 #include <shlib-compat.h>
 #include <stap-probe.h>
+#include <jmpbuf-offsets.h>
 
 /* TODO: do we need the compat stuff?  */
 /* TODO: Why doesn't the z/Linux version have any cfi stuff?  */
@@ -115,24 +116,25 @@ ENTRY (__sigsetjmp)
 	/* Store registers in jmp_buf.  */
 #ifdef PTR_MANGLE
 	/* SECURITY TODO: mangle r13, r14 (any others?) */
-	stmg	%r3, %r14, 8(%r15)
+	stmg	%r3, %r14, 8 * __JB_GPR3(%r15)
 #else
-	stmg	%r3, %r14, 8(%r15)
+	stmg	%r3, %r14, 8 * __JB_GPR3(%r15)
 #endif
 	/* save FP regs.  */
-	std	%f8, 112(%r15)
-	std	%f9, 120(%r15)
-	std	%f10, 128(%r15)
-	std	%f11, 136(%r15)
-	std	%f12, 144(%r15)
-	std	%f13, 152(%r15)
-	std	%f14, 160(%r15)
-	std	%f15, 168(%r15)
+	std	%f8, 8 * (__JB_GPR14 + __JB_FPR8 + 1)(%r15)
+	std	%f9, 8 * (__JB_GPR14 + __JB_FPR9 + 1)(%r15)
+	std	%f10, 8 * (__JB_GPR14 + __JB_FPR10 + 1)(%r15)
+	std	%f11, 8 * (__JB_GPR14 + __JB_FPR11 + 1)(%r15)
+	std	%f12, 8 * (__JB_GPR14 + __JB_FPR12 + 1)(%r15)
+	std	%f13, 8 * (__JB_GPR14 + __JB_FPR13 + 1)(%r15)
+	std	%f14, 8 * (__JB_GPR14 + __JB_FPR14 + 1)(%r15)
+	std	%f15, 8 * (__JB_GPR14 + __JB_FPR15 + 1)(%r15)
 
 #ifdef HAVE_S390_VX_ASM_SUPPORT
 	/* TODO: How can we get this to run on lower archlevels without
 	   using separate binaries?  */
-	vstm	%v16, %v23, 176(%r15), 4	/* save vector regs.  */
+	/* save vector regs.  */
+	vstm	%v16, %v23, 8 * (__JB_GPR14 + __JB_FPR15 + 2)(%r15), 0
 #endif
 
 #if IS_IN (rtld)

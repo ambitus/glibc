@@ -1,6 +1,6 @@
-/* Copyright (C) 2018 Rocket Software
+/* Private macros for accessing __jmp_buf contents.  z/OS version.
+   Copyright (C) 2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -16,30 +16,27 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-/* Define the machine-dependent type `jmp_buf'.  z/OS version.  */
+#define __JB_GPR1	0
+#define __JB_GPR2	1
+#define __JB_GPR3	2
+#define __JB_GPR4	3
+#define __JB_GPR5	4
+#define __JB_GPR6	5
+#define __JB_GPR7	6
+#define __JB_GPR8	7
+#define __JB_GPR9	8
+#define __JB_GPR10	9
+#define __JB_GPR11	10
+#define __JB_GPR12	11
+#define __JB_GPR13	12
+#define __JB_GPR14	13
 
-#ifndef __ZOS_SETJMP_H__
-#define __ZOS_SETJMP_H__
 
-#if !defined _SETJMP_H && !defined _PTHREAD_H
-# error "Never include <bits/setjmp.h> directly; use <setjmp.h> instead."
-#endif
-
-#ifndef	_ASM
-
-typedef struct __zos_jmp_buf
-{
-  /* We save gprs r1 - r14.  */
-  long int __gregs[14];
-
-  /* We save fpu registers f8 - f15.  */
-  long __fpregs[8];
-
-  /* We save vector registers v16 - v23 (if present).  */
-  char __vregs[128];
-  /* TODO: FPC reg? */
-} __jmp_buf[1];
-
-#endif
-
-#endif /* __ZOS_SETJMP_H__ */
+#define __JB_FPR8	0
+#define __JB_FPR9	1
+#define __JB_FPR10	2
+#define __JB_FPR11	3
+#define __JB_FPR12	4
+#define __JB_FPR13	5
+#define __JB_FPR14	6
+#define __JB_FPR15	7
