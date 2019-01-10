@@ -38,6 +38,7 @@
    TODO: this is all experimental right now.
    TODO: Make this work with shared stuff.  */
 
+#include <zos-core.h>
 
 	.text
 	.align 8  /* TODO: confirm this.  */
@@ -64,38 +65,37 @@ _start:
 	   We need to be 100% certain that whatever allocation method
 	   we use the operating system will reclaim our unfreed
 	   resources whenever a process ends.  */
-	larl	%r15, 0f
-	/* Load storage amount into r0.  */
-	/* TODO: document this more.  */
-	l	%r0, 4(%r15)
-	l	%r15, 8(%r15)
+	larl	%r15, .Lmain_stack_length
+
+	/* Load storage amount into r0 and flags into r15.  */
+	l	%r0, 0(%r15)
+	l	%r15, .Lmain_stack_flags-.Lmain_stack_length(%r15)
 	llgt	%r14, 16
 	l	%r14, 772(%r14)
 	l	%r14, 160(%r14)
 	pc	0(%r14)
+	/* r15 has the return code and r1 has the address.  */
 	/* TODO: Check if the call failed here.  */
-
-	/* presumably, the top of our stack is in r13 */
 
 	/* TODO: ensure 16-byte stack alignment. They do it on z/Linux so
 	presumably there's a reason.  */
 
-	/* Prepare main F4SA  */
-	lgr	%r15, %r13
+
+	/* Store address of our next DSA in old DSA.  */
+	stg	%r1, 136(%r13)
+	/* Store address of old DSA in our next DSA.  */
+	stg	%r13, 128(%r1)
+	/* Swap DSAs.  */
 	lgr	%r13, %r1
-	stg	%r15, 128(%r13)
-	stg	%r13, 136(%r15)
-	lg	%r1, 32(%r15)
 
 	/* Set up F4SA sig  */
 	llilh	%r14, 50932
 	oill	%r14, 58049
-	stg	%r14, 4(%r13)
+	st	%r14, 4(%r13)
 
 	/* Initialize NAB  */
-	lghi	%r14, 144
-	algr	%r14, %r13
-	stg	%r14, 136(%r13)
+	la	%r14, 208(%r13)
+	stg	%r14, 136(%r13)		/* Fake NAB (144(%r13)) unused.  */
 
 	/* Set up args for __libc_start_main */
 	/* __libc_start_main (main, argc, argv, init, fini, rtld_fini,
@@ -106,9 +106,9 @@ _start:
 	larl	%r2, main
 	stg	%r2, 152(%r13)
 
-	llill	%r2, 0	/* TODO: this should be argc.  */
+	lghi	%r2, 0	/* TODO: this should be argc.  */
 	stg	%r2, 160(%r13)
-	llill	%r2, 0	/* TODO: this should be argv.  */
+	lghi	%r2, 0	/* TODO: this should be argv.  */
 	stg	%r2, 168(%r13)
 
 	larl	%r2, __libc_csu_init
@@ -116,7 +116,7 @@ _start:
 	larl	%r2, __libc_csu_fini
 	stg	%r2, 184(%r13)
 
-	llill	%r2, 0	/* TODO: this should be rtld_fini.  */
+	lghi	%r2, 0	/* TODO: this should be rtld_fini.  */
 	stg	%r2, 192(%r13)
 
 	stg	%r13, 200(%r13)	/* stack_end  */
@@ -132,9 +132,9 @@ _start:
 	lgr	%r1, %r13
 	lg	%r13, 128(%r13)
 	stg	%r15, 16(%r13)
-	larl	%r15, 0f
-	l	%r0, 4(%r15)
-	lhi	%r15, 0x0003
+	larl	%r15, .Lmain_stack_length
+	l	%r0, 0(%r15)
+	l	%r15, .Lmain_stack_rel_flags-.Lmain_stack_length(%r15)
 	llgt	%r14, 16
 	l	%r14, 772(%r14)
 	l	%r14, 204(%r14)
@@ -149,11 +149,12 @@ _start:
 
 	/* cfi_endproc */	/* TODO: see above.  */
 
-0:
-	/* stack size  */
-	/* .long 0x001000a0 */	/* TODO: final val should be like 2-10 MB.  */
-	.long 0x00010000	/* Testing stack size.  */
-	.long 0x00000006	/* TODO: what is this?  */
+.Lmain_stack_length:
+	.long 10 * (1 << 20)	/* 10 MiB  */
+.Lmain_stack_flags:
+	.long REGULAR_OBTAIN_FLAGS  /* Flags for STORAGE OBTAIN.  */
+.Lmain_stack_rel_flags:
+	.long REGULAR_RELEASE_FLAGS  /* Flags for STORAGE RELEASE.  */
 
 	/* TODO: These symbols are only here because the linker doesn't
 	   provide them like it should yet. Remove them when the linker

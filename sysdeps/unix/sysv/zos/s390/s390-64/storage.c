@@ -61,28 +61,8 @@ hidden_data_def (__ipt_zos_tcb)
    be cleaned up on process termination.  */
 
 
-/* STORAGE flags  */
-/* r15 flags  */
-#define REQ_OBTAIN     0x00000000
-#define REQ_RELEASE    0x00000001
-#define COND_NO	       0x00000002
-#define BNDRY_PAGE     0x00000004
-#define MAX_MIN_LEN    0x00000008
-#define LOC_VIRT_31_64 0x00000030
-#define LOC_REAL_31_64 0x00000040
-#define USE_ALET       0x00000080
-#define SUBPOOL_MASK   0x0000ff00
-#define KEY_MASK       0x00f00000
-#define USE_TCBADDR    0x04000000
-#define CHECKZERO_YES  0x08000000
-#define LOC_REAL_64    0x10000000
-#define USE_AR15       0x20000000
-#define CALLRKY_YES    0x40000000
-
-#define SUBPOOL_SHIFT  8
-
-/* a15 flags  */
-#define EXECUTABLE_NO  0x20000000
+/* This is the range of subpools we will consider using.  */
+_Static_assert (1 <= STORAGE_SUBPOOL && STORAGE_SUBPOOL <= 127, "");
 
 /* We want a private, fetch-protected, task-owned subpool. There are
    many available, the choice of specific subpool number is
@@ -134,7 +114,7 @@ storage_request (uint32_t length, uint32_t tcbaddr,
   uint32_t ret_addr = storage_addr, return_code = r15;
 
   /* Return code is 0 for a successful request.	 */
-  if (flags & REQ_RELEASE)
+  if (flags & STORAGE_REQ_RELEASE)
     return return_code == 0 ? 1 : 0;
   return return_code == 0 ? ret_addr : 0;
 }
@@ -188,23 +168,16 @@ __storage_obtain (unsigned int length, unsigned int tcbaddr,
   if (tcbaddr == 0)
     return NULL;
 
-  /* This is the range of subpools we will consider using.  */
-  if (STORAGE_SUBPOOL < 1 || STORAGE_SUBPOOL > 127)
-    return NULL;
-
   /* Base flags that we use for every OBTAIN request. Right now we use
      a constant fixed storage subpool, always specify LOC=(31,31),
      TCBADDR, and COND=YES.  */
-  flags = STORAGE_SUBPOOL << SUBPOOL_SHIFT
-	  | REQ_OBTAIN
-	  | LOC_VIRT_31_64 | LOC_REAL_31_64
-	  | USE_TCBADDR;
-  flags |= on_page_boundary ? BNDRY_PAGE : 0;
+  flags = REGULAR_OBTAIN_FLAGS | STORAGE_USE_TCBADDR;
+  flags |= on_page_boundary ? STORAGE_BNDRY_PAGE : 0;
 
   if (noexec)
     {
-      flags |= USE_AR15;
-      flags2 = EXECUTABLE_NO;
+      flags |= STORAGE_USE_AR15;
+      flags2 = STORAGE_EXECUTABLE_NO;
     }
   else
     flags2 = 0;
@@ -237,13 +210,11 @@ __storage_release (unsigned int storage_addr, unsigned int length,
   /* Base flags that we use for every OBTAIN request. Right now we use
      a constant fixed storage subpool, specify TCBADDR, and
      COND=YES.  */
-  flags = STORAGE_SUBPOOL << SUBPOOL_SHIFT
-	  | REQ_RELEASE
-	  | USE_TCBADDR;
+  flags = REGULAR_RELEASE_FLAGS | STORAGE_USE_TCBADDR;
   if (noexec)
     {
-      flags |= USE_AR15;
-      flags2 = EXECUTABLE_NO;
+      flags |= STORAGE_USE_AR15;
+      flags2 = STORAGE_EXECUTABLE_NO;
     }
   else
     flags2 = 0;
