@@ -68,28 +68,10 @@ typedef struct
    least until a more sane solution becomes apparent. We use a lock-free
    hash table right now.  */
 #include <lock-free.h>
-extern lf_hash_table *__zos_tp_table attribute_hidden;
-static inline void *
-__zos_get_thread_pointer (void)
-{
-  unsigned int task_addr = __get_zos_tcb_addr ();
-  return (void *) (uintptr_t) __lf_hash_table_get (task_addr,
-						   __zos_tp_table);
-}
 
-static inline void
-__zos_set_thread_pointer (void *addr)
-{
-  unsigned int task_addr = __get_zos_tcb_addr ();
-  __lf_hash_table_put (task_addr, (uintptr_t) addr, __zos_tp_table);
-}
-
-static inline void
-__zos_clear_thread_pointer (void)
-{
-  unsigned int task_addr = __get_zos_tcb_addr ();
-  __lf_hash_table_remove (task_addr, __zos_tp_table);
-}
+extern void *__zos_get_thread_pointer (void);
+extern void __zos_set_thread_pointer (void *addr);
+extern void __zos_clear_thread_pointer (void);
 
 /* Get system call information.  */
 # include <sysdep.h>
