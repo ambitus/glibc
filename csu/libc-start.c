@@ -200,6 +200,9 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Perform IREL{,A} relocations.  */
   ARCH_SETUP_IREL ();
 
+  /* Miscellaneous platform-specific early setup.  */
+  ARCH_SPECIAL_SETUP ();
+
   /* The stack guard goes into the TCB, so initialize it early.  */
   ARCH_SETUP_TLS ();
 
@@ -237,9 +240,6 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 # else
   __pointer_chk_guard_local = pointer_chk_guard;
 # endif
-
-  /* Miscellaneous platform-specific early setup.  */
-  ARCH_SPECIAL_SETUP ();
 
 #endif /* !SHARED  */
 
