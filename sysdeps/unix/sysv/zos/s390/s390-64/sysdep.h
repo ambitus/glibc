@@ -51,7 +51,7 @@
 # define INTERNAL_SYSCALL(name, err, nr, args...)	\
   ({							\
     SHIM_IF_ENABLED (name,				\
-	SHIM_NAME (name) (&(err), args);		\
+	SHIM_NAME (name) (&(err), ## args);		\
       ,							\
 	__GLIBC_ZOS_RUNTIME_UNIMPLEMENTED (		\
 	    #name " syscall unimplemented");		\
