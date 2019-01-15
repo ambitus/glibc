@@ -80,6 +80,12 @@ typedef struct
 } lfl_tagged_marked_ptr;
 
 
+/* Only 16-byte aligned 16-byte fields may be atomically accessed on
+   z/Arch.  */
+typedef lfl_tagged_marked_ptr __attribute__ ((__aligned__ (16)))
+  lfl_atomic_tm_ptr;
+
+
 /* Note that this type exceeds the alignment gaurantees of malloc
    (which gives 8-byte aligned pointers).  */
 typedef struct
@@ -101,7 +107,7 @@ typedef struct
 
      This field must be accessed atomically. 128-bit atomic loads on
      z/Arch require 16-byte alignment.  */
-  volatile lfl_tagged_marked_ptr next __attribute__ ((__aligned__ (16)));
+  volatile lfl_atomic_tm_ptr next;
 } lfl_node_t;
 
 

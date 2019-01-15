@@ -103,68 +103,64 @@
    we did not need to add explicit fences many places.  */
 #define fence() __asm__ __volatile__ ("bcr 14, 0" ::: "memory")
 
-/* A complier memory fence, for preventing reordering.  */
-#define compiler_fence() __asm__ __volatile__ ("" ::: "memory")
 
 /* A destructuring atomic load that loads a 16 byte tagged marked ptr
    into its constituent fields. Very useful for avoiding the ABA
    problem. See the principals of operation for more details.  */
-#define atomic_load_tm_ptr(mem, marked_ptr, tag)		 \
-  ({								 \
-    _Static_assert (sizeof (marked_ptr) == 8, "");		 \
-    _Static_assert (sizeof (tag) == 8, "");			 \
-    _Static_assert (sizeof (*mem) == 16, "");			 \
-    								 \
-    /* We need to force the usage of a register pair.  */	 \
-    register __typeof (marked_ptr) r2 asm ("r2");		 \
-    register __typeof (tag) r3 asm ("r3");			 \
-    __asm__ __volatile__ ("lpq %0, %2"				 \
-			  : "=r" (r2), "=r" (r3)		 \
-			  : "m" (*(mem)) : "cc");		 \
-    (marked_ptr) = r2;						 \
-    (tag) = r3; })
+static inline void
+atomic_load_acquire_next (volatile lfl_atomic_tm_ptr *next,
+			  uintptr_t *nextptr,
+			  uint64_t *currtag)
+{
+  volatile lfl_atomic_tm_ptr tmp_tm_ptr;
 
-#define atomic_load_tm_ptr_acquire(...) \
-  do { compiler_fence (); atomic_load_tm_ptr (__VA_ARGS__); } while (0)
+  /* We need to guarantee to gcc that the pointer is always 16-byte
+     aligned.  */
+  volatile lfl_atomic_tm_ptr *next_aligned =
+    __builtin_assume_aligned ((void *) next, 16);
 
-#define atomic_load_tm_ptr_relaxed(...) atomic_load_tm_ptr (__VA_ARGS__)
+  __atomic_load (next_aligned, &tmp_tm_ptr, __ATOMIC_ACQUIRE);
+
+  *nextptr = tmp_tm_ptr.nextptr;
+  *currtag = tmp_tm_ptr.tag;
+}
 
 
 /* Replace a node's next pointer and all associated mark and tag data in
    one 128-bit CAS. Return false if the CAS failed, otherwise
    return true.  */
-#define atomic_cas_next(mem,						\
-			old_next, old_tag,				\
-			new_next, new_tag)				\
-  ({									\
-    int _cc;								\
-    _Static_assert (sizeof (old_next) == 8 && sizeof (old_tag) == 8	\
-		    && sizeof (new_next) == 8 && sizeof (new_tag) == 8	\
-		    && sizeof (*mem) == 16, "");			\
-    									\
-    register __typeof (old_next) r4 asm ("r4") = (old_next);		\
-    register __typeof (old_tag)  r5 asm ("r5") = (old_tag);		\
-    register __typeof (new_next) r6 asm ("r6") = (new_next);		\
-    register __typeof (new_tag)  r7 asm ("r7") = (new_tag);		\
-    									\
-    /* We need to report the condition code, which is awkward.  */	\
-    __asm__ __volatile__ ("xgr %2, %2\n\t"	/* Zero retval  */	\
-                          "cdsg %0, %3, %5\n\t"	/* Do the CAS  */	\
-			  "jz 1f\n\t"		/* Examine CC  */	\
-                          "la %2, 1(%2)\n\t"	/* Increment on fail  */\
-                          "1: br %%r0"		/* nop  */		\
-			  : "+r" (r4), "+r" (r5), "=&r" (_cc)		\
-			  : "r" (r6), "r" (r7), "m" (*(mem))		\
-			  : "memory", "cc");				\
-    /* We return whether or not the CAS succeeded (1) or failed (0).  */\
-    !_cc; })
+static inline bool
+atomic_cas_next (volatile lfl_atomic_tm_ptr *mem,
+		 uintptr_t old_next, uint64_t old_tag,
+		 uintptr_t new_next, uint64_t new_tag,
+		 int success_memorder)
+{
+  /* We need to guarantee to gcc that the pointer is always 16-byte
+     aligned.  */
+  volatile lfl_atomic_tm_ptr *mem_aligned =
+    __builtin_assume_aligned ((void *) mem, 16);
+
+  volatile lfl_atomic_tm_ptr tmp_expected;
+  volatile lfl_atomic_tm_ptr tmp_desired;
+  tmp_expected.nextptr = old_next;
+  tmp_expected.tag = old_tag;
+  tmp_desired.nextptr = new_next;
+  tmp_desired.tag = new_tag;
+
+  return __atomic_compare_exchange (mem_aligned, &tmp_expected,
+				    &tmp_desired, false,
+                                    success_memorder, __ATOMIC_RELAXED);
+}
+
 
 /* 128-bit CAS is a memory barrier in its own right on s390, but for
    clarity we have these macros.  */
-#define atomic_cas_next_acquire(...) atomic_cas_next (__VA_ARGS__)
-#define atomic_cas_next_release(...) atomic_cas_next (__VA_ARGS__)
-#define atomic_cas_next_acq_rel(...) atomic_cas_next (__VA_ARGS__)
-#define atomic_cas_next_relaxed(...) atomic_cas_next (__VA_ARGS__)
+#define atomic_cas_next_relaxed(m, on, ot, nn, nt)			\
+  atomic_cas_next (m, on, ot, nn, nt, __ATOMIC_RELAXED)
+#define atomic_cas_next_release(m, on, ot, nn, nt)			\
+  atomic_cas_next (m, on, ot, nn, nt, __ATOMIC_RELEASE)
+#define atomic_cas_next_acq_rel(m, on, ot, nn, nt)			\
+  atomic_cas_next (m, on, ot, nn, nt, __ATOMIC_ACQ_REL)
 
 
 /* We use this instead of abort() or __libc_fatal() because certain
@@ -269,8 +265,9 @@ lfl_find (uint64_t key,
       next = NULL;
       /* Get the next node, don't check for marks since the head
 	 node will never be marked, and will never be removed.  */
-      atomic_load_tm_ptr_acquire (&prev->next, curr, prev_tag);
-      raw_curr = (uintptr_t) curr;
+      atomic_load_acquire_next (&prev->next, &raw_curr, &prev_tag);
+
+      curr = (lfl_node_t *) raw_curr;
       curr_tag = 0;
       curr_was_marked = 0;
 
@@ -293,14 +290,16 @@ lfl_find (uint64_t key,
 
 	  /* Get the the next node ptr, check if current node is
 	     marked.  */
-	  atomic_load_tm_ptr_acquire (&curr->next, raw_next, curr_tag);
+	  atomic_load_acquire_next (&curr->next, &raw_next, &curr_tag);
+
 	  next = (lfl_node_t *) (raw_next & ~LFL_MARK);
 	  curr_was_marked = raw_next & LFL_MARK;
 
 	  /* Recheck prev. See if it has changed since we last examined it.  */
 	  uintptr_t raw_curr2;
 	  uint64_t prev_tag2;
-	  atomic_load_tm_ptr_acquire (&prev->next, raw_curr2, prev_tag2);
+	  atomic_load_acquire_next (&prev->next, &raw_curr2, &prev_tag2);
+
 	  if ((raw_curr2 & ~LFL_MARK) != raw_curr
 	      || prev_tag2 != prev_tag)
 	    break;  /* Try again.  */
@@ -310,8 +309,8 @@ lfl_find (uint64_t key,
 	      /* If we found a marked node, try to delete it. If we fail,
 		 start over.  */
 	      if (atomic_cas_next_acq_rel (&prev->next,
-					   curr, prev_tag,
-					   next, prev_tag + 1))
+					   (uintptr_t) curr, prev_tag,
+					   (uintptr_t) next, prev_tag + 1))
 		{
 		  free_lfl_node (curr, list);
 		  curr_tag = prev_tag + 1;
@@ -407,7 +406,8 @@ __lfl_insert (uint64_t key, uint64_t val, lfl_list_t *list)
       /* Do the actual insertion. If it fails, start over.  */
       if (atomic_cas_next_release (&prev->next,
 				   prev_body.nextptr, prev_body.tag,
-				   new_node, prev_body.tag + 1))
+				   (uintptr_t) new_node,
+                                   prev_body.tag + 1))
 	return true;
 
     }
