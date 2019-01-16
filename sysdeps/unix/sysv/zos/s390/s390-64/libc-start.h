@@ -66,7 +66,7 @@ extern object_pool __alloc_info_pool;
 libc_hidden_proto (__alloc_info_pool)
 
 
-#define roundup16(val) (((val) + 16 - 1) & (16 - 1))
+#define roundup16(val) (((val) + 16 - 1) & ~(16 - 1))
 #define ZOS_THREAD_BUCKETS 64
 #define ZOS_FUTEX_BUCKETS 64
 
