@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include <lock-free.h>
 #include <zos-futex.h>
+#include <zos-utils.h>
 #include <zos-core.h>
 #include <map-info.h>
 
@@ -103,7 +104,7 @@ perm_store_alloc (size_t size)
 
   size_t new_used = __perm_store.used + prev - new_next;
   if (new_used > ZOS_PERM_STORE_SIZE)
-    abort ();
+    CRASH_NOW ();
   __perm_store.used = new_used;
   __perm_store.next = (void *) new_next;
 
@@ -123,7 +124,7 @@ zos_global_structure_setup (void)
 				true, false);
 
   if (!res)
-    abort ();
+    CRASH_NOW ();
 
   __perm_store.used = 0;
   __perm_store.next = res;

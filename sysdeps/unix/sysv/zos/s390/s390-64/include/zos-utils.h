@@ -22,9 +22,16 @@
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include <abort-instr.h>
 
 #define GET_PTR31_UNSAFE(x) ((uintptr_t)(*(uint32_t *)(x)))
 #define GET_PTR31_SAFE(x) ((uintptr_t)(~(1UL << 31) & *(uint32_t *)(x)))
+
+/* We use this instead of abort() in situations where signals might not
+   be possible or desirable.  */
+#define CRASH_NOW()							\
+  do { ABORT_INSTRUCTION; __builtin_unreachable (); } while (0)
+
 
 #endif /* __ASSEMBLER__  */
 #endif /* _ZOS_UTILS_H  */
