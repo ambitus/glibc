@@ -97,21 +97,46 @@ storage_request (uint32_t length, uint32_t tcbaddr,
        just RELEASE:
 	 r1: clobbered  */
 
-  register uint32_t r15 asm ("r15") = flags;
-  register uint32_t storage_addr asm ("r1") = target_addr;
-  register uint32_t len asm ("r0") = length;
-  __asm__ __volatile__ ("sar   %%a0, %3\n\t"
-			"sar   %%a15, %4\n\t"
-			"llgt  %%r14, 16\n\t"
-			"l     %%r14, 772(%%r14)\n\t"
-			"l     %%r14, 160(%%r14)\n\t"
-			"pc    0(%%r14)\n\t"
-			: "+r" (len), "+r" (storage_addr),
-			  "+r" (r15)
-			: "r" (tcbaddr), "r" (flags2)
-			: "r14", "a0", "a1", /* "a14", "a15", */ "cc");
+  /* TODO: parts of this function are commented out because they trigger
+     a bug in gcc, which occurs because it defines the arglist as
+     whatever r1 points to. Put them back in when that bug has been
+     fixed.  */
 
-  uint32_t ret_addr = storage_addr, return_code = r15;
+  /* TODO: I think the final offset is different for release, 204
+     instead of 160. Change that.  */
+
+  uint32_t ret_addr, return_code;
+
+  register uint32_t r15 asm ("r15") = flags;
+  /* register uint32_t storage_addr asm ("r1") = target_addr;  */
+  register uint32_t len asm ("r0") = length;
+
+  __asm__ __volatile__ ("lgr	%%r5, %%r1\n\t"
+			"sar	%%a0, %3\n\t"
+			"sar	%%a15, %4\n\t"
+			"llgt	%%r14, 16\n\t"
+			"l	%%r14, 772(%%r14)\n\t"
+			"l	%%r14, 160(%%r14)\n\t"
+			"pc	0(%%r14)\n\t"
+			"lgr	%3, %%r1\n\t"  /* Copy the storage
+						  address out of r1.  */
+			"lgr	%%r1, %%r5"    /* Don't clobber r1.  */
+			: "+r" (len), "+r" (r15), "=r" (ret_addr)
+			: "r" (tcbaddr), "r" (flags2)
+			: "r14", "r5", "a0", "a1", /* "a14", "a15", */ "cc");
+			// "sar   %%a0, %3\n\t"
+			// "sar   %%a15, %4\n\t"
+			// "llgt  %%r14, 16\n\t"
+			// "l     %%r14, 772(%%r14)\n\t"
+			// "l     %%r14, 160(%%r14)\n\t"
+			// "pc    0(%%r14)\n\t"
+			// : "+r" (len), "+r" (storage_addr),
+			//   "+r" (r15)
+			// : "r" (tcbaddr), "r" (flags2)
+			// : "r14", "a0", "a1", /* "a14", "a15", */ "cc");
+
+  /* ret_addr = storage_addr;  */
+  return_code = r15;
 
   /* Return code is 0 for a successful request.	 */
   if (flags & STORAGE_REQ_RELEASE)
