@@ -642,8 +642,7 @@ libc_hidden_def (__lf_hash_table_initialize)
     __typeof (size) _size = (size);					\
     if (size <= PTR31_BAR)						\
       crash ();								\
-    __storage_obtain ((unsigned int) _size, __ipt_zos_tcb, true,	\
-		      false);						\
+    __storage_obtain_simple ((unsigned int) _size);			\
   })
 #define raw_deallocator(addr, size) \
   __storage_release ((unsigned int) (uintptr_t) addr, \

@@ -120,8 +120,7 @@ zos_global_structure_setup (void)
   __ipt_zos_tcb = __get_zos_tcb_addr ();
 
   /* 2. Obtain storage for the major global structures.  */
-  void *res = __storage_obtain (ZOS_PERM_STORE_SIZE, __ipt_zos_tcb,
-				true, false);
+  void *res = __storage_obtain_simple (ZOS_PERM_STORE_SIZE);
 
   if (!res)
     CRASH_NOW ();

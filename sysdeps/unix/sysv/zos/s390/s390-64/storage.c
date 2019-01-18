@@ -221,6 +221,38 @@ __storage_obtain (unsigned int length, unsigned int tcbaddr,
 libc_hidden_def (__storage_obtain)
 
 
+/* TODO: remove this once the generic version above is working.  */
+void *
+__storage_obtain_simple (unsigned int length)
+{
+  if (length == 0 || length % 8 != 0)
+    return NULL;
+
+  uint32_t ret_addr, flags = REGULAR_OBTAIN_FLAGS;
+
+  register uint32_t r15 asm ("r15") = flags;
+  register uint32_t len asm ("r0") = length;
+
+  __asm__ __volatile__ ("lgr	%%r5, %%r1\n\t"
+			"llgt	%%r14, 16\n\t"
+			"l	%%r14, 772(%%r14)\n\t"
+			"l	%%r14, 160(%%r14)\n\t"
+			"pc	0(%%r14)\n\t"
+			"lgr	%3, %%r1\n\t"  /* Copy the storage
+						  address out of r1.  */
+			"lgr	%%r1, %%r5"    /* Don't clobber r1.  */
+			: "+r" (len), "+r" (r15), "=r" (ret_addr)
+			:
+			: "r14", "r5", "a0", "a1", /* "a14", "a15", */ "cc");
+
+  uint32_t return_code = r15;
+
+  /* Return code is 0 for a successful request.	 */
+  return return_code == 0 ? (void *) (uintptr_t) ret_addr : NULL;
+}
+libc_hidden_def (__storage_obtain_simple)
+
+
 /* C interface to a subset of STORAGE RELEASE's functionality.
    Should probably only be used with STORAGE OBTAINed storage.
    Returns 0 on success and -1 on failure.  */
@@ -230,7 +262,7 @@ __storage_release (unsigned int storage_addr, unsigned int length,
 {
   uint32_t flags, flags2, res;
   if (length == 0 || tcbaddr == 0 || storage_addr == 0)
-    return 1;
+    return -1;
 
   /* Base flags that we use for every OBTAIN request. Right now we use
      a constant fixed storage subpool, specify TCBADDR, and

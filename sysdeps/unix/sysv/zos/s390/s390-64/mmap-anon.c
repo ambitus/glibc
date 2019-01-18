@@ -132,7 +132,10 @@ __create_anon_mmap (void *addr __attribute__ ((unused)), size_t len,
   noexec = flags & PROT_EXEC;
 
   /* Allocate the mapping itself.  */
-  mapping = __storage_obtain (len, __ipt_zos_tcb, noexec, true);
+  /* mapping = __storage_obtain (len, __ipt_zos_tcb, noexec, true);  */
+  /* z/OS TODO: change this to the above when the regular call is
+     working.  */
+  mapping = __storage_obtain_simple (len);
 
   if (!mapping)
     return MAP_FAILED;

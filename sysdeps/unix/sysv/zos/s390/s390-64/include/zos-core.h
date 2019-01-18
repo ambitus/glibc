@@ -85,6 +85,10 @@ void *__storage_obtain (unsigned int length, unsigned int tcbaddr,
 			bool on_page_boundary) attribute_hidden
   __attribute_malloc__ __attribute_alloc_size__ ((1));
 
+/* TODO: remove this when the regular one works.  */
+void *__storage_obtain_simple (unsigned int length)
+  __attribute_malloc__ __attribute_alloc_size__ ((1));
+
 int __storage_release (unsigned int storage_addr, unsigned int length,
 		       unsigned int tcbaddr,
 		       bool noexec) attribute_hidden;

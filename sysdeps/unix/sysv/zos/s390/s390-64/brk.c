@@ -52,8 +52,10 @@ __brk (void *addr)
   /* A one-time large allocation associated with the IPT.  */
   if (__glibc_unlikely (!__curbrk))
     {
-      void *brk_start = __storage_obtain (BRK_AREA_SIZE, __ipt_zos_tcb,
-					  true, true);
+      /* void *brk_start = __storage_obtain (BRK_AREA_SIZE,
+	 __ipt_zos_tcb, true, true); */
+      /* z/OS TODO: revert this when regular storage obtain works.  */
+      void *brk_start = __storage_obtain_simple (BRK_AREA_SIZE);
       /* Don't set errno here, we're early in libc startup.
          Errno might not exist yet.  */
       if (!brk_start)
