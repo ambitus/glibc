@@ -36,7 +36,7 @@ override inhibit-unix-syscalls = yes
 
 ifeq ($(subdir),misc)
 sysdep_routines += storage mmap-anon lock-free tls-lookup zos-futex \
-		   syscall-trampoline
+		   syscall-trampoline estaex estaex-handler
 # Install bits/bpxystat.h, which is required by our stat.h
 sysdep_headers += bits/bpxystat.h
 endif

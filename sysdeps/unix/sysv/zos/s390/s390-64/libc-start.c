@@ -32,6 +32,7 @@
 #include <stdbool.h>
 #include <zos-utils.h>
 #include <zos-core.h>
+#include <zos-estaex.h>
 #include <zos-futex.h>
 #include <lock-free.h>
 #include <map-info.h>
@@ -232,6 +233,11 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   size_t total_args_size, ae_size;
 
   /* Do several things here.  */
+  /* 0. Set up an ESTAEX handler for debugging. */
+  int estaex_set = set_estaex_handler(estaex_handler_dump, NULL);
+  if (!estaex_set)
+    CRASH_NOW ();
+
   /* 1. Save the IPT Task Control Block address. This will be needed
 	throughout the life of the program.  */
   __ipt_zos_tcb = __get_zos_tcb_addr ();
