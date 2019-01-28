@@ -102,7 +102,7 @@ perm_store_alloc (size_t size)
   ret = (prev + 16 - 1) & ~(16 - 1);
   new_next = ret + size;
 
-  size_t new_used = __perm_store.used + prev - new_next;
+  size_t new_used = __perm_store.used + new_next - prev;
   if (new_used > ZOS_PERM_STORE_SIZE)
     CRASH_NOW ();
   __perm_store.used = new_used;
