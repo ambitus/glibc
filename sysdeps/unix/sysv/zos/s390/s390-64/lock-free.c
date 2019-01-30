@@ -640,7 +640,7 @@ libc_hidden_def (__lf_hash_table_initialize)
 #define raw_allocator(size)						\
   ({									\
     __typeof (size) _size = (size);					\
-    if (size <= PTR31_BAR)						\
+    if (size >= PTR31_BAR)						\
       crash ();								\
     __storage_obtain_simple ((unsigned int) _size);			\
   })
