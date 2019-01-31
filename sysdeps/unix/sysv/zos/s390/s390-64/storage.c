@@ -118,7 +118,7 @@ storage_request (uint32_t length, uint32_t tcbaddr,
 			"l	%%r14, 772(%%r14)\n\t"
 			"l	%%r14, 160(%%r14)\n\t"
 			"pc	0(%%r14)\n\t"
-			"lgr	%3, %%r1\n\t"  /* Copy the storage
+			"lgr	%2, %%r1\n\t"  /* Copy the storage
 						  address out of r1.  */
 			"lgr	%%r1, %%r5"    /* Don't clobber r1.  */
 			: "+r" (len), "+r" (r15), "=r" (ret_addr)
@@ -238,7 +238,7 @@ __storage_obtain_simple (unsigned int length)
 			"l	%%r14, 772(%%r14)\n\t"
 			"l	%%r14, 160(%%r14)\n\t"
 			"pc	0(%%r14)\n\t"
-			"lgr	%3, %%r1\n\t"  /* Copy the storage
+			"lgr	%2, %%r1\n\t"  /* Copy the storage
 						  address out of r1.  */
 			"lgr	%%r1, %%r5"    /* Don't clobber r1.  */
 			: "+r" (len), "+r" (r15), "=r" (ret_addr)
