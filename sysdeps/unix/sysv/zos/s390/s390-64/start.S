@@ -190,6 +190,11 @@ __fini_array_start:
 __fini_array_end:
 	br	%r0
 
+	/* z/OS TODO: This is a stopgap measure to enable our minimal
+	   elf header to work. Rework the elf header generation soon,
+	   and remove this when it's no longer needed.  */
+	.section __tls_ptr
+	.quad __tls_start
 
 /* Define a symbol for the first piece of initialized data.  */
 	.data
