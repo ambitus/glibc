@@ -1,3 +1,4 @@
 # These entries need to be in this exact order. Otherwise,
 # the wrong c files will get used.
+unix/sysv/zos/s390/s390-64/nptl
 unix/sysv/linux/s390/s390-64
