@@ -234,8 +234,8 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 
   /* Do several things here.  */
   /* 0. Set up an ESTAEX handler for debugging. */
-  int estaex_set = set_estaex_handler(estaex_handler_dump, NULL);
-  if (!estaex_set)
+  int estaex_set = set_estaex_handler (estaex_handler_dump, NULL);
+  if (estaex_set != 0)
     CRASH_NOW ();
 
   /* 1. Save the IPT Task Control Block address. This will be needed
