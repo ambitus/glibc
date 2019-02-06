@@ -676,7 +676,7 @@ alloc_subpool (object_pool *pool)
   uintptr_t mempool_head_start = (uintptr_t) raw_allocator (size);
 
   if (!mempool_head_start)
-    return NULL;
+    crash ();
 
   /* Find where the pool blocks should start.  */
   uintptr_t mempool_data_start =
@@ -709,9 +709,6 @@ __obj_pool_initialize (object_pool *new_pool, size_t block_size,
   new_pool->can_delete = can_delete;
   new_pool->initializer = initializer;
   new_pool->start = alloc_subpool (new_pool);
-
-  if (!new_pool->start)
-    crash ();
 }
 libc_hidden_def (__obj_pool_initialize)
 
@@ -727,7 +724,7 @@ __obj_pool_alloc_block (object_pool *pool)
   for (;;)
     {
       /* Always start searching from the head. Assume pool is valid.  */
-      for (prev = pool->start, curr = prev->next; curr != NULL;
+      for (prev = curr = pool->start; curr != NULL;
 	   prev = curr, curr = curr->next)
 	{
 	  for (;;)
@@ -765,8 +762,6 @@ __obj_pool_alloc_block (object_pool *pool)
 	 one. We need to make sure that the allocator we use is MT-Safe,
 	 AS-Safe, and AC-Safe.  */
       new_subpool = alloc_subpool (pool);
-      if (!new_subpool)
-	return NULL;
       new_subpool->usage |= 1;
 
       /* Add our new subpool to the list. If some other user has already
