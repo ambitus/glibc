@@ -159,14 +159,6 @@ _start:
 	/* TODO: These symbols are only here because the linker doesn't
 	   provide them like it should yet. Remove them when the linker
 	   provides them.  */
-	.globl _init
-	.type _init,@function
-	.globl _fini
-	.type _fini,@function
-_init:
-	br	%r14
-_fini:
-	br	%r14
 
 	/* Trick startup code into not running init array stuff.  */
 	.globl __preinit_array_start
