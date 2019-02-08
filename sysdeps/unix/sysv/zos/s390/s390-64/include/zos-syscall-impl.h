@@ -217,9 +217,9 @@ __map_common_oflags (int flags)
     _Static_assert (_sh > 0, "bad flag values");			\
     _sh; })
 #define shift_up(flg) \
-  zflags |= uflags & (flg) << validate_shift (ZOS_SYS_##flg, (flg))
+  zflags |= (uflags & (flg)) << validate_shift (ZOS_SYS_##flg, (flg))
 #define shift_down(flg) \
-  zflags |= uflags & (flg) >> validate_shift ((flg), ZOS_SYS_##flg)
+  zflags |= (uflags & (flg)) >> validate_shift ((flg), ZOS_SYS_##flg)
 
   shift_up (O_CREAT);
   shift_down (O_EXCL);
@@ -241,7 +241,7 @@ __map_common_oflags (int flags)
 }
 
 typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     const int32_t *options,
 			     const int32_t *mode,
 			     int32_t *retval, int32_t *retcode,
@@ -343,8 +343,9 @@ __zos_sys_open (int *errcode, const char *pathname,
 	not_creating = false;
     }
 
+  int32_t zflags = __map_common_oflags (flags);
   /* Do the syscall.  */
-  BPX_CALL (open, __bpx4opn_t, &pathname_len, &pathname, &flags,
+  BPX_CALL (open, __bpx4opn_t, &pathname_len, pathname, &zflags,
 	    &kernel_mode, &retval, errcode, &reason_code);
   /* TODO: check important reason codes. */
   /* TODO: confirm retvals are in line with what linux gives.  */
@@ -457,7 +458,7 @@ __zos_sys_write (int *errcode, int fd, const void *buf, size_t nbytes)
 /* stat and related syscalls.  */
 
 typedef void (*__bpx4sta_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     const uint32_t *statbuf_len,
 			     struct stat *statbuf,
 			     int32_t *retval, int32_t *retcode,
@@ -484,7 +485,7 @@ __zos_sys_stat (int *errcode, const char *pathname,
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
   uint32_t statbuf_len = __bpxystat_len;
-  BPX_CALL (stat, __bpx4sta_t, &pathname_len, &pathname, &statbuf_len,
+  BPX_CALL (stat, __bpx4sta_t, &pathname_len, pathname, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
   __initialize_times (statbuf);
   /* TODO: confirm retvals are in line with what linux gives.  */
@@ -514,7 +515,7 @@ __zos_sys_lstat (int *errcode, const char *pathname,
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
   uint32_t statbuf_len = __bpxystat_len;
-  BPX_CALL (lstat, __bpx4lst_t, &pathname_len, &pathname, &statbuf_len,
+  BPX_CALL (lstat, __bpx4lst_t, &pathname_len, pathname, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
   __initialize_times (statbuf);
   /* TODO: confirm retvals are in line with what linux gives.  */
@@ -873,7 +874,7 @@ __zos_sys_mprotect (int *errcode, void *addr, size_t length, int prot)
 /* Core Unix syscalls with trivial wrappers.  */
 
 typedef void (*__bpx4chm_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     const int32_t *mode,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
@@ -894,7 +895,7 @@ __zos_sys_chmod (int *errcode, const char *pathname, mode_t mode)
      to be set in chmod's mode. We haven't tested to see whether
      or not the bpx services do the same, so we mask to be safe.  */
   int32_t kernel_mode = mode & 0x0fff;
-  BPX_CALL (chmod, __bpx4chm_t, &pathname_len, &pathname, &kernel_mode,
+  BPX_CALL (chmod, __bpx4chm_t, &pathname_len, pathname, &kernel_mode,
 	    &retval, errcode, &reason_code);
   /* retvals are the same as for linux.  */
   return retval;
@@ -930,7 +931,7 @@ __zos_sys_fchmodat (int *errcode, int dirfd, const char *pathname,
 
 
 typedef void (*__bpx4cho_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     const uint32_t *owner_uid,
 			     const uint32_t *group_id,
 			     int32_t *retval, int32_t *retcode,
@@ -952,7 +953,7 @@ __zos_sys_chown (int *errcode, const char *pathname, uid_t owner,
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
   uint32_t owner_uid = owner, group_id = group;
-  BPX_CALL (chown, __bpx4cho_t, &pathname_len, &pathname, &owner_uid,
+  BPX_CALL (chown, __bpx4cho_t, &pathname_len, pathname, &owner_uid,
 	    &group_id, &retval, errcode, &reason_code);
   return retval;
 }
@@ -976,14 +977,14 @@ __zos_sys_lchown (int *errcode, const char *pathname, uid_t owner,
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
   uint32_t owner_uid = owner, group_id = group;
-  BPX_CALL (lchown, __bpx4lco_t, &pathname_len, &pathname, &owner_uid,
+  BPX_CALL (lchown, __bpx4lco_t, &pathname_len, pathname, &owner_uid,
 	    &group_id, &retval, errcode, &reason_code);
   return retval;
 }
 
 
 typedef void (*__bpx4chd_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
@@ -997,7 +998,7 @@ __zos_sys_chdir (int *errcode, const char *path)
 {
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (path, -1);
-  BPX_CALL (chdir, __bpx4chd_t, &pathname_len, &path, &retval, errcode,
+  BPX_CALL (chdir, __bpx4chd_t, &pathname_len, path, &retval, errcode,
 	    &reason_code);
   return retval;
 }
@@ -1017,7 +1018,7 @@ __zos_sys_fchdir (int *errcode, int fd)
    shared memory objects.  */
 
 typedef void (*__bpx4tru_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     uint64_t *file_length,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
@@ -1039,7 +1040,7 @@ __zos_sys_truncate (int *errcode, const char *path, off_t length)
       return -1;
     }
   uint64_t file_length = length;
-  BPX_CALL (truncate, __bpx4tru_t, &pathname_len, &path, &file_length,
+  BPX_CALL (truncate, __bpx4tru_t, &pathname_len, path, &file_length,
 	    &retval, errcode, &reason_code);
   return retval;
 }
@@ -1062,7 +1063,7 @@ __zos_sys_ftruncate (int *errcode, int fd, off_t length)
 
 
 typedef void (*__bpx4mkd_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     uint32_t *mode,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
@@ -1074,14 +1075,14 @@ __zos_sys_mkdir (int *errcode, const char *pathname, mode_t mode)
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
   uint32_t dmode = mode;
-  BPX_CALL (mkdir, __bpx4mkd_t, &pathname_len, &pathname, &dmode,
+  BPX_CALL (mkdir, __bpx4mkd_t, &pathname_len, pathname, &dmode,
 	    &retval, errcode, &reason_code);
   return retval;
 }
 
 
 typedef void (*__bpx4rmd_t) (const uint32_t *pathname_len,
-			     const char * const *pathname,
+			     const char *pathname,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
@@ -1091,7 +1092,7 @@ __zos_sys_rmdir (int *errcode, const char *pathname)
 {
   int32_t retval, reason_code;
   uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
-  BPX_CALL (rmdir, __bpx4rmd_t, &pathname_len, &pathname, &retval,
+  BPX_CALL (rmdir, __bpx4rmd_t, &pathname_len, pathname, &retval,
 	    errcode, &reason_code);
   return retval;
 }
