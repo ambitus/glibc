@@ -170,6 +170,66 @@ __initialize_times (struct stat *statbuf)
 #endif
 }
 
+/* An ISO-88591 to IBM-1047 (or something like it) conversion table.
+
+   z/OS TODO: Test this table thoroughly, I think LF and NL might be
+   swapped.
+
+   z/OS TODO: This conversion table is a stopgap measure. There are some
+   very serious decisions about locale and filesystem encoding that need
+   to be made. Most filesystems can have a variety of encodings, all at
+   the same time. UTF-8 is the most common (except on windows). How
+   robust is the kernel's filename handling? The '/' character seems like
+   it MUST be EBCDIC. What about un-mappable characters? Should we check
+   LANG and replace all unrepresetable chars with '?'s?
+
+   z/OS TODO: This is going to be replicated in an unconscionable number
+   of translation units. Seriously, I need to tear this file apart. */
+
+static const unsigned char a_to_1047[256] =
+  {
+    0x00, 0x01, 0x02, 0x03, 0x37, 0x2D, 0x2E, 0x2F, 0x16, 0x05, 0x15,
+    0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x3C, 0x3D,
+    0x32, 0x26, 0x18, 0x19, 0x3F, 0x27, 0x1C, 0x1D, 0x1E, 0x1F, 0x40,
+    0x5A, 0x7F, 0x7B, 0x5B, 0x6C, 0x50, 0x7D, 0x4D, 0x5D, 0x5C, 0x4E,
+    0x6B, 0x60, 0x4B, 0x61, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6,
+    0xF7, 0xF8, 0xF9, 0x7A, 0x5E, 0x4C, 0x7E, 0x6E, 0x6F, 0x7C, 0xC1,
+    0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xD1, 0xD2, 0xD3,
+    0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6,
+    0xE7, 0xE8, 0xE9, 0xAD, 0xE0, 0xBD, 0x5F, 0x6D, 0x79, 0x81, 0x82,
+    0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x91, 0x92, 0x93, 0x94,
+    0x95, 0x96, 0x97, 0x98, 0x99, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7,
+    0xA8, 0xA9, 0xC0, 0x4F, 0xD0, 0xA1, 0x07, 0x20, 0x21, 0x22, 0x23,
+    0x24, 0x25, 0x06, 0x17, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x09, 0x0A,
+    0x1B, 0x30, 0x31, 0x1A, 0x33, 0x34, 0x35, 0x36, 0x08, 0x38, 0x39,
+    0x3A, 0x3B, 0x04, 0x14, 0x3E, 0xFF, 0x41, 0xAA, 0x4A, 0xB1, 0x9F,
+    0xB2, 0x6A, 0xB5, 0xBB, 0xB4, 0x9A, 0x8A, 0xB0, 0xCA, 0xAF, 0xBC,
+    0x90, 0x8F, 0xEA, 0xFA, 0xBE, 0xA0, 0xB6, 0xB3, 0x9D, 0xDA, 0x9B,
+    0x8B, 0xB7, 0xB8, 0xB9, 0xAB, 0x64, 0x65, 0x62, 0x66, 0x63, 0x67,
+    0x9E, 0x68, 0x74, 0x71, 0x72, 0x73, 0x78, 0x75, 0x76, 0x77, 0xAC,
+    0x69, 0xED, 0xEE, 0xEB, 0xEF, 0xEC, 0xBF, 0x80, 0xFD, 0xFE, 0xFB,
+    0xFC, 0xBA, 0xAE, 0x59, 0x44, 0x45, 0x42, 0x46, 0x43, 0x47, 0x9C,
+    0x48, 0x54, 0x51, 0x52, 0x53, 0x58, 0x55, 0x56, 0x57, 0x8C, 0x49,
+    0xCD, 0xCE, 0xCB, 0xCF, 0xCC, 0xE1, 0x70, 0xDD, 0xDE, 0xDB, 0xDC,
+    0x8D, 0x8E, 0xDF
+  };
+
+static inline uint32_t
+translate_and_check_size (const char *str, char ebcstr[PATH_MAX])
+{
+  /* z/OS TODO: z/Arch is wonderful, in an insane kind of way. The TROO
+     instruction can be used to check the length of a string and place a
+     translated version of it in a different memory location at the same
+     time. Use it, though check the ETF2 PSA bit first. It's a formality,
+     really, but we should still do it.  */
+  unsigned int i;
+  for (i = 0; i < PATH_MAX; i++)
+    if ((ebcstr[i] = a_to_1047[(unsigned char) str[i]]) == 0)
+      break;
+  return i;
+}
+
+
 /***************************************************
  * Syscall wrappers
  ***************************************************/
@@ -265,7 +325,14 @@ __zos_sys_open (int *errcode, const char *pathname,
 		int flags, mode_t mode)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  char translated_path[PATH_MAX];
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
 
   /* We use the linux values for the user-visible O_* constants, but
      then we translate them to the proper z/OS constants, and to an
@@ -345,7 +412,7 @@ __zos_sys_open (int *errcode, const char *pathname,
 
   int32_t zflags = __map_common_oflags (flags);
   /* Do the syscall.  */
-  BPX_CALL (open, __bpx4opn_t, &pathname_len, pathname, &zflags,
+  BPX_CALL (open, __bpx4opn_t, &path_len, translated_path, &zflags,
 	    &kernel_mode, &retval, errcode, &reason_code);
   /* TODO: check important reason codes. */
   /* TODO: confirm retvals are in line with what linux gives.  */
@@ -483,9 +550,17 @@ __zos_sys_stat (int *errcode, const char *pathname,
 		struct stat *statbuf)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  char translated_path[PATH_MAX];
   uint32_t statbuf_len = __bpxystat_len;
-  BPX_CALL (stat, __bpx4sta_t, &pathname_len, pathname, &statbuf_len,
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (stat, __bpx4sta_t, &path_len, translated_path, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
   __initialize_times (statbuf);
   /* TODO: confirm retvals are in line with what linux gives.  */
@@ -513,9 +588,17 @@ __zos_sys_lstat (int *errcode, const char *pathname,
 		 struct stat *statbuf)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  char translated_path[PATH_MAX];
   uint32_t statbuf_len = __bpxystat_len;
-  BPX_CALL (lstat, __bpx4lst_t, &pathname_len, pathname, &statbuf_len,
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (lstat, __bpx4lst_t, &path_len, translated_path, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
   __initialize_times (statbuf);
   /* TODO: confirm retvals are in line with what linux gives.  */
@@ -890,12 +973,20 @@ __zos_sys_chmod (int *errcode, const char *pathname, mode_t mode)
 {
   /* TODO: Figure out how to avoid IBM's S_ISVTX executable behavior.  */
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  char translated_path[PATH_MAX];
   /* TODO: this mask might be unnecessary. Linux allows extra bits
      to be set in chmod's mode. We haven't tested to see whether
      or not the bpx services do the same, so we mask to be safe.  */
   int32_t kernel_mode = mode & 0x0fff;
-  BPX_CALL (chmod, __bpx4chm_t, &pathname_len, pathname, &kernel_mode,
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (chmod, __bpx4chm_t, &path_len, translated_path, &kernel_mode,
 	    &retval, errcode, &reason_code);
   /* retvals are the same as for linux.  */
   return retval;
@@ -951,9 +1042,17 @@ __zos_sys_chown (int *errcode, const char *pathname, uid_t owner,
 		 gid_t group)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  char translated_path[PATH_MAX];
   uint32_t owner_uid = owner, group_id = group;
-  BPX_CALL (chown, __bpx4cho_t, &pathname_len, pathname, &owner_uid,
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (chown, __bpx4cho_t, &path_len, translated_path, &owner_uid,
 	    &group_id, &retval, errcode, &reason_code);
   return retval;
 }
@@ -975,9 +1074,17 @@ __zos_sys_lchown (int *errcode, const char *pathname, uid_t owner,
 		  gid_t group)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
   uint32_t owner_uid = owner, group_id = group;
-  BPX_CALL (lchown, __bpx4lco_t, &pathname_len, pathname, &owner_uid,
+  char translated_path[PATH_MAX];
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (lchown, __bpx4lco_t, &path_len, translated_path, &owner_uid,
 	    &group_id, &retval, errcode, &reason_code);
   return retval;
 }
@@ -997,9 +1104,17 @@ static inline int
 __zos_sys_chdir (int *errcode, const char *path)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (path, -1);
-  BPX_CALL (chdir, __bpx4chd_t, &pathname_len, path, &retval, errcode,
-	    &reason_code);
+  char translated_path[PATH_MAX];
+  uint32_t path_len = translate_and_check_size (path, translated_path);
+
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (chdir, __bpx4chd_t, &path_len, translated_path, &retval,
+	    errcode, &reason_code);
   return retval;
 }
 
@@ -1033,15 +1148,23 @@ static inline int
 __zos_sys_truncate (int *errcode, const char *path, off_t length)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (path, -1);
+  char translated_path[PATH_MAX];
+  uint64_t file_length = length;
+  uint32_t path_len = translate_and_check_size (path, translated_path);
+
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
   if (length < 0)
     {
       *errcode = EINVAL;
       return -1;
     }
-  uint64_t file_length = length;
-  BPX_CALL (truncate, __bpx4tru_t, &pathname_len, path, &file_length,
-	    &retval, errcode, &reason_code);
+  BPX_CALL (truncate, __bpx4tru_t, &path_len, translated_path,
+	    &file_length, &retval, errcode, &reason_code);
   return retval;
 }
 
@@ -1073,9 +1196,17 @@ static inline int
 __zos_sys_mkdir (int *errcode, const char *pathname, mode_t mode)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
+  char translated_path[PATH_MAX];
   uint32_t dmode = mode;
-  BPX_CALL (mkdir, __bpx4mkd_t, &pathname_len, pathname, &dmode,
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (mkdir, __bpx4mkd_t, &path_len, translated_path, &dmode,
 	    &retval, errcode, &reason_code);
   return retval;
 }
@@ -1091,8 +1222,16 @@ static inline int
 __zos_sys_rmdir (int *errcode, const char *pathname)
 {
   int32_t retval, reason_code;
-  uint32_t pathname_len = SAFE_PATHLEN_OR_FAIL_WITH (pathname, -1);
-  BPX_CALL (rmdir, __bpx4rmd_t, &pathname_len, pathname, &retval,
+  char translated_path[PATH_MAX];
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (rmdir, __bpx4rmd_t, &path_len, translated_path, &retval,
 	    errcode, &reason_code);
   return retval;
 }
