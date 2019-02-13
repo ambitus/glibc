@@ -83,7 +83,7 @@ extern uintptr_t __bpx_call_table attribute_hidden;
       "Some functionality in the z/OS port of glibc has not yet been "	\
       "fully implemented. Unimplemented at "				\
       _SHIM_STRINGIFY (__FILE__) ":" _SHIM_STRINGIFY (__LINE__) "\n"	\
-      "Additional info: " msg;						\
+      "Additional info: " msg "\n";					\
     __zos_sys_write (2, __errmsg, sizeof (__errmsg));			\
   })
 # define SHIM_NOT_YET_IMPLEMENTED_FATAL(msg, retval) \
