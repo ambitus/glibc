@@ -522,6 +522,37 @@ __zos_sys_write (int *errcode, int fd, const void *buf, size_t nbytes)
 }
 
 
+typedef void (*__bpx4wrv_t) (const int32_t *fd,
+			     const int32_t *iov_count,
+			     const struct iovec *iov,
+			     const int32_t *iov_alet,
+			     const int32_t *iov_buffer_alet,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline ssize_t
+__zos_sys_writev (int *errcode,
+		  int fd, const struct iovec *iov, int iovcnt)
+{
+  /* TODO: Allow users to optionally specify the buffer ALET in some
+     way that cannot potentially break compatibility with other
+     platforms. Do this for all syscalls using ALETs.
+
+     TODO: Apparently, the system does absolutely no checking on how
+     many bytes are to be written, so we should probably do some sort
+     of validation.  */
+
+  /* As it turns out, the z/OS format for iovecs exactly matches
+     the Linux format.  */
+  int32_t retval, reason_code;
+  const int32_t alet = 0;
+
+  BPX_CALL (writev, __bpx4wrv_t, &fd,
+	    &iovcnt, iov, &alet, &alet, &retval, errcode, &reason_code);
+  return retval;
+}
+
+
 /* stat and related syscalls.  */
 
 typedef void (*__bpx4sta_t) (const uint32_t *pathname_len,
