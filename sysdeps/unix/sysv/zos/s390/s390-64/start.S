@@ -39,19 +39,48 @@
    TODO: Make this work with shared stuff.  */
 
 #include <zos-core.h>
+#include <sysdep.h>
+
+/*
+   This is the canonical entry point, usually the first thing in the text
+   segment. Most registers' values are unspecified, except for:
+
+   %r0		Maybe something, at some point?
+		TODO: Initialize r0 with rtld_fini, like %r14 is on
+		zLinux.
+   %r1		Pointer to a structure that contains the program
+		arguments and environment in the kernel's format.
+   %r12		?
+		TODO: Anything interesting?
+   %r13		Pointer to a DSA.
+   %r14		Return address. Technically we should branch here on
+		exit, however I'm not sure how necessary that is.
+		TODO: Check how necessary that is. Looks like ret addr is
+		a stub that sets %r15 to retcode then does an SVC 3,
+		at least for exec()ed programs.
+   %r15		?
+*/
 
 	.text
 	.align 8  /* TODO: confirm this.  */
 	.globl _start
 	.type _start,@function
 _start:
-	/* cfi_startproc */	/* TODO: undo this when .eh_header works  */
-	/* cfi_undefined (r14) */
+	cfi_startproc
+	cfi_undefined (r14)
 
-	/* TODO: Figure out how to stop unwinding here.  */
-
-	/* Save initial registers.  */
+	/* Save initial registers.
+	   TODO: Do we need to do this? Do we need to restore them?  */
 	stmg	%r14, %r12, 8(%r13)
+
+	/* TODO: This is a stopgap measure. Until we figure out what to
+	   do about rtld_fini, we're just going to pass in NULL.  */
+	lghi	%r0, 0
+
+	/* Prevent the value we got in %r1 and %r0 from being clobbered
+	   by the storage call.  */
+	lgr	%r3, %r1
+	lgr	%r4, %r0
 
 	/* Obtain storage
 
@@ -78,8 +107,7 @@ _start:
 	/* TODO: Check if the call failed here.  */
 
 	/* TODO: ensure 16-byte stack alignment. They do it on z/Linux so
-	presumably there's a reason.  */
-
+	   presumably there's a reason.  */
 
 	/* Store address of our next DSA in old DSA.  */
 	stg	%r1, 136(%r13)
@@ -94,67 +122,29 @@ _start:
 	st	%r14, 4(%r13)
 
 	/* Initialize NAB  */
-	la	%r14, 208(%r13)
+	la	%r14, 184(%r13)
 	stg	%r14, 136(%r13)		/* Fake NAB (144(%r13)) unused.  */
 
-	/* Set up args for __libc_start_main */
-	/* __libc_start_main (main, argc, argv, init, fini, rtld_fini,
-	   stack_end) */
+	/* Set up args for __libc_start_main. Our __libc_start_main
+	   is not the generic one, and it takes slightly different
+	   args.  */
 
-	/* TODO: Figure out where argc, argv, and envp are.  */
+	/* __libc_start_main (main, arg_info, rtld_fini, stack_end)  */
 
 	larl	%r2, main
-	stg	%r2, 152(%r13)
-
-	lghi	%r2, 0	/* TODO: this should be argc.  */
-	stg	%r2, 160(%r13)
-	lghi	%r2, 0	/* TODO: this should be argv.  */
-	stg	%r2, 168(%r13)
-
-	larl	%r2, __libc_csu_init
-	stg	%r2, 176(%r13)
-	larl	%r2, __libc_csu_fini
-	stg	%r2, 184(%r13)
-
-	lghi	%r2, 0	/* TODO: this should be rtld_fini.  */
-	stg	%r2, 192(%r13)
-
-	stg	%r13, 200(%r13)	/* stack_end  */
+	lgr	%r5, %r13		# stack_end
+	stmg	%r2, %r5, 152(%r13)	# Store params to arglist.
 
 	la	%r1, 152(%r13)	/* load arg pointer into r1.  */
 
-	/* TODO: ensure we are dubbed before calling main.  */
 	brasl	%r14, __libc_start_main
 
-	/* TODO: normal glibc start.S code doesn't return.  */
-
-	/* Release storage  */
-	lgr	%r1, %r13
-	lg	%r13, 128(%r13)
-	stg	%r15, 16(%r13)
-	larl	%r15, .Lmain_stack_length
-	l	%r0, 0(%r15)
-	l	%r15, .Lmain_stack_rel_flags-.Lmain_stack_length(%r15)
-	llgt	%r14, 16
-	l	%r14, 772(%r14)
-	l	%r14, 204(%r14)
-	pc	0(%r14)
-
-	/* Branch back to caller TODO: this needs work  */
-	lg	%r15, 16(%r13)
-	lg	%r14, 8(%r13)
-	lmg	%r1, %r3, 32(%r13)
-	/* TODO return value?  */
-	br	%r14
-
-	/* cfi_endproc */	/* TODO: see above.  */
+	cfi_endproc
 
 .Lmain_stack_length:
 	.long 10 * (1 << 20)	/* 10 MiB  */
 .Lmain_stack_flags:
 	.long REGULAR_OBTAIN_FLAGS  /* Flags for STORAGE OBTAIN.  */
-.Lmain_stack_rel_flags:
-	.long REGULAR_RELEASE_FLAGS  /* Flags for STORAGE RELEASE.  */
 
 	/* TODO: These symbols are only here because the linker doesn't
 	   provide them like it should yet. Remove them when the linker
@@ -180,7 +170,7 @@ __init_array_start:
 __init_array_end:
 __fini_array_start:
 __fini_array_end:
-	br	%r0
+	br	%r14
 
 	/* z/OS TODO: This is a stopgap measure to enable our minimal
 	   elf header to work. Rework the elf header generation soon,
