@@ -1,6 +1,7 @@
-/* Run-time dynamic linker data structures for loaded ELF shared objects.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+/* Determine realtime clock frequency.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -16,16 +17,16 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#ifndef	_LDSODEFS_H
+#include <sys/time.h>
+#include <libc-internal.h>
 
-/* Get the real definitions.  */
-#include_next <ldsodefs.h>
-
-/* We don't have the auxiliary vector.  */
-#undef HAVE_AUX_VECTOR
-
-#undef HAVE_AUX_XID
-#undef HAVE_AUX_SECURE
-#undef HAVE_AUX_PAGESIZE
-
-#endif /* ldsodefs.h */
+/* TODO: Implement this for real.  */
+int
+__profile_frequency (void)
+{
+  return 100;
+}
+libc_hidden_def (__profile_frequency)
+link_warning (__getclktck, "warning: __profile_frequency is not yet "
+			   "properly implemented and always returns "
+			   "100.")
