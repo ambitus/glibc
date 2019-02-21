@@ -61,8 +61,12 @@ extern uintptr_t __bpx_call_table attribute_hidden;
 #include <string.h>  /* for strnlen.  */
 #include <unimplemented.h>
 
-#define BPX_CALL(name, ftype, args...) \
-  (((ftype) (BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name)))) (args))
+extern void __bpxk_syscall (void *, ...);
+
+/* I miss type checking...  */
+#define BPX_CALL(name, ftype, args...)					\
+  ((__bpxk_syscall							\
+    ((BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name))), ## args)))
 
 #define SHIM_RETURN_UNSUPPORTED(retval)		\
   ({						\
