@@ -121,12 +121,22 @@ STATIC int LIBC_START_MAIN (int (*main) (int, char **, char **
 			    void *stack_end)
      __attribute__ ((noreturn));
 
+#ifdef __ZOS__
+     /* z/OS TODO: Part 1 of working around a nasty GCC bug. Remove when fixed.  */
+     extern int main (int, char **, char ** MAIN_AUXVEC_DECL);
+#endif
+
 
 /* Note: the fini parameter is ignored here for shared library.  It
    is registered with __cxa_atexit.  This had the disadvantage that
    finalizers were called in more than one place.  */
 STATIC int
+#ifdef __ZOS__
+     /* z/OS TODO: Part 2 of working around a nasty GCC bug. Remove when fixed.  */
+LIBC_START_MAIN (int (*dummy) (int, char **, char ** MAIN_AUXVEC_DECL) __attribute__ ((unused)),
+#else
 LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
+#endif
 		 int argc, char **argv,
 #ifdef LIBC_START_MAIN_AUXVEC_ARG
 		 ElfW(auxv_t) *auxvec,
@@ -218,9 +228,13 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
     }
 # endif
 
+  /* z/OS TODO: work around our lack of unresolved weak ref support.
+     Remove when fixed.  */
+#ifndef __ZOS__
   /* Initialize libpthread if linked in.  */
   if (__pthread_initialize_minimal != NULL)
     __pthread_initialize_minimal ();
+#endif
 
   /* Set up the pointer guard value.  */
   uintptr_t pointer_chk_guard = _dl_setup_pointer_guard (_dl_random,
@@ -233,9 +247,12 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 
 #endif /* !SHARED  */
 
+  /* z/OS TODO: Work around a bug in __cxa_atexit. Remove when fixed.  */
+#ifndef __ZOS__
   /* Register the destructor of the dynamic linker if there is any.  */
   if (__glibc_likely (rtld_fini != NULL))
     __cxa_atexit ((void (*) (void *)) rtld_fini, NULL, NULL);
+#endif
 
 #ifndef SHARED
   /* Call the initializer of the libc.  This is only needed here if we
@@ -243,9 +260,12 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
      run the constructors in `_dl_start_user'.  */
   __libc_init_first (argc, argv, __environ);
 
+  /* z/OS TODO: Work around a bug in __cxa_atexit. Remove when fixed.  */
+#ifndef __ZOS__
   /* Register the destructor of the program, if any.  */
   if (fini)
     __cxa_atexit ((void (*) (void *)) fini, NULL, NULL);
+#endif
 
   /* Some security at this point.  Prevent starting a SUID binary where
      the standard file descriptors are not opened.  We have to do this
@@ -260,8 +280,11 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   if (__builtin_expect (GLRO(dl_debug_mask) & DL_DEBUG_IMPCALLS, 0))
     GLRO(dl_debug_printf) ("\ninitialize program: %s\n\n", argv[0]);
 #endif
+  /* z/OS TODO: Work around a bug... somewhere. Remove when fixed.  */
+#ifndef __ZOS__
   if (init)
     (*init) (argc, argv, __environ MAIN_AUXVEC_PARAM);
+#endif
 
 #ifdef SHARED
   /* Auditing checkpoint: we have a new object.  */
@@ -287,6 +310,7 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 #ifndef SHARED
   _dl_debug_initialize (0, LM_ID_BASE);
 #endif
+
 #ifdef HAVE_CLEANUP_JMP_BUF
   /* Memory for the cancellation buffer.  */
   struct pthread_unwind_buf unwind_buf;
