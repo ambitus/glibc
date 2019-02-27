@@ -38,6 +38,11 @@ attribute_hidden
 __run_exit_handlers (int status, struct exit_function_list **listp,
 		     bool run_list_atexit, bool run_dtors)
 {
+#ifdef __ZOS__
+  /* z/OS TODO: This is a hack to get around the weak symbol linker bug.
+     Remove this as soon as possible.  */
+  _exit (status);
+#endif
   /* First, call the TLS destructors.  */
 #ifndef SHARED
   if (&__call_tls_dtors != NULL)

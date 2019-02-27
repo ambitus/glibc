@@ -813,6 +813,28 @@ __zos_sys_readlinkat (int *errcode, int dirfd,
 }
 
 
+typedef void (*__bpx4exi_t) (const int32_t *status);
+
+static inline int
+__zos_sys_exit_group (int *errcode __attribute__ ((unused)), int status)
+{
+  /* Somewhat confusingly, our _exit() act's like linux's exit_group().
+
+     TODO: what happens on linux when a thread invokes _exit?
+     What happens to other threads in the process? Emulate this.
+     TODO: We need to figure out how to emulate exit_group().
+     TODO: The current syscall handling macros don't allow void syscalls,
+     so extra code is being generated.  */
+
+  status = (status & 0xff) << 8;
+
+  BPX_CALL (_exit, __bpx4exi_t, &status);
+
+  /* If we did return, something went terribly wrong.  */
+  return -1;
+}
+
+
 /* mmap and related syscalls.  */
 
 /* ret_map_addr below is actualy a void *, but glibc expects it to
