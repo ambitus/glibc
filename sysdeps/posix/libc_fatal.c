@@ -75,6 +75,8 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
   FATAL_PREPARE;
 #endif
 
+#ifndef __ZOS__
+  /* z/OS TODO: Hack to get libc_fatal output to be readable.  */
   /* Don't call __libc_secure_getenv if we aren't doing backtrace, which
      may access the corrupted stack.  */
   if ((action & do_backtrace))
@@ -85,6 +87,7 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
       if (on_2 == NULL || *on_2 == '\0')
 	fd = __open_nocancel (_PATH_TTY, O_RDWR | O_NOCTTY | O_NDELAY);
     }
+#endif
 
   if (fd == -1)
     fd = STDERR_FILENO;
@@ -178,6 +181,10 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
 	BEFORE_ABORT (do_abort, written, fd);
 
       /* Kill the application.  */
+#ifdef __ZOS__
+      /* z/OS TODO: Hack to get libc_fatal to kill us without signals.  */
+      _Exit (-1);
+#endif
       abort ();
     }
 }
