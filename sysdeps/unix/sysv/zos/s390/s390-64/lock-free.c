@@ -61,13 +61,7 @@
    our cache lines are huge (256 bytes, which is 8 nodes worth of
    storage).  */
 
-/* TODO: Use hazard pointers to truely free some memory.
-   Specifically, using hazard pointers would make the size of unreusable
-   memory a function of the maximum number of threads that have ever
-   concurrently used all lists/hashtables, rather than a function
-   of the maximum number of entries ever valid at once.
-   TODO: Use GCC builtin atomics.
-   TODO: Use constrained transactions where possible.  */
+/* TODO: Use constrained transactions if possible.  */
 
 /* PORTME: At the moment, the code only works for 64-bit mode
    on z/Arch, however it could be easily modified to work in
@@ -541,7 +535,7 @@ __lfl_remove_and_splice (uint64_t key, lfl_action accept,
 {
   lfl_node_t *sublist_start, *sublist_end;
 
-  if (key == 0 || list->type == lfl_set)
+  if (key == 0 || list->type != lfl_set)
     return 0;
 
   sublist_start = (lfl_node_t *) sublist->start.next.nextptr;
@@ -621,12 +615,12 @@ libc_hidden_def (__lf_hash_table_initialize)
    it's the simplest and safest lock-free implementation that I can
    think of right now that doesn't make use of TLS.
 
-   I needs to be a fixed-size allocator because the chosen algorithm
+   It needs to be a fixed-size allocator because the list algorithm
    does not allow the memory used by lfl_nodes to be split or
    apportioned after it is originaly allocated, but it does allow reuse.
    It's primary designed for lfl_nodes, but it will work for any type.
 
-   No provision is made for freeing unsed subpools by default.
+   No provision is made for freeing unused subpools by default.
 
    Potential TODOs:
      * Find a better implementation.
@@ -754,7 +748,6 @@ __obj_pool_alloc_block (object_pool *pool)
 				     + pos * pool->block_size);
 
 		  }
-	      __builtin_unreachable ();
 	    }
 	}
 
