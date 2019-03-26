@@ -65,7 +65,7 @@
 
 struct bpxk_arg_list
   {
-    uint32_t count;
+    uint32_t *count;
     uint32_t **lens;
     char     **vals;
   };
@@ -193,7 +193,7 @@ size_t
 args_min_size (struct bpxk_arg_list *arglist)
 {
   size_t total = 0;
-  for (uint32_t i = 0; i < arglist->count; i++)
+  for (uint32_t i = 0; i < *arglist->count; i++)
     total += *arglist->lens[i] + 1;
 
   return total;
@@ -205,7 +205,7 @@ void
 translate_and_copy_args (char **dest, struct bpxk_arg_list *arglist)
 {
   size_t narg;
-  for (narg = 0; narg < arglist->count; narg++)
+  for (narg = 0; narg < *arglist->count; narg++)
     {
       uint32_t arg_len = *arglist->lens[narg];
       char *tr_arg = perm_store_alloc (arg_len + 1, false);
@@ -242,7 +242,7 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 
   /*  Total size of the argv/argp array.  */
   ae_size =
-    (arg_info.argv.count + arg_info.argp.count + 2) * sizeof (char *);
+    (*arg_info.argv.count + *arg_info.argp.count + 2) * sizeof (char *);
 
   total_args_size = roundup16 (ae_size);
   total_args_size += roundup16 (args_min_size (&arg_info.argv));
@@ -260,12 +260,12 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Allocate the argv/p array itself.  */
   args_and_envs = perm_store_alloc (ae_size, true);
 
-  char **argp_start = &args_and_envs[arg_info.argv.count + 1];
+  char **argp_start = &args_and_envs[*arg_info.argv.count + 1];
   translate_and_copy_args (args_and_envs, &arg_info.argv);
   translate_and_copy_args (argp_start, &arg_info.argp);
 
   /* 4. Do the regular __libc_start_main stuff.  */
-  generic_start_main (main, arg_info.argv.count, args_and_envs,
+  generic_start_main (main, *arg_info.argv.count, args_and_envs,
 		      (__typeof (main)) __libc_csu_init,
 		      __libc_csu_fini, rtld_fini, stack_end);
 
