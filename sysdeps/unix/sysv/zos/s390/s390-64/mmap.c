@@ -35,6 +35,8 @@ __mmap64 (void *addr, size_t len, int prot, int flags, int fd,
 
   if (flags & MAP_ANONYMOUS)
     {
+      void *ret;
+
       if ((flags & MAP_SHARED) == MAP_SHARED
 	  || (flags & MAP_SHARED_VALIDATE) == MAP_SHARED_VALIDATE
 	  || (~prot & (PROT_READ | PROT_WRITE)))
@@ -49,11 +51,15 @@ __mmap64 (void *addr, size_t len, int prot, int flags, int fd,
 	  return MAP_FAILED;
 	}
 
-      if (__create_anon_mmap (addr, len, prot, flags) == MAP_FAILED)
+      ret = __create_anon_mmap (addr, len, prot, flags);
+
+      if (ret == MAP_FAILED)
 	{
 	  __set_errno (ENOMEM);
 	  return MAP_FAILED;
 	}
+
+      return ret;
     }
 
   return (void *) INLINE_SYSCALL_CALL (mmap, addr, len, prot, flags, fd, offset);
