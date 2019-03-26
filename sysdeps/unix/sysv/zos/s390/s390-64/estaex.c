@@ -17,48 +17,55 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <zos-core.h>
 #include <zos-estaex.h>
 
-/* Modify with care. This struct is referenced in assembly. */
-struct estaex_handler_data {
-  void (*user_handler)(struct sdwa *, void *);
-  void *user_data;
-};
-
-char estaex_stack[1 << 20];
-
-extern void (*estaex_handler)(void);
-
-int set_estaex_handler(void (*user_handler)(struct sdwa *, void *), void *user_data) {
+int
+__set_estaex_handler (void (*user_handler) (struct sdwa *, void *),
+		      void *user_data)
+{
+  void *storage, *parm_list;
+  struct estaex_handler_data *handler_data;
+  uintptr_t aligned1, alloc_size;
   int return_code, reason_code;
 
-  /* TODO: This must be below the bar */
-  static char parm_list[24];
+  /* Calculate aligned storage requirements.  */
+  alloc_size = aligned1 = (sizeof (*handler_data) + 7) & ~7;
+  alloc_size += SIZEOF_ESTAEX_PARM_LIST;
+  /* Align again because storage obtain only handles multiples of 8.  */
+  alloc_size = (alloc_size + 7) & ~7;
 
-  /* TODO: storage obtain this */
-  static struct estaex_handler_data data;
-  data.user_handler = user_handler;
-  data.user_data = user_data;
+  /* Acquire some below-the-bar storage. It will live for as long
+     as the program does.  */
+  storage = __storage_obtain_simple (alloc_size);
 
-  __asm__ __volatile__(
-      "lgr  %%r1, %4\n\t"
-      "st   %2, 16(%%r1)\n\t"
-      "ni   0(%%r1), 223\n\t"
-      "oi   0(%%r1), 4\n\t"
-      "stg  %3, 8(%%r1)\n\t"
-      "mvi  3(%%r1), 1\n\t"
-      "la   %%r0, 0\n\t"
-      "llgt %%r14, 16\n\t"
-      "l    %%r14, 772(%%r14)\n\t"
-      "l    %%r14, 176(%%r14)\n\t"
-      "pc   0(%%r14)\n\t"
-      "lr   %0, %%r15\n\t"
-      "lr   %1, %%r0\n\t"
-      : "=r" (return_code), "=r" (reason_code)
-      : "r" (&estaex_handler), "r" (&data), "r" (parm_list)
-      : "r0", "r1", "r14", "r15");
+  /* These must be below the bar */
+  handler_data = storage;
+  parm_list = (void *) ((uintptr_t)storage + aligned1);
+
+  handler_data->user_handler = user_handler;
+  handler_data->user_data = user_data;
+
+  __asm__ __volatile__ ("lgr  %%r1, %4\n\t"
+			"st   %2, 16(%%r1)\n\t"
+			"ni   0(%%r1), 223\n\t"
+			"oi   0(%%r1), 4\n\t"
+			"stg  %3, 8(%%r1)\n\t"
+			"mvi  3(%%r1), 1\n\t"
+			"la   %%r0, 0\n\t"
+			"llgt %%r14, 16\n\t"
+			"l    %%r14, 772(%%r14)\n\t"
+			"l    %%r14, 176(%%r14)\n\t"
+			"pc   0(%%r14)\n\t"
+			"lr   %0, %%r15\n\t"
+			"lr   %1, %%r0\n\t"
+			: "=r" (return_code), "=r" (reason_code)
+			: "r" (&__estaex_handler_wrapper),
+			  "r" (handler_data), "r" (parm_list)
+			: "r0", "r1", "r14", "r15");
 
   return return_code;
 }
@@ -216,7 +223,7 @@ void dump_buffer(const char *buffer, int length)
   }
 }
 
-void estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
+void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
   ext_printf("*** ESTAEX TRIGGERED ***\n");
 
   ext_printf("\n");

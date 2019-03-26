@@ -22,6 +22,8 @@
 
 #include <stdint.h>
 
+#define SIZEOF_ESTAEX_PARM_LIST 24
+
 /* TODO: expand each of these mappings */
 
 struct sdwaptrs {
@@ -78,11 +80,18 @@ struct sdwa {
   uint8_t pad3[292];
 };
 
-/* TODO: kludge for now until storage obtain is working */
-extern char estaex_stack[1 << 20];
+/* Modify with care. This struct is referenced in assembly. */
+struct estaex_handler_data {
+  void (*user_handler) (struct sdwa *, void *);
+  void *user_data;
+};
 
-int set_estaex_handler(void (*user_handler)(struct sdwa *, void *), void *user_data);
-void estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data);
+/* z/OS TODO: make these hidden.  */
 
-#endif
+extern int __set_estaex_handler (void (*) (struct sdwa *, void *),
+				 void *);
+extern void __estaex_handler_dump (struct sdwa *, void *);
+extern void (*__estaex_handler_wrapper) (void);
 
+
+#endif  /* _ZOS_ESTAEX_H  */

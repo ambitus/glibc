@@ -233,16 +233,16 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   size_t total_args_size, ae_size;
 
   /* Do several things here.  */
-  /* 0. Set up an ESTAEX handler for debugging. */
-  int estaex_set = set_estaex_handler (estaex_handler_dump, NULL);
+  /* 1. Save the IPT Task Control Block address. This will be needed
+     throughout the life of the program.  */
+  __ipt_zos_tcb = __get_zos_tcb_addr ();
+
+  /* 2. Set up an ESTAEX handler for debugging. */
+  int estaex_set = __set_estaex_handler (__estaex_handler_dump, NULL);
   if (estaex_set != 0)
     CRASH_NOW ();
 
-  /* 1. Save the IPT Task Control Block address. This will be needed
-	throughout the life of the program.  */
-  __ipt_zos_tcb = __get_zos_tcb_addr ();
-
-  /* 2. Obtain storage for and initialize the major global structures.
+  /* 3. Obtain storage for and initialize the major global structures.
 	We will use the same storage area for the translated
 	args/environ.  */
 
@@ -260,7 +260,7 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Initialize structures.  */
   global_structures_init ();
 
-  /* 3. Convert argv and argc into a Linux-like format, and convert to
+  /* 4. Convert argv and argc into a Linux-like format, and convert to
 	EBCDIC. Note that argv[argc + 1] must be __environ[0].  */
 
   /* Allocate the argv/p array itself.  */
@@ -270,7 +270,7 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   translate_and_copy_args (args_and_envs, &arg_info.argv);
   translate_and_copy_args (argp_start, &arg_info.argp);
 
-  /* 4. Do the regular __libc_start_main stuff.  */
+  /* 5. Do the regular __libc_start_main stuff.  */
   generic_start_main (main, *arg_info.argv.count, args_and_envs,
 		      (__typeof (main)) __libc_csu_init,
 		      __libc_csu_fini, rtld_fini, stack_end);
