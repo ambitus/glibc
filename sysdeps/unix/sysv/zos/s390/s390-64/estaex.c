@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <sysdep.h>
 #include <zos-core.h>
 #include <zos-estaex.h>
 
@@ -100,26 +101,11 @@ const unsigned char iso88591_to_ibm1047[256] = {
 /* F */ 0x8C, 0x49, 0xCD, 0xCE, 0xCB, 0xCF, 0xCC, 0xE1, 0x70, 0xDD, 0xDE, 0xDB, 0xDC, 0x8D, 0x8E, 0xDF};
 
 
-int fileWrite(int fd, const char *buffer, int alet, int length, int *returnCode, int *reasonCode) {
-  int zero = 0, returnValue;
-  void (*bpx4wrt)(int *, const char**, int *, int *, int *, int *, int *);
-  bpx4wrt = CVT_CSRT_GET(0x18, 0xDC);
-
-  bpx4wrt(&fd, (const char **) &buffer, &zero, &length, &returnValue, returnCode, reasonCode);
-  if (returnValue < 0) {
-    return -1;
-  } else {
-    *returnCode = 0;
-    *reasonCode = 0;
-    return returnValue;
-  }
-}
-
 static
 int ext_printf(const char *format, ...) {
   char dst[1024];
   va_list arg;
-  int returnCode, reasonCode;
+  int err;
 
   va_start (arg, format);
   int len = vsnprintf(dst, sizeof(dst), format, arg);
@@ -128,7 +114,7 @@ int ext_printf(const char *format, ...) {
   for (int i = 0; i < len; i ++)
     dst[i] = iso88591_to_ibm1047[(unsigned) dst[i]];
 
-  fileWrite(1, dst, 0, len, &returnCode, &reasonCode);
+  INTERNAL_SYSCALL (write, err, 3, 1, dst, len);
 
   return len;
 }

@@ -1,7 +1,6 @@
 /* Copyright (C) 2018 Rocket Software
    This file is part of the GNU C Library.
-   Contributed by Michael Colavita <mcolavita@rocketsoftware.com> and
-   Giancarlo Frix <gfrix@rocketsoftware.com>.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -36,36 +35,85 @@
 
 #include <sysdep.h>
 
-   /* This code defines a trampoline that is called as a normal function
+   /* This code defines a wrapper that is called as a normal function
       from C, with the address of a syscall routine and all necessary
-      args. The trampoline wraps the syscall, smoothing over differences
+      args. The wrapper wraps the syscall, smoothing over differences
       in the calling convention.
 
       TODO: We might end up changing the calling convention in the
-      compiler. If we do, delete all this.
+      compiler. If we do, delete some of this.
 
       TODO: Make this a hidden symbol.  */
 
 	.text
 ENTRY (__bpxk_syscall)
+	# We don't bother sticking to the save area convention here,
+	# since the syscalls don't use it.
+
 	# Save r1 and r14.
 	lg	%r15, 136(%r13)
-	stg	%r1, 24(%r15)
+	stg	%r1, 0(%r15)
 	stg	%r14, 8(%r15)
 
+	# Save FP regs
+	std	%f8, 16(%r15)
+	std	%f9, 24(%r15)
+	std	%f10, 32(%r15)
+	std	%f11, 40(%r15)
+	std	%f12, 48(%r15)
+	std	%f13, 56(%r15)
+	std	%f14, 64(%r15)
+	std	%f15, 72(%r15)
+
+	# Check CVTVEF to see if VRs are available, and save them if
+	# they are.
+	# TODO: Check that this works.
+	# TODO: This stuff is quite general, should be factored out of
+	# here.
+	llgt	%r14, 16
+	tm	244(%r14), 128
+	jz	0f
+
+	.machine push
+	.machine "z13"
+	vstm	%v16, %v23, 80(%r15)
+	.machine pop
+
+0:
 	lg	%r15, 0(%r1)	# load the syscall routine addr
 	la	%r1, 8(%r1)	# set args to what the syscall expects
-	/* TODO: Should this be a BALR?  */
+
+	# TODO: Should this be a BALR?
 	basr	%r14, %r15	# Do the syscall
 
-	# No retval in r15
+	lg	%r15, 136(%r13)
+
+	# Restore vector registers if necessary
+	llgt	%r14, 16
+	tm	244(%r14), 128
+	jz	0f
+
+	.machine push
+	.machine "z13"
+	vlm	%v16, %v23, 80(%r15)
+	.machine pop
+
+0:
+	# Restore FP regs
+	ld	%f8, 16(%r15)
+	ld	%f9, 24(%r15)
+	ld	%f10, 32(%r15)
+	ld	%f11, 40(%r15)
+	ld	%f12, 48(%r15)
+	ld	%f13, 56(%r15)
+	ld	%f14, 64(%r15)
+	ld	%f15, 72(%r15)
 
 	# Restore r1 and r14.
-	lg	%r15, 136(%r13)
-	lg	%r1, 24(%r15)
+	lg	%r1, 0(%r15)
 	lg	%r14, 8(%r15)
 
 	# return
 	br	%r14
-END (__bpxk_syscall)
 
+END (__bpxk_syscall)
