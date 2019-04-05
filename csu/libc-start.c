@@ -260,12 +260,9 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
      run the constructors in `_dl_start_user'.  */
   __libc_init_first (argc, argv, __environ);
 
-  /* z/OS TODO: Work around a bug in __cxa_atexit. Remove when fixed.  */
-#ifndef __ZOS__
   /* Register the destructor of the program, if any.  */
   if (fini)
     __cxa_atexit ((void (*) (void *)) fini, NULL, NULL);
-#endif
 
   /* Some security at this point.  Prevent starting a SUID binary where
      the standard file descriptors are not opened.  We have to do this
