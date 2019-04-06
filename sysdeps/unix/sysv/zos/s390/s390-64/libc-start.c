@@ -73,14 +73,10 @@ struct bpxk_arg_list
 
 /* The format of %r1 when we first receive control.  */
 struct bpxk_args
-  {
-    struct bpxk_arg_list argv;
-    struct bpxk_arg_list argp;
-  };
-
-extern void (*__libc_csu_init) (int, char **, char ** MAIN_AUXVEC_DECL);
-extern void (*__libc_csu_fini) (void);
-
+{
+  struct bpxk_arg_list argv;
+  struct bpxk_arg_list argp;
+};
 
 /* The thread pointer table.  */
 extern lf_hash_table *__zos_tp_table;
@@ -224,8 +220,10 @@ translate_and_copy_args (char **dest, struct bpxk_arg_list *arglist)
 
 int
 __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
-		   struct bpxk_args arg_info,
+		   struct bpxk_args *arg_info,
 		   void (*rtld_fini) (void),
+		   __typeof (main) init,
+		   void (*fini) (void),
 		   void *stack_end)
 {
 
@@ -248,11 +246,11 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 
   /*  Total size of the argv/argp array.  */
   ae_size =
-    (*arg_info.argv.count + *arg_info.argp.count + 2) * sizeof (char *);
+    (*arg_info->argv.count + *arg_info->argp.count + 2) * sizeof (char*);
 
   total_args_size = roundup16 (ae_size);
-  total_args_size += roundup16 (args_min_size (&arg_info.argv));
-  total_args_size += roundup16 (args_min_size (&arg_info.argp));
+  total_args_size += roundup16 (args_min_size (&arg_info->argv));
+  total_args_size += roundup16 (args_min_size (&arg_info->argp));
 
   /* Get our storage.  */
   perm_store_init (PERM_STORE_CONST_SIZE + total_args_size);
@@ -266,14 +264,13 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Allocate the argv/p array itself.  */
   args_and_envs = perm_store_alloc (ae_size, true);
 
-  char **argp_start = &args_and_envs[*arg_info.argv.count + 1];
-  translate_and_copy_args (args_and_envs, &arg_info.argv);
-  translate_and_copy_args (argp_start, &arg_info.argp);
+  char **argp_start = &args_and_envs[*arg_info->argv.count + 1];
+  translate_and_copy_args (args_and_envs, &arg_info->argv);
+  translate_and_copy_args (argp_start, &arg_info->argp);
 
   /* 5. Do the regular __libc_start_main stuff.  */
-  generic_start_main (main, *arg_info.argv.count, args_and_envs,
-		      (__typeof (main)) __libc_csu_init,
-		      __libc_csu_fini, rtld_fini, stack_end);
+  generic_start_main (main, *arg_info->argv.count, args_and_envs,
+		      init, fini, rtld_fini, stack_end);
 
   /* This should never be reached.  */
   abort ();

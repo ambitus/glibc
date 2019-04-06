@@ -79,8 +79,8 @@ _start:
 
 	/* Prevent the value we got in %r1 and %r0 from being clobbered
 	   by the storage call.  */
-	lgr	%r3, %r1
-	lgr	%r4, %r0
+	lgr	%r3, %r1	# arg_info
+	lgr	%r4, %r0	# rtld_fini
 
 	/* Obtain storage
 
@@ -122,18 +122,21 @@ _start:
 	st	%r14, 4(%r13)
 
 	/* Initialize NAB  */
-	la	%r14, 184(%r13)
+	la	%r14, 200(%r13)
 	stg	%r14, 136(%r13)		/* Fake NAB (144(%r13)) unused.  */
 
 	/* Set up args for __libc_start_main. Our __libc_start_main
 	   is not the generic one, and it takes slightly different
 	   args.  */
 
-	/* __libc_start_main (main, arg_info, rtld_fini, stack_end)  */
+	/* __libc_start_main (main, arg_info, rtld_fini, init, fini,
+			      stack_end)  */
 
-	larl	%r2, main
-	lgr	%r5, %r13		# stack_end
-	stmg	%r2, %r5, 152(%r13)	# Store params to arglist.
+	larl	%r2, main		# main
+	larl	%r5, __libc_csu_init	# init
+	larl	%r6, __libc_csu_fini	# fini
+	lgr	%r7, %r13		# stack_end
+	stmg	%r2, %r7, 152(%r13)	# Store params to arglist.
 
 	la	%r1, 152(%r13)	/* load arg pointer into r1.  */
 

@@ -57,7 +57,7 @@
 #endif
 
 	.section .init,"ax",@progbits
-	.align 8
+	.align	8, 0x07
 	.globl	_init
 	.hidden	_init
 	.type	_init,@function
@@ -66,25 +66,37 @@ _init:
 	lg	%r15, 136(%r13)
 	stg	%r13,128(%r15)
 	la	%r0, 160(%r15)
-	stg	%r0, 144(%r15)
+	stg	%r0, 136(%r15)
 	llilh	%r0, 50932
 	oill	%r0, 58049
 	st	%r0, 4(%r15)
 	lgr	%r13, %r15
 
 #if PREINIT_FUNCTION_WEAK
-	larl	%r15, PREINIT_FUNCTION
+	larl	%r15, 2f
+	lg	%r15, 0(%r15)
 	ltgr	%r15, %r15
 	je	1f
 	basr	%r14, %r15
+1:
+	bcr	0, %r0
 #else
 	brasl	%r14, PREINIT_FUNCTION
 #endif
 	.align	8, 0x07
-1:
+
+#if PREINIT_FUNCTION_WEAK
+	/* We can't do pc-relative relocs against weak symbols on
+	   z/OS.  */
+	.section .rodata
+	.align	8, 0x07
+2:
+	.quad	PREINIT_FUNCTION
+#endif
+
 
 	.section .fini,"ax",@progbits
-	.align 8
+	.align	8, 0x07
 	.globl	_fini
 	.hidden	_fini
 	.type	_fini,@function
@@ -93,7 +105,7 @@ _fini:
 	lg	%r15, 136(%r13)
 	stg	%r13,128(%r15)
 	la	%r0, 160(%r15)
-	stg	%r0, 144(%r15)
+	stg	%r0, 136(%r15)
 	llilh	%r0, 50932
 	oill	%r0, 58049
 	st	%r0, 4(%r15)
