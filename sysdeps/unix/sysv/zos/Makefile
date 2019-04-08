@@ -41,4 +41,10 @@ sysdep_routines += storage mmap-anon lock-free tls-lookup zos-futex \
 sysdep_headers += bits/bpxystat.h
 endif
 
+ifeq ($(subdir),io)
+# z/OS TODO: Rework this. We should determine our own set of headers
+# to install, and remove the symlink from the repo.
+sysdep_headers += linux/falloc.h
+endif
+
 endif	# in-Makerules
