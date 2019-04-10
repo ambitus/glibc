@@ -149,37 +149,11 @@ _start:
 .Lmain_stack_flags:
 	.long REGULAR_OBTAIN_FLAGS  /* Flags for STORAGE OBTAIN.  */
 
-	/* TODO: These symbols are only here because the linker doesn't
-	   provide them like it should yet. Remove them when the linker
-	   provides them.  */
-
-	/* Trick startup code into not running init array stuff.  */
-	.globl __preinit_array_start
-	.type __preinit_array_start,@function
-	.globl __preinit_array_end
-	.type __preinit_array_end,@function
-	.globl __init_array_start
-	.type __init_array_start,@function
-	.globl __init_array_end
-	.type __init_array_end,@function
-	.globl __fini_array_start
-	.type __fini_array_start,@function
-	.globl __fini_array_end
-	.type __fini_array_end,@function
-
-__preinit_array_start:
-__preinit_array_end:
-__init_array_start:
-__init_array_end:
-__fini_array_start:
-__fini_array_end:
-	br	%r14
-
 	/* z/OS TODO: This is a stopgap measure to enable our minimal
 	   elf header to work. Rework the elf header generation soon,
 	   and remove this when it's no longer needed.  */
 	.section __tls_ptr
-	.quad __tls_start
+	.quad __tdata_start
 
 /* Define a symbol for the first piece of initialized data.  */
 	.data
