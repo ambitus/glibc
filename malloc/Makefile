@@ -93,11 +93,18 @@ test-extras = \
 libmemusage-routines = memusage
 libmemusage-inhibit-o = $(filter-out .os,$(object-suffixes))
 
-$(objpfx)tst-malloc-backtrace: $(shared-thread-library)
-$(objpfx)tst-malloc-thread-exit: $(shared-thread-library)
-$(objpfx)tst-malloc-thread-fail: $(shared-thread-library)
-$(objpfx)tst-malloc-fork-deadlock: $(shared-thread-library)
-$(objpfx)tst-malloc-stats-cancellation: $(shared-thread-library)
+# z/OS TODO: Review this.
+ifeq (yes,$(build-shared))
+malloc-test-thread-library = $(shared-thread-library)
+else
+malloc-test-thread-library = $(static-thread-library)
+endif
+
+$(objpfx)tst-malloc-backtrace: $(malloc-test-thread-library)
+$(objpfx)tst-malloc-thread-exit: $(malloc-test-thread-library)
+$(objpfx)tst-malloc-thread-fail: $(malloc-test-thread-library)
+$(objpfx)tst-malloc-fork-deadlock: $(malloc-test-thread-library)
+$(objpfx)tst-malloc-stats-cancellation: $(malloc-test-thread-library)
 
 # Export the __malloc_initialize_hook variable to libc.so.
 LDFLAGS-tst-mallocstate = -rdynamic
@@ -234,7 +241,7 @@ $(tests:%=$(objpfx)%.o): CPPFLAGS += -DTEST_NO_MALLOPT
 
 $(objpfx)tst-interpose-nothread: $(objpfx)tst-interpose-aux-nothread.o
 $(objpfx)tst-interpose-thread: \
-  $(objpfx)tst-interpose-aux-thread.o $(shared-thread-library)
+  $(objpfx)tst-interpose-aux-thread.o $(malloc-test-thread-library)
 $(objpfx)tst-interpose-static-nothread: $(objpfx)tst-interpose-aux-nothread.o
 $(objpfx)tst-interpose-static-thread: \
   $(objpfx)tst-interpose-aux-thread.o $(static-thread-library)
@@ -249,5 +256,5 @@ $(objpfx)tst-dynarray-fail-mem.out: $(objpfx)tst-dynarray-fail.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-dynarray-fail.mtrace > $@; \
 	$(evaluate-test)
 
-$(objpfx)tst-malloc-tcache-leak: $(shared-thread-library)
-$(objpfx)tst-malloc_info: $(shared-thread-library)
+$(objpfx)tst-malloc-tcache-leak: $(malloc-test-thread-library)
+$(objpfx)tst-malloc_info: $(malloc-test-thread-library)

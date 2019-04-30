@@ -31,6 +31,9 @@
 #include <sys/mman.h>
 #include <sys/uio.h>
 #include <not-cancel.h>
+#ifdef __ZOS__
+# include <zos-core.h>
+#endif
 
 #ifdef FATAL_PREPARE_INCLUDE
 #include FATAL_PREPARE_INCLUDE
@@ -124,7 +127,12 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
 	  cp = next;
 	}
 
+#ifndef __ZOS__
       struct str_list *newp = alloca (sizeof (struct str_list));
+#else
+      struct str_list *newp =
+	__storage_obtain_simple ((sizeof (struct str_list) + 7) & ~7);
+#endif
       newp->str = str;
       newp->len = len;
       newp->next = list;
@@ -135,7 +143,12 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
   bool written = false;
   if (nlist > 0)
     {
+#ifndef __ZOS__
       struct iovec *iov = alloca (nlist * sizeof (struct iovec));
+#else
+      struct iovec *iov =
+	__storage_obtain_simple ((nlist * sizeof (struct iovec) + 7) & ~7);
+#endif
       ssize_t total = 0;
 
       for (int cnt = nlist - 1; cnt >= 0; --cnt)
@@ -177,13 +190,16 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
 
   if ((action & do_abort))
     {
+#ifndef __ZOS__
       if ((action & do_backtrace))
 	BEFORE_ABORT (do_abort, written, fd);
+#endif
 
       /* Kill the application.  */
 #ifdef __ZOS__
       /* z/OS TODO: Hack to get libc_fatal to kill us without signals.  */
       _Exit (-1);
+      BEFORE_ABORT (do_abort, written, fd);
 #endif
       abort ();
     }

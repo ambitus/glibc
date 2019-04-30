@@ -67,6 +67,7 @@ _init:
 	stg	%r13,128(%r15)
 	la	%r0, 160(%r15)
 	stg	%r0, 136(%r15)
+	stg	%r0, 144(%r15)
 	llilh	%r0, 50932
 	oill	%r0, 58049
 	st	%r0, 4(%r15)
@@ -83,6 +84,7 @@ _init:
 #else
 	brasl	%r14, PREINIT_FUNCTION
 #endif
+	mvc	136(8,%r13), 144(%r13)
 	.align	8, 0x07
 
 #if PREINIT_FUNCTION_WEAK
@@ -106,6 +108,7 @@ _fini:
 	stg	%r13,128(%r15)
 	la	%r0, 160(%r15)
 	stg	%r0, 136(%r15)
+	stg	%r0, 144(%r15)
 	llilh	%r0, 50932
 	oill	%r0, 58049
 	st	%r0, 4(%r15)
