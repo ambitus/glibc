@@ -730,8 +730,11 @@ run-via-rtld-prefix =
 endif
 # $(run-program-env) is the default environment variable settings to
 # use when running a program built with the newly built library.
+# z/OS TODO: Find some way to properly conditionalize this based on
+# target OS.
 run-program-env = GCONV_PATH=$(common-objpfx)iconvdata \
-		  LOCPATH=$(common-objpfx)localedata LC_ALL=C
+		  LOCPATH=$(common-objpfx)localedata LC_ALL=C \
+		  _BPXK_PCCSID=819
 # $(run-program-prefix) is a command that, when prepended to the name
 # of a program built with the newly built library, produces a command
 # that, executed on the build system on which "make" is run, runs that
