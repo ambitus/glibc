@@ -1362,6 +1362,20 @@ __zos_sys_umask (int *errcode, mode_t mask)
 }
 
 
+typedef void (*__bpx4frk_t) (pid_t *pid, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline pid_t
+__zos_sys_fork (int *errcode)
+{
+  pid_t pid;
+  int32_t reason_code;
+  BPX_CALL (fork, __bpx4frk_t, &pid, errcode, &reason_code);
+  return pid;
+}
+
+
 /* setuid/setgid, etc.
 
    TODO: setuid and setgid programs interact in some way with the MVS

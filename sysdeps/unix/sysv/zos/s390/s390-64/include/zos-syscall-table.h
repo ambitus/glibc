@@ -668,7 +668,7 @@
    proto.  */
 
 #define __shim_enabled_exit(if_true, if_false) if_false
-#define __shim_enabled_fork(if_true, if_false) if_false
+#define __shim_enabled_fork(if_true, if_false) if_true
 #define __shim_enabled_read(if_true, if_false) if_false
 #define __shim_enabled_write(if_true, if_false) if_true
 #define __shim_enabled_open(if_true, if_false) if_true
