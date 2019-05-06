@@ -92,6 +92,7 @@ extern int __set_estaex_handler (void (*) (struct sdwa *, void *),
 				 void *);
 extern void __estaex_handler_dump (struct sdwa *, void *);
 extern void (*__estaex_handler_wrapper) (void);
+extern void __zos_dump_stack (int fd, void *r13);
 
 
 #endif  /* _ZOS_ESTAEX_H  */

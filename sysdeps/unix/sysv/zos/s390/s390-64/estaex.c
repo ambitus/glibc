@@ -88,6 +88,22 @@ int ext_printf(const char *format, ...) {
   return len;
 }
 
+static int
+ext_fprintf (int fd, const char *format, ...)
+{
+  char dst[1024];
+  va_list arg;
+  int err;
+
+  va_start (arg, format);
+  int len = vsnprintf (dst, sizeof (dst), format, arg);
+  va_end (arg);
+
+  INTERNAL_SYSCALL (write, err, 3, fd, dst, len);
+
+  return len;
+}
+
 static char hexDigits[16] ={ '0', '1', '2', '3',
 			     '4', '5', '6', '7',
 			     '8', '9', 'A', 'B',
@@ -178,6 +194,42 @@ void dump_buffer(const char *buffer, int length)
   }
 }
 
+void
+__zos_dump_stack (int fd, void *r13)
+{
+  void *first_ptr, *ptr, *last_valid_ptr;
+  int frames = 0;
+  char eyecat_true[] = { 0xc6, 0xf4, 0xe2, 0xc1 };
+
+  first_ptr = ptr = last_valid_ptr = r13;
+
+  ext_fprintf (fd, "Stack frames:\n");
+
+  while (ptr && frames < 50)
+    {
+      char *eyecat = ((char *)ptr) + 4;
+      ext_fprintf (fd, "Frame at %p:\n", ptr);
+
+      if (memcmp (eyecat, eyecat_true, 4))
+       {
+         ext_fprintf (fd, "  NO EYECATCHER\n");
+         break;
+       }
+
+      last_valid_ptr = ptr;
+      for (int i = 0; i < 16; i += 2)
+       ext_fprintf (fd, "  %2d: 0x%016x    %2d: 0x%016x\n",
+                    (i + 14) % 16, *(((unsigned long *) ptr) + i + 1),
+                    (i + 15) % 16, *(((unsigned long *) ptr) + i + 2));
+      ptr = (void*) *(((unsigned long *) ptr) + 16);
+      frames++;
+    }
+
+  ext_fprintf (fd, "\nStack dump (at 0x%016x):\n", last_valid_ptr);
+  dump_buffer (last_valid_ptr,
+              ((char*) first_ptr - (char*) last_valid_ptr) + 256);
+}
+
 void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
   ext_printf("*** ESTAEX TRIGGERED ***\n");
 
@@ -235,33 +287,11 @@ void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
   for (int i = 0; i < 16; i += 2)
     ext_printf("  %2d: 0x%016x    %2d: 0x%016x\n", i, sdwarc1->ars[i], i + 1, sdwarc1->ars[i + 1]);
 
-  void *first_ptr = (void *) (uintptr_t) sdwarc4->gprs[13];
-  void *ptr = (void *) (uintptr_t) sdwarc4->gprs[13];
-  void *last_valid_ptr = (void *) (uintptr_t) sdwarc4->gprs[13];
+  ext_printf("\n");
+
+  __zos_dump_stack (1, (void *) (uintptr_t) sdwarc4->gprs[13]);
 
   ext_printf("\n");
-  ext_printf("Stack frames:\n");
-  int frames = 0;
-  while (ptr && frames < 50) {
-    ext_printf("Frame at %p:\n", ptr);
-    char *eyecat = ((char *)ptr) + 4;
-    char eyecat_true[] = { 0xc6, 0xf4, 0xe2, 0xc1 };
-    if (memcmp(eyecat, eyecat_true, 4)) {
-      ext_printf("  NO EYECATCHER\n");
-      break;
-    }
-    last_valid_ptr = ptr;
-    for (int i = 0; i < 16; i += 2)
-      ext_printf("  %2d: 0x%016x    %2d: 0x%016x\n", (i + 14) % 16, *(((unsigned long *) ptr) + i + 1), (i + 15) % 16, *(((unsigned long *) ptr) + i + 2));
-    ptr = (void*) *(((unsigned long *) ptr) + 16);
-    frames ++;
-  }
-
-  ext_printf("\n");
-  ext_printf("Stack dump (at 0x%016x):\n", last_valid_ptr);
-  dump_buffer(last_valid_ptr, ((char*)first_ptr - (char*)last_valid_ptr) + 256);
-
-  ext_printf("\n");
-  ext_printf("*** END ESTAX DUMP ***");
+  ext_printf("*** END ESTAEX DUMP ***");
   ext_printf("\n");
 }

@@ -190,16 +190,13 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
 
   if ((action & do_abort))
     {
-#ifndef __ZOS__
       if ((action & do_backtrace))
-	BEFORE_ABORT (do_abort, written, fd);
-#endif
+	BEFORE_ABORT (action, written, fd);
 
       /* Kill the application.  */
 #ifdef __ZOS__
       /* z/OS TODO: Hack to get libc_fatal to kill us without signals.  */
       _Exit (-1);
-      BEFORE_ABORT (do_abort, written, fd);
 #endif
       abort ();
     }
