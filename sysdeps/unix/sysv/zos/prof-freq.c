@@ -24,9 +24,8 @@
 int
 __profile_frequency (void)
 {
+  /* z/OS TODO: __profile_frequency is not yet properly implemented and
+     always returns 100.  */
   return 100;
 }
 libc_hidden_def (__profile_frequency)
-link_warning (__getclktck, "warning: __profile_frequency is not yet "
-			   "properly implemented and always returns "
-			   "100.")

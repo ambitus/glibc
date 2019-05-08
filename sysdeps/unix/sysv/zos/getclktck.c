@@ -23,7 +23,7 @@
 int
 __getclktck (void)
 {
+  /* z/OS TODO: __getclktck is not yet properly implemented and always
+     returns 100.  */
   return 100;
 }
-link_warning (__getclktck, "warning: __getclktck is not yet properly "
-			   "implemented and always returns 100.")
