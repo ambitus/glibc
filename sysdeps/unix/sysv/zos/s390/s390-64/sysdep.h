@@ -27,7 +27,7 @@
 #include <dl-sysdep.h>	/* For RTLD_PRIVATE_ERRNO.  */
 #include <tls.h>
 
-/* this file is based on sysdeps/unix/sysv/linux/s390/s390-64/sysdep.h */
+/* This file is based on sysdeps/unix/sysv/linux/s390/s390-64/sysdep.h */
 
 #undef SYS_ify
 #define _ZOS_SYSDEP_CAT(a, b) a##b

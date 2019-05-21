@@ -31,9 +31,6 @@
 /* This structure is known in the BPX documentation as the PPSD and is
    different for AMODE 31 programs.  */
 
-/* TODO: There is a race with literally every signal.
-   Every single signal overwrites the same info.  */
-
 /* TODO: should we hide this structure from the users?  */
 
 /* TODO: pretty this up when it has been tested/finalized.  */
@@ -45,47 +42,44 @@ struct sigcontext
   unsigned char length[3];
   unsigned int self_ptr;
   unsigned int prtrm_status;
-  unsigned int signum;
+  int sig_si_signo;
   char flags1;
   char flags2;
-  char action;
+  char action;  /* TODO: What is this?  */
   char flags3;
   unsigned int __reserved1;
-  unsigned long int sigaction_sigmask;
-  char flags4[4];
-  unsigned long int sigmask_on_return;
-  unsigned int __reserved2;
+  char sigaction_sigmask[8];
+  char flags4;
+  char __reserved2[3];
+  char sigmask_on_return[8];
   unsigned int __reserved3;
-  char regs[64];
-  unsigned long int __reserved4;
+  unsigned int __reserved4;
+  unsigned int gregs_low[16];
+  char __reserved5[8];
   unsigned int ars[16];
-  char userdata[2];
-  char killdata[2];
-  unsigned int __reserved5;
+  short sig_si_code;
+  short killopts;
+  unsigned int __reserved6;
   unsigned int last_ptraced_sig;
-  unsigned int __reserved6[2];
-  unsigned long int sending_threadid;
-  unsigned long int target_threadid;
-  unsigned int sending_procid;
-  unsigned int sending_real_uid;
-  unsigned int __reserved7;
-  union {
-    unsigned int exit_status;
-    unsigned int signal;
-  };
+  char __reserved7[8];
+  char sending_threadid[8];
+  char target_threadid[8];
+  unsigned int sig_si_pid;
+  unsigned int sig_si_uid;
   unsigned int __reserved8;
-  unsigned int error_return_code;
-  unsigned long int sigmask_for_handler;
-  unsigned int __reserved9[25];
-  unsigned int __reserved10;
+  int sig_si_status;
+  unsigned int __reserved9;
+  int sig_si_errno;
+  char sigmask_for_handler[8];
+  unsigned int __reserved10[26];
   unsigned int signal_delay_time;
-  unsigned int regs_high[16];
+  unsigned int gregs_high[16];
   unsigned long int sending_threadid_msg;
   unsigned long int sending_jobname;
   unsigned int __reserved11[4];
-  void *handler_addr;
-  void *sir_addr;
-  void *udata_addr;
+  void *handler;
+  void *sir;
+  void *udata;
   struct
   {
     unsigned long int mask;
@@ -94,11 +88,10 @@ struct sigcontext
   unsigned long int bpx1qut_user_data;
   unsigned long int bpx1sia_user_data;
   void *workarea_addr;
-  void *fault_addr;
-  unsigned long int band_event;
+  void *sig_si_addr;
+  long int sig_si_band;
   unsigned long int sig_si_value;
-  unsigned int __reserved12[4];
-  char __reserved13[2];
+  unsigned short __reserved12[9];
   unsigned short exit_flags;
   unsigned short ppsd_aiocb_count;
   unsigned short last_arr_ind;

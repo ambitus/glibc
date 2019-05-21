@@ -64,12 +64,6 @@ hidden_data_def (__ipt_zos_tcb)
 /* This is the range of subpools we will consider using.  */
 _Static_assert (1 <= STORAGE_SUBPOOL && STORAGE_SUBPOOL <= 127, "");
 
-/* We want a private, fetch-protected, task-owned subpool. There are
-   many available, the choice of specific subpool number is
-   arbitrary.
-   The storage key is ignored for the subpools we are using.  */
-#define STORAGE_SUBPOOL 72
-
 
 /* This does the actual storage request. Returns zero on failure,
    1 on success for RELEASE, and the storage address for OBTAIN.  */

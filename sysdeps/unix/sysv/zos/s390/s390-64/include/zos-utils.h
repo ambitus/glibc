@@ -27,6 +27,11 @@
 #define GET_PTR31_UNSAFE(x) ((uintptr_t)(*(uint32_t *)(x)))
 #define GET_PTR31_SAFE(x) ((uintptr_t)(~(1UL << 31) & *(uint32_t *)(x)))
 
+/* Pointer to a table of many pointers to functions of interest. See the
+   CSRT documentation.  */
+#define CSRT_PTR \
+  GET_PTR31_UNSAFE (GET_PTR31_UNSAFE ((volatile uintptr_t) (0x10)) + 544)
+
 /* We use this instead of abort() in situations where signals might not
    be possible or desirable.  */
 #define CRASH_NOW()							\

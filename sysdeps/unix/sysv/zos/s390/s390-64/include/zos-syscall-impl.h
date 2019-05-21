@@ -47,6 +47,8 @@
 
 #include <limits.h>  /* for PATH_MAX */
 #include <sys/mman.h>  /* for user-facing mmap constant values.  */
+#include <signal.h>
+#include <sir.h>
 
 #include <bpxk-constants.h>
 
@@ -1446,6 +1448,184 @@ __zos_sys_setregid (int *errcode, gid_t rgid, gid_t egid)
   uint32_t rgroup_id = rgid, egroup_id = egid;
   BPX_CALL (setregid, __bpx4srg_t, &rgroup_id, &egroup_id, &retval,
 	    errcode, &reason_code);
+  return retval;
+}
+
+
+/* Signal syscalls.  */
+
+typedef void (*__bpx4spm_t) (const int32_t *how,
+			     const uint64_t * const *new_sigmask,
+			     uint64_t * const *old_sigmask,
+			     const uint32_t *euid,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+/* Documentation is somewhat unclear and might suggest that params 2 and
+   3 are actually 31-bit pointers to 8-byte areas, not 64-bit
+   pointers.
+   TODO: IMPORTANT: Test this.  */
+static inline int
+__zos_sys_sigprocmask (int *errcode, int how, const sigset_t *set,
+		       sigset_t *oset)
+{
+  int32_t retval, reason_code;
+  /* Convert the linux-compatible sigset_t type used by glibc right now
+     to the 64-bit value used by the kernel.  */
+  /* TODO: DANGER: The exact wording of the documentation suggests that
+     the sigprocmask mask parameters should be pointers to
+     31-bit pointers to the actual mask, which doesn't make any
+     sense. It also differs with how it states the sigaction mask params
+     work.  */
+  uint64_t sigset;
+  uint64_t osigset = 0;
+  uint64_t *in_ptr;
+  uint64_t *out_ptr;
+
+  if (set)
+    {
+      sigset = user_to_kern_sigset (set);
+      in_ptr = set ? &sigset : NULL;
+    }
+  else
+    in_ptr = NULL;
+
+  out_ptr = oset ? &osigset : NULL;
+
+  /* Map linux setprocmask flags to z/OS flags.  */
+  switch (how)
+    {
+    case SIG_BLOCK:
+      how = ZOS_SYS_SIG_BLOCK;
+      break;
+    case SIG_UNBLOCK:
+      how = ZOS_SYS_SIG_UNBLOCK;
+      break;
+    case SIG_SETMASK:
+      how = ZOS_SYS_SIG_SETMASK;
+      break;
+    }
+
+  BPX_CALL (sigprocmask, __bpx4spm_t, &how, &in_ptr, &out_ptr,
+	    &retval, errcode, &reason_code);
+
+  if (oset)
+    kern_to_user_sigset (oset, osigset);
+
+  return retval;
+}
+
+/* The signal user data is described as being 4 bytes large but
+   potentially occupying a doubleword.  */
+
+typedef union
+{
+  char data[4];
+  unsigned long full;
+} __bpxk_sig_usr_data;
+
+typedef void (*__bpx4sia_t) (const int32_t *sig,
+			     const void **new_handler,
+			     const uint64_t *new_sigmask,
+			     const uint32_t *new_sigflags,
+			     void **old_handler,
+			     uint64_t *old_sigmask,
+			     uint32_t *old_sigflags,
+			     __bpxk_sig_usr_data *udata,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_sigaction (int *errcode, int sig, const struct sigaction *act,
+		     struct sigaction *oact)
+{
+  int32_t retval, reason_code;
+  __sighandler_t hand, ohand;
+  __sighandler_t *handptr, *ohandptr = &ohand;
+  uint64_t mask, omask;
+  uint32_t flags, oflags;
+
+  sig = user_to_kern_signo (sig);
+
+  flags = 0;
+  if (act)
+    {
+      hand = act->sa_handler;
+      handptr = &hand;
+      mask = user_to_kern_sigset (&act->sa_mask);
+      if (act->sa_flags & SA_NOCLDSTOP)
+	flags |= ZOS_SYS_SA_NOCLDSTOP;
+      if (act->sa_flags & SA_NOCLDWAIT)
+	flags |= ZOS_SYS_SA_NOCLDWAIT;
+      if (act->sa_flags & SA_NODEFER)
+	flags |= ZOS_SYS_SA_NODEFER;
+      /* z/OS TODO: right now our approach to signal stacks makes this
+	 flag meaningless.  */
+      if (act->sa_flags & SA_ONSTACK)
+	flags |= ZOS_SYS_SA_ONSTACK;
+      if (act->sa_flags & SA_RESETHAND)
+	flags |= ZOS_SYS_SA_RESETHAND;
+      /* z/OS TODO: We might need to do something in the SIR for
+	 this.  */
+      if (act->sa_flags & SA_RESTART)
+	flags |= ZOS_SYS_SA_RESTART;
+      /* z/OS TODO: Does this flag actualy change anything at a kernel
+	 level?  */
+      if (act->sa_flags & SA_SIGINFO)
+	flags |= ZOS_SYS_SA_SIGINFO;
+    }
+  else
+    {
+      handptr = NULL;
+      mask = 0;
+    }
+
+  oflags = 0;
+  omask = 0;
+  if (oact)
+    {
+      ohand = oact->sa_handler;
+      ohandptr = &ohand;
+    }
+  else
+    ohandptr = NULL;
+
+  /* z/OS TODO: How should we use the user data?  */
+  __bpxk_sig_usr_data udata;
+  udata.full = 0;
+
+  BPX_CALL (sigaction, __bpx4sia_t, &sig, &handptr, &mask, &flags,
+	    &ohandptr, &omask, &oflags, &udata, &retval, errcode,
+	    &reason_code);
+
+  if (oact)
+    {
+      kern_to_user_sigset (&oact->sa_mask, omask);
+
+      oact->sa_handler = ohand;
+      oact->sa_flags = 0;
+      if (oflags & ZOS_SYS_SA_NOCLDSTOP)
+	oact->sa_flags |= SA_NOCLDSTOP;
+      if (oflags & ZOS_SYS_SA_NOCLDWAIT)
+	oact->sa_flags |= SA_NOCLDWAIT;
+      if (oflags & ZOS_SYS_SA_NODEFER)
+	oact->sa_flags |= SA_NODEFER;
+      /* z/OS TODO: right now our approach to signal stacks makes this
+	 flag meaningless.  */
+      if (oflags & ZOS_SYS_SA_ONSTACK)
+	oact->sa_flags |= SA_ONSTACK;
+      if (oflags & ZOS_SYS_SA_RESETHAND)
+	oact->sa_flags |= SA_RESETHAND;
+      /* z/OS TODO: We might need to do something in the SIR for
+	 this.  */
+      if (oflags & ZOS_SYS_SA_RESTART)
+	oact->sa_flags |= SA_RESTART;
+      /* z/OS TODO: Does this flag actualy change anything at a kernel
+	 level?  */
+      if (oflags & ZOS_SYS_SA_SIGINFO)
+	oact->sa_flags |= SA_SIGINFO;
+    }
+
   return retval;
 }
 

@@ -32,10 +32,12 @@
 #include <stdbool.h>
 #include <zos-utils.h>
 #include <zos-core.h>
+#include <zos-syscall-base.h>
 #include <zos-estaex.h>
 #include <zos-futex.h>
 #include <lock-free.h>
 #include <map-info.h>
+#include <sir.h>
 
 /* TODO: What to we need to change here to handle shared cases?
    Where is the shared env init?
@@ -218,6 +220,29 @@ translate_and_copy_args (char **dest, struct bpxk_arg_list *arglist)
 }
 
 
+typedef void (*__bpx4mss_t) (void (**sir_addr) (struct sigcontext *),
+			     const uint64_t *user_data,
+			     const uint64_t *override_sigset,
+			     const uint64_t *terminate_sigset,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline
+void
+set_up_signals (void)
+{
+  int32_t retval, retcode, reason_code;
+  const uint64_t nothing = 0;
+  void *sir = __sir_entry;
+
+  /* z/OS TODO: What should we put for override_sigset and
+     terminate_sigset?  */
+  BPX_CALL (mvssigsetup, __bpx4mss, &sir, &nothing, &nothing,
+	    &nothing, &retval, &retcode, &reason_code);
+  /* z/OS TODO: Check for errors here.  */
+}
+
+
 int
 __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 		   struct bpxk_args *arg_info,
@@ -268,7 +293,10 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   translate_and_copy_args (args_and_envs, &arg_info->argv);
   translate_and_copy_args (argp_start, &arg_info->argp);
 
-  /* 5. Do the regular __libc_start_main stuff.  */
+  /* 5. Register our SIR.  */
+  set_up_signals ();
+
+  /* 6. Do the regular __libc_start_main stuff.  */
   generic_start_main (main, *arg_info->argv.count, args_and_envs,
 		      init, fini, rtld_fini, stack_end);
 
