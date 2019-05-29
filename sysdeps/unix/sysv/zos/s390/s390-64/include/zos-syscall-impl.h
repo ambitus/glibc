@@ -264,6 +264,12 @@ typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
    we need to do is make sure it fits into 32 bits. Confirm this
    behavior definitively.  */
 
+typedef void (*__bpx4red_t) (const int32_t *fd, void * const *buf,
+			     const int32_t *buf_alet,
+			     const __bpxk_32_t *count,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
 typedef void (*__bpx4wrt_t) (const int32_t *fd, const void * const *buf,
 			     const int32_t *buf_alet,
 			     const __bpxk_32_t *count,
@@ -449,6 +455,30 @@ __zos_sys_openat (int *errcode, int dirfd, const char *pathname,
   if (dirfd == AT_FDCWD || *pathname == '/')
     return __zos_sys_open (errcode, pathname, flags, mode);
   SHIM_NOT_YET_IMPLEMENTED_FATAL ("openat not implemnted", -1);
+}
+
+
+static inline ssize_t
+__zos_sys_read (int *errcode, int fd, void *buf, size_t nbytes)
+{
+  /* TODO: Note that while the linux syscall returns an ssize_t, we can
+     only return an int. Address that somehow.  */
+
+  int32_t retval, reason_code;
+  const int32_t alet = 0;
+  if (!IS_UINT32 (nbytes))
+    {
+      /* z/OS can't handle reads that can't fit into a 32-bit quantity
+	 TODO: is there a better errno for this?  */
+      *errcode = EINVAL;
+      return -1;
+    }
+  __bpxk_32_t count = nbytes;
+  BPX_CALL (read, __bpx4red_t, &fd, &buf, &alet, &count,
+	    &retval, errcode, &reason_code);
+  /* TODO: check important reason codes  */
+  /* TODO: confirm retvals are in line with what linux gives.  */
+  return retval;
 }
 
 
