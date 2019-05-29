@@ -96,13 +96,11 @@ extern void __bpxk_syscall (void *, ...);
   SHIM_RETURN_UNSUPPORTED (retval)
 #endif
 
-/* z/OS TODO: PATH_MAX isn't sufficient. It's historically unreliable.
-   Check to see what the maximum possible path that can be made on z/OS
-   through any method is.
+#define __BPXK_PATH_MAX 1024
 
-   pathconf -a shows PATH_MAX as 1023 (PATH_MAX should include the
-   terminating null character). It's possible they just read the
-   standard wrong, but use it anyway for now. */
+/* z/OS TODO: getconf -a shows PATH_MAX as 1023 (PATH_MAX should
+   include the terminating null character). It's possible they just
+   read the standard wrong. */
 
 /* get the length of a path, stopping at PATH_MAX, setting errno, and
    returning a specified value if PATH_MAX - 1 isn't the end of the
@@ -110,9 +108,10 @@ extern void __bpxk_syscall (void *, ...);
 #define SAFE_PATHLEN_OR_FAIL_WITH(pathname, return_value_on_error)  \
   ({								    \
     const char *__pathname = (pathname);			    \
-    int __pathname_len = __strnlen (__pathname, PATH_MAX - 1);	    \
-    if (__glibc_unlikely (__pathname_len == PATH_MAX - 1) &&	    \
-	__glibc_likely (__pathname[PATH_MAX - 1] != '\0'))	    \
+    int __pathname_len = __strnlen (__pathname,			    \
+				    __BPXK_PATH_MAX - 1);	    \
+    if (__glibc_unlikely (__pathname_len == __BPXK_PATH_MAX - 1) && \
+	__glibc_likely (__pathname[__BPXK_PATH_MAX - 1] != '\0'))   \
       {								    \
 	*errcode = ENAMETOOLONG;				    \
 	return (return_value_on_error);				    \

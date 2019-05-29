@@ -45,7 +45,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <limits.h>  /* for PATH_MAX */
 #include <sys/mman.h>  /* for user-facing mmap constant values.  */
 #include <signal.h>
 #include <sir.h>
@@ -175,9 +174,10 @@ __initialize_times (struct stat *statbuf)
 /* Translate a path into EBCDIC and check its size along the way.  */
 
 static inline uint32_t
-translate_and_check_size (const char *str, char ebcstr[PATH_MAX])
+translate_and_check_size (const char *str, char ebcstr[__BPXK_PATH_MAX])
 {
-  return (uint32_t) tr_e_until_chr_or_len (str, ebcstr, '\0', PATH_MAX);
+  return (uint32_t) tr_e_until_chr_or_len (str, ebcstr, '\0',
+					   __BPXK_PATH_MAX);
 }
 
 
@@ -196,7 +196,7 @@ translate_and_check_size (const char *str, char ebcstr[PATH_MAX])
 
    TODO: Profile. If it becomes apparent that any noticable amount
    of time is spent in this code, we should consider just using the
-   z/OS native values as that actual values for the O_* constants,
+   z/OS native values as the actual values for the O_* constants,
    skipping this step entirely.  */
 static inline int32_t
 __map_common_oflags (int flags)
@@ -276,10 +276,10 @@ __zos_sys_open (int *errcode, const char *pathname,
 		int flags, mode_t mode)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -538,11 +538,11 @@ __zos_sys_stat (int *errcode, const char *pathname,
 		struct stat *statbuf)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t statbuf_len = __bpxystat_len;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -576,11 +576,11 @@ __zos_sys_lstat (int *errcode, const char *pathname,
 		 struct stat *statbuf)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t statbuf_len = __bpxystat_len;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -773,11 +773,11 @@ __zos_sys_readlink (int *errcode,
      action?  */
   int32_t retval, reason_code;
   uint32_t bufsiz_trunc;
-  char translated_link_path[PATH_MAX];
+  char translated_link_path[__BPXK_PATH_MAX];
   uint32_t link_path_len =
     translate_and_check_size (pathname, translated_link_path);
 
-  if (__glibc_unlikely (link_path_len == PATH_MAX))
+  if (__glibc_unlikely (link_path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -1040,14 +1040,14 @@ __zos_sys_chmod (int *errcode, const char *pathname, mode_t mode)
 {
   /* TODO: Figure out how to avoid IBM's S_ISVTX executable behavior.  */
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   /* TODO: this mask might be unnecessary. Linux allows extra bits
      to be set in chmod's mode. We haven't tested to see whether
      or not the bpx services do the same, so we mask to be safe.  */
   int32_t kernel_mode = mode & 0x0fff;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -1109,11 +1109,11 @@ __zos_sys_chown (int *errcode, const char *pathname, uid_t owner,
 		 gid_t group)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t owner_uid = owner, group_id = group;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -1142,10 +1142,10 @@ __zos_sys_lchown (int *errcode, const char *pathname, uid_t owner,
 {
   int32_t retval, reason_code;
   uint32_t owner_uid = owner, group_id = group;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -1171,10 +1171,10 @@ static inline int
 __zos_sys_chdir (int *errcode, const char *path)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t path_len = translate_and_check_size (path, translated_path);
 
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -1215,11 +1215,11 @@ static inline int
 __zos_sys_truncate (int *errcode, const char *path, off_t length)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint64_t file_length = length;
   uint32_t path_len = translate_and_check_size (path, translated_path);
 
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -1263,11 +1263,11 @@ static inline int
 __zos_sys_mkdir (int *errcode, const char *pathname, mode_t mode)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t dmode = mode;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
@@ -1289,10 +1289,10 @@ static inline int
 __zos_sys_rmdir (int *errcode, const char *pathname)
 {
   int32_t retval, reason_code;
-  char translated_path[PATH_MAX];
+  char translated_path[__BPXK_PATH_MAX];
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
-  if (__glibc_unlikely (path_len == PATH_MAX))
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
     {
       *errcode = ENAMETOOLONG;
       return -1;
