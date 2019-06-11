@@ -540,6 +540,24 @@ __zos_sys_writev (int *errcode,
 }
 
 
+typedef void (*__bpx4lsk_t) (const int32_t *fd,
+			     const int64_t *offset,
+			     const int32_t *ref,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline off_t
+__zos_sys_lseek (int *errcode, int fd, off_t offset, int whence)
+{
+  int32_t retval, reason_code;
+
+  /* We don't need to translate whence.  */
+  BPX_CALL (lseek, __bpx4lsk_t, &fd, &offset, &whence,
+	    &retval, errcode, &reason_code);
+  return retval;
+}
+
+
 /* stat and related syscalls.  */
 
 typedef void (*__bpx4sta_t) (const uint32_t *pathname_len,
