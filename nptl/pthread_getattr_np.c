@@ -84,7 +84,13 @@ pthread_getattr_np (pthread_t thread_id, pthread_attr_t *attr)
       /* We need the limit of the stack in any case.  */
       else
 	{
+#ifdef RLIMIT_STACK
 	  if (getrlimit (RLIMIT_STACK, &rl) != 0)
+#else
+	  /* z/OS TODO: What's the approprate thing to do here?  */
+	  rl.rlim_cur = ARCH_STACK_DEFAULT_SIZE;
+	  if (0)
+#endif
 	    ret = errno;
 	  else
 	    {

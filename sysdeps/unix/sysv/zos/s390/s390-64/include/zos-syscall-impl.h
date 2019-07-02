@@ -1332,7 +1332,6 @@ typedef void (*__bpx4rmd_t) (const uint32_t *pathname_len,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-
 static inline int
 __zos_sys_rmdir (int *errcode, const char *pathname)
 {
@@ -1351,6 +1350,8 @@ __zos_sys_rmdir (int *errcode, const char *pathname)
   return retval;
 }
 
+/* The getrlimit wrapper is in getrlimit64.c.  */
+/* The getrusage wrapper is in getrusage.c.  */
 
 /* Notice that these have different prototypes from all the other
    syscalls.  */
