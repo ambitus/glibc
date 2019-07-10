@@ -525,4 +525,13 @@ struct zos_sys_directed_load_ret_parms {
 
 #define ZOS_SYS_SIG_NO_TIMEOUT 0x7FFFFFFF
 
+#define ZOS_SYS_ACCEFFID 0x0400
+#define ZOS_SYS_ACCDEVNO 0x0200
+#define ZOS_SYS_ACCWAIT  0x0100
+
+#define ZOS_SYS_ACC_F_OK 0x0008
+#define ZOS_SYS_ACC_R_OK 0x0004
+#define ZOS_SYS_ACC_W_OK 0x0002
+#define ZOS_SYS_ACC_X_OK 0x0001
+
 #endif /* BPXK_CONSTANTS_H */

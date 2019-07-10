@@ -213,6 +213,10 @@ extern char *alloca ();
 #elif IS_IN (rtld)
 static int __rtld_have_atfcts;
 # define __have_atfcts __rtld_have_atfcts
+#else
+/* z/OS TODO: Add a declaration of __have_atfcts into our openat.c when
+   we create one.  */
+int __have_atfcts = 0;
 #endif
 
 /* Get the pathname of the current working directory, and put it in SIZE

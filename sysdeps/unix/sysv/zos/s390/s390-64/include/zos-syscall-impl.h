@@ -1353,6 +1353,53 @@ __zos_sys_rmdir (int *errcode, const char *pathname)
 /* The getrlimit wrapper is in getrlimit64.c.  */
 /* The getrusage wrapper is in getrusage.c.  */
 
+typedef void (*__bpx4gcw_t) (const __bpxk_32_t *buf_len,
+			     char *buf,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_getcwd (int *errcode, char *buf, size_t size)
+{
+  int32_t retval, reason_code;
+  const int32_t buf_len = size <= INT32_MAX ? (int32_t) size : INT32_MAX;
+
+  BPX_CALL (getcwd, __bpx4gcw_t, &buf_len, buf, &retval, errcode,
+	    &reason_code);
+
+  return retval;
+}
+
+
+typedef void (*__bpx4acc_t) (const uint32_t *pathname_len,
+			     const char *pathname,
+			     const uint32_t *mode,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_access (int *errcode, const char *pathname, int mode)
+{
+  int32_t retval, reason_code;
+  char translated_path[__BPXK_PATH_MAX];
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  /* The z/OS flags are effectively the same, so no mapping.
+     z/OS TODO: Decide if we want to provide defines for the special
+     access flags unique to z/OS.  */
+
+  BPX_CALL (access, __bpx4acc_t, &path_len, translated_path, &mode,
+	    &retval, errcode, &reason_code);
+  return retval;
+}
+
+
 /* Notice that these have different prototypes from all the other
    syscalls.  */
 typedef void (*__bpx4uid_t) (const uint32_t *);
