@@ -19,30 +19,28 @@
 #include <errno.h>
 #include <sysdep.h>
 
-
 /* We need to move the syscall wrapper code into this file because of the
    problem with including "sys/resource.h" in "zos-syscall-impl.h". */
-
 
 typedef void (*__bpx4gru_t) (const int32_t *who,
 			     struct rusage *usage,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-
 /* Return resource usage information on process indicated by WHO
    and put it in USAGE.  Returns 0 for success, -1 for failure.  */
 int
 __getrusage (enum __rusage_who who, struct rusage *usage)
 {
-  /* z/OS callable service returns very few information about resources
-     that are used by the calling process or its child processes - 
-     only user and system time used.
+  /* z/OS callable service returns very little information about
+     resources that are used by the calling process or its child
+     processes - only user and system time are available.
 
-     TODO: Figure out which additional resources information we can return
-     according to the linux struct rusage fields.
+     z/OS TODO: Figure out for which additional resources we can obtain
+     information according to the linux struct rusage fields.
 
-     TODO: Figure out whether it is possible to add support of who=RUSAGE_THREAD. */
+     z/OS TODO: Figure out whether it is possible to add support for
+     who=RUSAGE_THREAD. */
 
   int32_t retval, reason_code;
   int32_t who_no = who;
@@ -57,12 +55,12 @@ __getrusage (enum __rusage_who who, struct rusage *usage)
       retval = -1;
     }
 
-  /* High 4 bytes of tv_usec should be ignored (padding in BPXYRLIM macro) */
+  /* High 4 bytes of tv_usec should be ignored (padding in BPXYRLIM
+     macro) */
   usage->ru_utime.tv_usec &= 0x00000000FFFFFFFFlu;
   usage->ru_stime.tv_usec &= 0x00000000FFFFFFFFlu;
 
   return retval;
 }
-
 libc_hidden_def (__getrusage)
 weak_alias (__getrusage, getrusage)
