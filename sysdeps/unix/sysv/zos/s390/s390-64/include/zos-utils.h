@@ -130,6 +130,10 @@ static const unsigned char e_to_a[256] =
 #define tr_a_until_len(in, out, maxlen)					\
   tr_until_len (in, out, maxlen, e_to_a)
 
+/* Translate to EBCDIC until maxlen is reached.  */
+#define tr_e_until_len(in, out, maxlen)					\
+  tr_until_len (in, out, maxlen, a_to_1047)
+
 /* Translate in place to ASCII until maxlen is reached.  */
 #define tr_a_until_len_in_place(in, maxlen)				\
   tr_until_len_in_place (in, maxlen, e_to_a)

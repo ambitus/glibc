@@ -1451,6 +1451,163 @@ __zos_sys_wait (int *errcode, int *status)
 }
 
 
+typedef void (*__bpx4exc_t) (const uint32_t *pathname_len,
+			     const char *pathname,
+			     const uint32_t *arg_count,
+			     const uint32_t *const *arg_len_list,
+			     const uint32_t *const *arg_list,
+			     const uint32_t *env_count,
+			     const uint32_t *const *env_len_list,
+			     const uint32_t *const *env_list,
+			     void **exit_routine,
+			     void **exit_routine_params,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
+		  char *const envp[])
+{
+  int32_t retval, reason_code;
+  char translated_path[__BPXK_PATH_MAX];
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  uint64_t total_size;
+  uint32_t argc, envc;
+  uint32_t **arglen_ptrs, **envlen_ptrs, *arglens, *envlens;
+  char **args, **envs;
+  char *translated;
+  void *lens;
+
+  extern int printf(const char *, ...);
+  /* Support argv == NULL or envp == NULL like linux does.  */
+  char *const dummy[] = { NULL };
+  if (argv == NULL)
+    argv = dummy;
+  if (envp == NULL)
+    envp = dummy;
+
+#define count_args(list, count)					\
+  do {								\
+    uint64_t _c;						\
+    for (_c = 0; list[_c] && _c < UINT32_MAX; ++_c);		\
+    if (_c == UINT32_MAX && list[_c] != NULL)			\
+      {								\
+	*errcode = E2BIG;					\
+	return -1;						\
+      }								\
+    count = (uint32_t) _c;					\
+  } while (0)
+  count_args (argv, argc);
+  count_args (envp, envc);
+#undef count_args
+
+  /* Structure of this allocation:
+     -----------------------
+     | arg length pointers |
+     ----------------------- size: Max(argc,1) * sizeof(*)
+     | env length pointers |
+     ----------------------- size: Max(envc,1) * sizeof(*)
+     | arg pointers        |
+     ----------------------- size: Max(argc,1) * sizeof(*)
+     | env pointers        |
+     ----------------------- size: Max(envc,1) * sizeof(*)
+     | arg lengths         |
+     ----------------------- size: argc * sizeof (uint32_t)
+     | env lengths         |
+     ----------------------- size: envc * sizeof (uint32_t)
+     Plus padding for storage obtain.  */
+
+  uint32_t adj_argc = argc ?: 1, adj_envc = envc ?: 1;
+
+  size_t eptrs_off  = (sizeof (*arglen_ptrs) * adj_argc);
+  size_t args_off   = (sizeof (*envlen_ptrs) * adj_envc  + eptrs_off);
+  size_t envs_off   = (sizeof (*args) * adj_argc + args_off);
+  size_t arglen_off = (sizeof (*envs) * adj_envc + envs_off);
+  size_t envlen_off = (sizeof (*arglens) * argc + arglen_off);
+  size_t lens_total = (sizeof (*envlens) * envc +
+		       envlen_off + 7UL) & ~7UL;
+
+  lens = __storage_obtain_simple (lens_total);
+  if (lens == NULL)
+    {
+      *errcode = ENOMEM;
+      return -1;
+    }
+
+  arglen_ptrs = lens;
+  envlen_ptrs = (uint32_t **) ((uintptr_t) lens + eptrs_off);
+  args = (char **) ((uintptr_t) lens + args_off);
+  envs = (char **) ((uintptr_t) lens + envs_off);
+  arglens = (uint32_t *) ((uintptr_t) lens + arglen_off);
+  envlens = (uint32_t *) ((uintptr_t) lens + envlen_off);
+
+  total_size = 0;
+#define count_lengths(list, count, lengths, len_ptrs)			\
+  do {									\
+    for (uint32_t i = 0; i < count; i++)				\
+      {									\
+	lengths[i] = strnlen (list[i], UINT32_MAX - 1) + 1;		\
+	if (lengths[i] == UINT32_MAX && list[i][UINT32_MAX] != '\0')	\
+	  {								\
+	    /* z/OS TODO: free lens.  */				\
+	    *errcode = E2BIG;						\
+	    return -1;							\
+	  }								\
+	len_ptrs[i] = &lengths[i];					\
+	total_size += lengths[i];					\
+      }									\
+    if (count == 0)							\
+      len_ptrs[0] = NULL;						\
+  } while (0)
+  count_lengths (argv, argc, arglens, arglen_ptrs);
+  count_lengths (envp, envc, envlens, envlen_ptrs);
+#undef count_lengths
+
+  translated = __storage_obtain_simple ((total_size + 7UL) & ~7UL);
+  if (translated == NULL)
+    {
+      /* z/OS TODO: free lens.  */
+      *errcode = ENOMEM;
+      return -1;
+    }
+
+#define copy_and_translate(list, count, lengths, argptrs)		\
+  do {									\
+    for (uint32_t i = 0; i < count; i++)				\
+      {									\
+        argptrs[i] = translated;					\
+	tr_e_until_len (list[i], translated, lengths[i]);		\
+	translated += lengths[i];					\
+      }									\
+    if (count == 0)							\
+      argptrs[0] = NULL;						\
+  } while (0)
+  copy_and_translate (argv, argc, arglens, args);
+  copy_and_translate (envp, envc, envlens, envs);
+#undef copy_and_translate
+
+  /* z/OS TODO: We might want to define an exit to clean up any
+     resources.  */
+  void *exit_addr = NULL, *exit_params = NULL;
+
+  BPX_CALL (exec, __bpx4exc_t, &path_len, translated_path, &argc,
+	    arglen_ptrs, args, &envc, envlen_ptrs, envs, &exit_addr,
+	    &exit_params, &retval, errcode, &reason_code);
+
+  /* If we returned, something has gone wrong.  */
+  /* z/OS TODO: do a storage release here when that's working.  */
+
+  return retval;
+}
+
+
 /* Notice that these have different prototypes from all the other
    syscalls.  */
 typedef void (*__bpx4uid_t) (const uint32_t *);
