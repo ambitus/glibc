@@ -68,14 +68,14 @@ typedef struct
 {
   /* The order of these two fields is significant.  */
 
-  /* The pointer to the next element. This is not an lfl_node_t pointer
-     because marking the pointer violates its alignment requirements,
-     which might invoke UB.  */
+  /* The pointer to the next element. This is not declared as an
+     lfl_node_t pointer because marking the pointer violates its
+     alignment requirements, which might invoke UB.  */
   uintptr_t nextptr;
 
   /* A tag value that is monotonically incremented at the same time as
-     changes to the containing node. It persist through node reuse. Used
-     for avoiding the ABA problem.  */
+     changes to the containing node. It persists through node reuse. Used
+     to avoid ABA problems.  */
   uint64_t tag;
 } lfl_tagged_marked_ptr;
 

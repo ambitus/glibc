@@ -253,15 +253,15 @@ lfl_find (uint64_t key,
   for (;;)
     {
       /* Set up to search the list from the beginning.  */
-      uintptr_t raw_curr, raw_next;
+      uintptr_t raw_ptr;
 
       prev = &list->start;
       next = NULL;
       /* Get the next node, don't check for marks since the head
 	 node will never be marked, and will never be removed.  */
-      atomic_load_acquire_next (&prev->next, &raw_curr, &prev_tag);
+      atomic_load_acquire_next (&prev->next, &raw_ptr, &prev_tag);
 
-      curr = (lfl_node_t *) raw_curr;
+      curr = (lfl_node_t *) raw_ptr;
       curr_tag = 0;
       curr_was_marked = 0;
 
@@ -270,7 +270,7 @@ lfl_find (uint64_t key,
 	{
 	  /* If the node we are currently examining is at the end of
 	     the list, report back.  */
-	  if (!curr)
+	  if (__glibc_unlikely (!curr))
 	    {
 	      *ret_prev = prev;
 	      ret_prev_body->nextptr = (uintptr_t) curr;
@@ -284,18 +284,14 @@ lfl_find (uint64_t key,
 
 	  /* Get the the next node ptr, check if current node is
 	     marked.  */
-	  atomic_load_acquire_next (&curr->next, &raw_next, &curr_tag);
+	  atomic_load_acquire_next (&curr->next, &raw_ptr, &curr_tag);
 
-	  next = (lfl_node_t *) (raw_next & ~LFL_MARK);
-	  curr_was_marked = raw_next & LFL_MARK;
+	  next = (lfl_node_t *) (raw_ptr & ~LFL_MARK);
+	  curr_was_marked = raw_ptr & LFL_MARK;
 
-	  /* Recheck prev. See if it has changed since we last examined it.  */
-	  uintptr_t raw_curr2;
-	  uint64_t prev_tag2;
-	  atomic_load_acquire_next (&prev->next, &raw_curr2, &prev_tag2);
-
-	  if ((raw_curr2 & ~LFL_MARK) != raw_curr
-	      || prev_tag2 != prev_tag)
+	  /* Recheck prev. If it has changed since we last examined it,
+	     the curr pointer we just read from was invalid.  */
+	  if (atomic_load_acquire (&prev->next.tag) != prev_tag)
 	    break;  /* Try again.  */
 
 	  if (__glibc_unlikely (curr_was_marked))
@@ -314,9 +310,7 @@ lfl_find (uint64_t key,
 	    }
 	  else
 	    {
-	      /* load the data for the current node.
-		 Relaxed is good enough for the first one since the above
-		 aquire keeps it in place.  */
+	      /* load the data for the current node.  */
 	      uint64_t curr_key = atomic_load_acquire (&curr->data.key);
 
 	      /* Recheck the node tag. If it has changed, the key value
@@ -331,10 +325,11 @@ lfl_find (uint64_t key,
 		 elements. If we are a list based set (hashtable bucket),
 		 or we are looking to delete from the list, then return
 		 after we find the first such element.  */
-	      if (curr_key >= key
-		  && (stop_after_first || curr_key > key))
+	      if (__glibc_unlikely (curr_key > key
+				    || (curr_key == key
+					&& stop_after_first)))
 		{
-		  bool accepted = true;
+		  bool accepted;
 		  uint64_t curr_val =
 		    atomic_load_acquire (&curr->data.val);
 
@@ -346,6 +341,8 @@ lfl_find (uint64_t key,
 		    accepted = examine (curr_key, curr_val, cmp_val,
 					curr_tag, &curr->next.tag,
 					list);
+		  else
+		    accepted = true;
 
 		  *ret_prev = prev;
 		  ret_prev_body->nextptr = (uintptr_t) curr;
@@ -432,6 +429,12 @@ __lfl_get (uint64_t key, lfl_list_t *list)
 }
 libc_hidden_def (__lfl_get)
 
+/* The subroutine that actually removes a node from a list. If present,
+   action and cmp_val must obey the restrictions described by the
+   corresponding arguments to __lfl_remove_and_splice. If present,
+   to_insert and end_node should be the start and end nodes of a sublist
+   that should atomically replace the node that is being removed. Right
+   now, the sublist is not treated atomically prior to insertion. */
 
 static uint64_t
 do_remove (uint64_t key, lfl_action action, void *cmp_val,
@@ -449,9 +452,9 @@ do_remove (uint64_t key, lfl_action action, void *cmp_val,
 		    true, action, cmp_val, list) != key)
 	return 0;
 
-      /* If we have been supplied a node that will be inserted into
+      /* If we have been supplied a sublist that will be inserted into
 	 the list, set up its next pointer, and use the user's value
-	 for new_next. Otherwise, ignore the new_next value and use
+	 for to_insert. Otherwise, ignore the to_insert value and use
 	 the pointer to the node after curr.  */
       if (to_insert)
 	atomic_store_release (&end_node->next.nextptr,
