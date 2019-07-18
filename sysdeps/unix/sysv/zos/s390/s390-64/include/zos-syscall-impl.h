@@ -199,7 +199,7 @@ translate_and_check_size (const char *str, char ebcstr[__BPXK_PATH_MAX])
    z/OS native values as the actual values for the O_* constants,
    skipping this step entirely.  */
 static inline int32_t
-__map_common_oflags (int flags)
+__map_common_oflags_to_zos (int flags)
 {
   uint32_t zflags;
   uint32_t uflags = (uint32_t) flags;
@@ -242,13 +242,62 @@ __map_common_oflags (int flags)
   shift_down (O_LARGEFILE);
   /* We can't emulate O_DSYNC, so alias it to O_SYNC.  */
   if (O_DSYNC & uflags) zflags |= ZOS_SYS_O_SYNC;
+  /* z/OS TODO: Is this appropriate?  */
+  if ((O_ASYNC & uflags) == O_ASYNC) zflags |= ZOS_SYS_O_ASYNCSIG;
 
   /* TODO: Allow O_NOLARGEFILE.  */
-#undef validate_shift
 #undef shift_up
 #undef shift_down
 
   return (int32_t) zflags;
+}
+
+static inline int32_t
+__map_common_oflags_from_zos (int zflgs)
+{
+  uint32_t flags;
+  uint32_t zflags = (uint32_t) zflgs;
+
+  /* Handle ACCMODE, lowest 3 bits.  */
+  switch (zflags & ZOS_SYS_O_ACCMODE)
+    {
+    case ZOS_SYS_O_RDONLY:
+      flags = O_RDONLY;
+    case ZOS_SYS_O_WRONLY:
+      flags = O_WRONLY;
+    case ZOS_SYS_O_RDWR:
+      flags = O_RDWR;
+    case 0:
+      /* This isn't actually documented to be a possibility, but we need
+	 to cover all bases.  */
+      flags = 0x3;
+    }
+
+#define shift_up(flg)							\
+  flags |= (zflags & (flg)) << validate_shift ((flg), ZOS_SYS_##flg)
+#define shift_down(flg)							\
+  flags |= (zflags & (flg)) >> validate_shift (ZOS_SYS_##flg, (flg))
+
+  /* TODO: Allow O_NOLARGEFILE.  */
+  flags &= ~ZOS_SYS_O_NOLARGEFILE;
+
+  shift_down (O_CREAT);
+  shift_up (O_EXCL);
+  shift_up (O_NOCTTY);
+  shift_up (O_TRUNC);
+  shift_up (O_APPEND);
+  shift_up (O_NONBLOCK);
+  if ((ZOS_SYS_O_SYNC & zflags) == ZOS_SYS_O_SYNC) flags |= O_SYNC;
+  shift_up (O_LARGEFILE);
+  /* z/OS TODO: Is this appropriate?  */
+  if ((ZOS_SYS_O_ASYNCSIG & zflags) == ZOS_SYS_O_ASYNCSIG)
+    flags |= O_ASYNC;
+
+#undef validate_shift
+#undef shift_up
+#undef shift_down
+
+  return (int32_t) flags;
 }
 
 typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
@@ -367,7 +416,7 @@ __zos_sys_open (int *errcode, const char *pathname,
 	not_creating = false;
     }
 
-  int32_t zflags = __map_common_oflags (flags);
+  int32_t zflags = __map_common_oflags_to_zos (flags);
   /* Do the syscall.  */
   BPX_CALL (open, __bpx4opn_t, &path_len, translated_path, &zflags,
 	    &kernel_mode, &retval, errcode, &reason_code);
@@ -431,7 +480,10 @@ __zos_sys_open (int *errcode, const char *pathname,
 	 before forking. If it's nonzero the forking thread waits for a
 	 while then checks it again, if it has been incremented then wait
 	 again, but if that happens too many times just go ahead and fork
-	 anyway. Decrement it after we've done the cloexec call.  */
+	 anyway. Decrement it after we've done the cloexec call. For
+	 total safety, we would need some way to decrement the value if
+	 this thread dies (maybe a secondary thread-local sentinel and a
+	 resource manager?). */
       if (__glibc_unlikely (__zos_sys_fcntl (&tmp_err, retval, F_SETFD,
 					     (void *) FD_CLOEXEC) == -1))
 	{
@@ -674,96 +726,98 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
   bool set_cloexec_after = false;
   int32_t zcmd;
 
-  intptr_t real_arg;
+  int32_t real_arg;
 
   /* Map linux fcntl commands to z/OS commands. Do a racy emulation
      of the ones we can emulate, and return ENOSYS for the rest.  */
   switch (cmd)
-  {
-  case F_DUPFD:
-    zcmd = ZOS_SYS_F_DUPFD;
-    real_arg = 0;
-    break;
+    {
+    case F_DUPFD_CLOEXEC:
+      /* TODO: There's a race condition here, but we could mitigate it by
+	 incrementing a global hazard variable that all threads check
+	 before forking. If it's nonzero the forking thread waits for a
+	 while then checks it again, if it has been incremented then wait
+	 again, but if that happens too many times just go ahead and fork
+	 anyway. Decrement it after we've done the cloexec call.  */
+      set_cloexec_after = true;
+      /* Fallthrough.  */
 
-  case F_DUPFD_CLOEXEC:
-    zcmd = ZOS_SYS_F_DUPFD;
-    /* TODO: There's a race condition here, but we could mitigate it by
-       incrementing a global hazard variable that all threads check
-       before forking. If it's nonzero the forking thread waits for a
-       while then checks it again, if it has been incremented then wait
-       again, but if that happens too many times just go ahead and fork
-       anyway. Decrement it after we've done the cloexec call.  */
-    set_cloexec_after = true;
-    real_arg = 0;
-    break;
+    case F_DUPFD:
+      zcmd = ZOS_SYS_F_DUPFD;
+      real_arg = (int32_t) (intptr_t) arg;
+      break;
 
-  case F_GETFD:
-    zcmd = ZOS_SYS_F_GETFD;
-    real_arg = 0;
-    break;
-
-  case F_SETFD:
-    zcmd = ZOS_SYS_F_SETFD;
-
-    /* Linux only checks whether the low bit is set.  */
-    if ((uintptr_t) arg & FD_CLOEXEC)
-      real_arg = ZOS_SYS_FD_CLOEXEC;
-    else
+    case F_GETFD:
+      zcmd = ZOS_SYS_F_GETFD;
       real_arg = 0;
+      break;
 
-    /* TODO: Maybe allow FD_CLOFORK.  */
-    break;
+    case F_SETFD:
+      zcmd = ZOS_SYS_F_SETFD;
+      real_arg = (int32_t) (intptr_t) arg;
+      /* TODO: Maybe provide a define for FD_CLOFORK.  */
+      break;
 
-  /* TODO: The rest of these.  */
-  case F_GETFL:
-  case F_SETFL:
+    case F_GETFL:
+      zcmd = ZOS_SYS_F_GETFL;
+      real_arg = 0;
+      break;
 
-  /* case F_GETLK64:  */
-  case F_GETLK:
-  /* case F_SETLK64:  */
-  case F_SETLK:
-  /* case F_SETLKW64:  */
-  case F_SETLKW:
+    /* z/OS TODO: The rest of these.  */
+    case F_SETFL:
 
-  case F_GETOWN:
-  case F_SETOWN:
+    /* case F_GETLK64:  */
+    case F_GETLK:
+    /* case F_SETLK64:  */
+    case F_SETLK:
+    /* case F_SETLKW64:  */
+    case F_SETLKW:
 
-  case F_GETOWN_EX:
-  case F_SETOWN_EX:
+    case F_GETOWN:
+    case F_SETOWN:
 
-  case F_GETSIG:
-  case F_SETSIG:
+    case F_GETOWN_EX:
+    case F_SETOWN_EX:
 
-  case 17 /* F_GETOWNER_UIDS  */:
+    case F_GETSIG:
+    case F_SETSIG:
 
-  case F_OFD_GETLK:
-  case F_OFD_SETLK:
-  case F_OFD_SETLKW:
+    case 17 /* F_GETOWNER_UIDS  */:
 
-  case F_GETLEASE:
-  case F_SETLEASE:
+    case F_OFD_GETLK:
+    case F_OFD_SETLK:
+    case F_OFD_SETLKW:
 
-  case F_NOTIFY:
+    case F_GETLEASE:
+    case F_SETLEASE:
 
-  case F_GETPIPE_SZ:
-  case F_SETPIPE_SZ:
+    case F_NOTIFY:
 
-  case F_ADD_SEALS:
-  case F_GET_SEALS:
+    case F_GETPIPE_SZ:
+    case F_SETPIPE_SZ:
 
-  case F_GET_RW_HINT:
-  case F_SET_RW_HINT:
-  case F_GET_FILE_RW_HINT:
-  case F_SET_FILE_RW_HINT:
+    case F_ADD_SEALS:
+    case F_GET_SEALS:
 
-  default:
-    SHIM_NOT_YET_IMPLEMENTED_FATAL ("SOME F_* flag", -1);
-  }
+    case F_GET_RW_HINT:
+    case F_SET_RW_HINT:
+    case F_GET_FILE_RW_HINT:
+    case F_SET_FILE_RW_HINT:
+
+    default:
+      SHIM_NOT_YET_IMPLEMENTED_FATAL ("SOME F_* flag", -1);
+    }
 
   BPX_CALL (fcntl, __bpx4fct_t, &fd, &zcmd, &real_arg, &retval,
 	    errcode, &reason_code);
   /* TODO: confirm retvals are in line with what linux gives.  */
 
+  /* z/OS TODO: We could actually make this more safe by atomically
+     incrementing a sentinel value that is checked against zero in
+     the fork wrapper. The fork wrapper must wait until the sentinel
+     is zero again. For total safety, we would need some way to decrement
+     the value if this thread dies (maybe a secondary thread-local
+     sentinel and a resource manager?).  */
   if (set_cloexec_after && retval != -1)
     {
       int tmp_err;
@@ -782,13 +836,22 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
   /* TODO: For F_DUPFD2, F_GETFD, F_GETFL, and F_GETLK, we need to
      convert the results from a z/OS format to a linux-like format.  */
   switch (cmd)
-  {
-  case F_GETFD:
-  case F_GETFL:
-  case F_GETLK:
-  default:
-    break;
-  }
+    {
+    case F_GETFL:
+      if (retval != -1)
+	retval = __map_common_oflags_from_zos (retval);
+      break;
+
+    case F_GETFD:
+      /* z/OS TODO: Some programs are poorly written so that they test
+	 the result for equality against FD_CLOEXEC, not for presence.
+         For now we do nothing, so those will break. Should we do
+	 anything?  */
+
+    case F_GETLK:
+    default:
+      break;
+    }
 
   return retval;
 }
