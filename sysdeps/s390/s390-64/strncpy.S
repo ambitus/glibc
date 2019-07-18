@@ -92,7 +92,7 @@ ENTRY(strncpy)
 #ifndef __ZOS__
 	lg    %r2,48(%r15)	    # return dst pointer
 #else
-	lmg   %r1,%r5,32(%r1)	    # restore regs
+	lmg   %r1,%r5,32(%r13)	    # restore regs
 	lg    %r15,0(%r1)	    # return dst pointer
 #endif /* __ZOS__  */
 	br    %r14
