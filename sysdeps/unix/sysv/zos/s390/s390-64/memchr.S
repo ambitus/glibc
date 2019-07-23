@@ -17,7 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 /* Inputs:
-     1: address to memory area
+     1: address of memory area
      2: character to find
      3: number of bytes to search  */
 
@@ -26,27 +26,24 @@
 
 	.text
 ENTRY(memchr)
-	# set up r0 with the character to find
-	lhi  %r0,0xff
-	lg   %r15,0(%r1)
-	n    %r0,12(%r1)
+	lghi	%r0, 0xff
+	n	%r0, 12(%r1)		# character to find
 
-	# z/OS TODO: if we aren't saving r1, remove this store
-	st    %r1,32(%r13)
-	lg    %r1,16(%r1)
+	lg	%r15, 16(%r1)
 
-	# set up end addr
-	la    %r1,0(%r1,%r15)
+	stg	%r1, 32(%r13)
+	lg	%r1, 0(%r1)		# start addr
+
+	la	%r15, 0(%r1,%r15)	# end addr
 
 	# srst's implicit third arg is r0
-0:	srst  %r15,%r1
-	jo    0b
-	brc   13,1f
-	slgr  %r15,%r15
+0:	srst	%r15, %r1
+	jo	0b
+	brc	13, 1f
+	slgr	%r15, %r15
 
-	# z/OS TODO: if we aren't saving r1, remove this load
-1:	lg    %r1,32(%r13)
-	br    %r14
+1:	lg	%r1, 32(%r13)
+	br	%r14
 
 END(memchr)
 libc_hidden_builtin_def (memchr)
