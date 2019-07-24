@@ -612,6 +612,72 @@ __zos_sys_lseek (int *errcode, int fd, off_t offset, int whence)
 }
 
 
+typedef void (*__bpx4pip_t) (int32_t *read_fd, int32_t *write_fd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_pipe2 (int *errcode, int pipedes[2], int flags)
+{
+  int32_t retval, reason_code;
+  int32_t *rfd, *wfd;
+  int tmp_err;
+
+  if (flags & O_DIRECT)
+    {
+      /* We don't support and can't emulate Linux's peculiar packet
+	 mode pipes.  */
+      *errcode = EINVAL;
+      return -1;
+    }
+
+  rfd = &pipedes[0];
+  wfd = &pipedes[1];
+
+  BPX_CALL (pipe, __bpx4pip_t, rfd, wfd, &retval, errcode, &reason_code);
+
+  if (flags & O_CLOEXEC)
+    {
+      /* z/OS TODO: There's a race condition here, but we could mitigate
+	 it by incrementing a global hazard variable that all threads
+	 check before forking. If it's nonzero the forking thread waits
+	 for a while then checks it again, if it has been incremented
+	 then wait again, but if that happens too many times just go
+	 ahead and fork anyway. Decrement it after we've done the cloexec
+	 call. For total safety, we would need some way to decrement the
+	 value if this thread dies (maybe a secondary thread-local
+	 sentinel and a resource manager?).  */
+
+      if (__zos_sys_fcntl (&tmp_err, pipedes[0], F_SETFD,
+			   (void *) FD_CLOEXEC) == -1
+	  || __zos_sys_fcntl (&tmp_err, pipedes[1], F_SETFD,
+			      (void *) FD_CLOEXEC) == -1)
+	{
+	  /* z/OS TODO: should we report this error to the user, or
+	     silently ignore it? It might be confusing, and a failure
+	     here would almost always be nonfatal, it would just be a
+	     slow leak of file descriptors. For now we report it.  */
+	  *errcode = tmp_err;
+	  return -1;
+	}
+    }
+
+  /* Would this need to be guarded in any manner, like should be done for
+     O_CLOEXEC?  */
+  if (flags & O_NONBLOCK
+      && (__zos_sys_fcntl (&tmp_err, pipedes[0], F_SETFL,
+			   (void *) O_NONBLOCK) == -1
+	  || __zos_sys_fcntl (&tmp_err, pipedes[1], F_SETFL,
+			      (void *) O_NONBLOCK) == -1))
+    {
+      *errcode = tmp_err;
+      return -1;
+    }
+
+  return retval;
+}
+
+
 /* stat and related syscalls.  */
 
 typedef void (*__bpx4sta_t) (const uint32_t *pathname_len,
