@@ -784,7 +784,7 @@ typedef void (*__bpx4fct_t) (const int32_t *fd,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-/* 'arg' is actually a pointer directly to the argument, glibc just
+/* 'arg' is actually the argument, not necessarily a pointer, glibc just
    prefers to treat that argument as a void pointer because the kernel
    is expected to know its size and type from the command.  */
 static inline int
@@ -792,9 +792,9 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
 {
   int32_t retval, reason_code;
   bool set_cloexec_after = false;
-  int32_t zcmd;
-
+  int32_t zcmd = cmd;
   int32_t real_arg;
+  void *real_arg_ptr = &real_arg;
 
   /* Map linux fcntl commands to z/OS commands. Do a racy emulation
      of the ones we can emulate, and return ENOSYS for the rest.  */
@@ -807,28 +807,24 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
 	 while then checks it again, if it has been incremented then wait
 	 again, but if that happens too many times just go ahead and fork
 	 anyway. Decrement it after we've done the cloexec call.  */
+      zcmd = F_DUPFD;
       set_cloexec_after = true;
       /* Fallthrough.  */
 
     case F_DUPFD:
-      zcmd = ZOS_SYS_F_DUPFD;
-      real_arg = (int32_t) (intptr_t) arg;
-      break;
-
-    case F_GETFD:
-      zcmd = ZOS_SYS_F_GETFD;
-      real_arg = 0;
-      break;
-
     case F_SETFD:
-      zcmd = ZOS_SYS_F_SETFD;
       real_arg = (int32_t) (intptr_t) arg;
       /* TODO: Maybe provide a define for FD_CLOFORK.  */
       break;
 
+    case F_GETFD:
     case F_GETFL:
-      zcmd = ZOS_SYS_F_GETFL;
       real_arg = 0;
+      break;
+
+    case F_SETTAG:
+    case F_CONTROL_CVT:
+      real_arg_ptr = arg;
       break;
 
     /* z/OS TODO: The rest of these.  */
@@ -871,12 +867,15 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
     case F_SET_RW_HINT:
     case F_GET_FILE_RW_HINT:
     case F_SET_FILE_RW_HINT:
+      SHIM_NOT_YET_IMPLEMENTED_FATAL ("SOME F_* flag", -1);
+      break;
 
     default:
-      SHIM_NOT_YET_IMPLEMENTED_FATAL ("SOME F_* flag", -1);
+      real_arg = (int32_t) (intptr_t) arg;
+      break;
     }
 
-  BPX_CALL (fcntl, __bpx4fct_t, &fd, &zcmd, &real_arg, &retval,
+  BPX_CALL (fcntl, __bpx4fct_t, &fd, &zcmd, real_arg_ptr, &retval,
 	    errcode, &reason_code);
   /* TODO: confirm retvals are in line with what linux gives.  */
 
@@ -913,8 +912,8 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
     case F_GETFD:
       /* z/OS TODO: Some programs are poorly written so that they test
 	 the result for equality against FD_CLOEXEC, not for presence.
-         For now we do nothing, so those will break. Should we do
-	 anything?  */
+	 For now we do nothing, so those will break in the presence of
+	 FD_CLOFORK. Should we do anything?  */
 
     case F_GETLK:
     default:
