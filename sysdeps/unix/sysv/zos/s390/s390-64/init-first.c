@@ -8,7 +8,7 @@ __zos_early_setup (void)
   /* __bpx_call_table = GET_BPX_FUNCTION_TABLE; */
 
   /* Get the address of the current thread's Task Control Block.  */
-  __ipt_zos_tcb = __get_zos_tcb_addr ();
+  /* __ipt_zos_tcb = __get_zos_tcb_addr ();  */
 }
 
 /* co-opt VDSO_SETUP to do our initialization, since we aren't

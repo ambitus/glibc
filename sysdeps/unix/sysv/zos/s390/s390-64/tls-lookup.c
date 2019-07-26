@@ -30,7 +30,7 @@ libc_hidden_data_def (__zos_tp_table)
 void *
 __zos_get_thread_pointer (void)
 {
-  unsigned int task_addr = __get_zos_tcb_addr ();
+  unsigned int task_addr = TCB_PTR;
   return (void *) (uintptr_t) __lf_hash_table_get (task_addr,
 						   __zos_tp_table);
 }
@@ -40,7 +40,7 @@ libc_hidden_def (__zos_set_thread_pointer)
 void
 __zos_set_thread_pointer (void *addr)
 {
-  unsigned int task_addr = __get_zos_tcb_addr ();
+  unsigned int task_addr = TCB_PTR;
   __lf_hash_table_put (task_addr, (uintptr_t) addr, __zos_tp_table);
 }
 libc_hidden_def (__zos_set_thread_pointer)
@@ -49,7 +49,7 @@ libc_hidden_def (__zos_set_thread_pointer)
 void
 __zos_clear_thread_pointer (void)
 {
-  unsigned int task_addr = __get_zos_tcb_addr ();
+  unsigned int task_addr = TCB_PTR;
   __lf_hash_table_pop (task_addr, __zos_tp_table);
 }
 libc_hidden_def (__zos_clear_thread_pointer)

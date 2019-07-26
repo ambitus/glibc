@@ -28,13 +28,26 @@
 #define GET_PTR31_SAFE(x) ((uintptr_t)(~(1UL << 31) & *(uint32_t *)(x)))
 
 /* Pointer to a very useful structure.  */
-#define CVT_PTR \
-  GET_PTR31_UNSAFE ((volatile uintptr_t) (0x10))
-
+#define CVT_PTR		GET_PTR31_UNSAFE ((volatile uintptr_t) (0x10))
 /* Pointer to a table of many pointers to functions of interest. See the
    CSRT documentation.  */
-#define CSRT_PTR \
-  GET_PTR31_UNSAFE (CVT_PTR + 544)
+#define CSRT_PTR	GET_PTR31_UNSAFE (CVT_PTR + 544)
+
+/* Get the address of the current thread's Task Control Block.  */
+#define TCB_PTR		GET_PTR31_SAFE ((volatile uintptr_t) (540))
+/* Secondary Task Control Block address.  */
+#define STCB_PTR	GET_PTR31_SAFE (TCB_PTR + 312)
+/* OMVS Task Control Block extension.  This may be NULL.  */
+#define OTCB_PTR	GET_PTR31_SAFE (STCB_PTR + 216)
+
+/* Pointer to a thread-local structure set up by the OS. May be null.  */
+static inline uintptr_t
+get_thli_ptr (void)
+{
+  uintptr_t otcb = OTCB_PTR;
+
+  return otcb ? GET_PTR31_SAFE (otcb + 188) : otcb;
+}
 
 /* We use this instead of abort() in situations where signals might not
    be possible or desirable.  */

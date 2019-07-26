@@ -633,7 +633,7 @@ __sir_body (struct sir_stack *ss, int should_free)
   /* TODO: Start of testing section. Remove later.  */
   sir_warn (flags & F2_64);
   if (flags & IPT)
-    sir_warn (__get_zos_tcb_addr () == __ipt_zos_tcb);
+    sir_warn (TCB_PTR == __ipt_zos_tcb);
   /* TODO: End of testing section. Remove later.  */
 
   /* Determine reason for interruption.  */

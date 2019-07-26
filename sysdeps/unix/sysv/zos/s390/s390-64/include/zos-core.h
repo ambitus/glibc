@@ -93,11 +93,5 @@ int __storage_release (unsigned int storage_addr, unsigned int length,
 		       unsigned int tcbaddr,
 		       bool noexec) attribute_hidden;
 
-/* Get the address of the current thread's Task Control Block.  */
-static inline unsigned int
-__get_zos_tcb_addr (void)
-{
-  return GET_PTR31_SAFE ((volatile uintptr_t) (540));
-}
 #endif  /* __ASSEMBLER__  */
 #endif /* _ZOS_CORE_H  */

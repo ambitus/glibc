@@ -258,7 +258,7 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Do several things here.  */
   /* 1. Save the IPT Task Control Block address. This will be needed
      throughout the life of the program.  */
-  __ipt_zos_tcb = __get_zos_tcb_addr ();
+  __ipt_zos_tcb = TCB_PTR;
 
   /* 2. Set up an ESTAEX handler for debugging. */
   int estaex_set = __set_estaex_handler (__estaex_handler_dump, NULL);
@@ -296,7 +296,12 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* 5. Register our SIR.  */
   set_up_signals ();
 
-  /* 6. Do the regular __libc_start_main stuff.  */
+  /* 6. We should now be dubbed. Set THLIccsid to 819 for ascii.  */
+  uintptr_t thli = get_thli_ptr ();
+  /* z/OS TODO: Should check if we're dubbed here at some point.  */
+  *(uint16_t *)(thli + 80) = 819;
+
+  /* 7. Do the regular __libc_start_main stuff.  */
   generic_start_main (main, *arg_info->argv.count, args_and_envs,
 		      init, fini, rtld_fini, stack_end);
 
