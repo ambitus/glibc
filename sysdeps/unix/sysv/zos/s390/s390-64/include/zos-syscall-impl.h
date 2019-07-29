@@ -1959,6 +1959,51 @@ __zos_sys_getppid (int *errcode __attribute__ ((unused)))
 }
 
 
+typedef void (*__bpx4ges_t) (const int32_t *pid,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline pid_t
+__zos_sys_getsid (int *errcode, pid_t pid)
+{
+  int32_t retval, reason_code;
+  int32_t pid_int = pid;
+  BPX_CALL (getsid, __bpx4ges_t, &pid_int,
+	    &retval, errcode, &reason_code);
+  return (pid_t)retval;
+}
+
+
+typedef void (*__bpx4spg_t) (const int32_t *pid,
+			     const int32_t *pgid,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_setpgid (int *errcode, pid_t pid, pid_t pgid)
+{
+  int32_t retval, reason_code;
+  int32_t pid_int = pid;
+  int32_t pgid_int = pgid;
+  BPX_CALL (setpgid, __bpx4spg_t, &pid_int, &pgid_int,
+	    &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4ssi_t) (int32_t *ret_sid, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline pid_t
+__zos_sys_setsid (int *errcode)
+{
+  int32_t ret_sid, reason_code;
+  BPX_CALL (setsid, __bpx4ssi_t,
+	    &ret_sid, errcode, &reason_code);
+  return (pid_t)ret_sid;
+}
+
+
 typedef void (*__bpx4alr_t) (const uint32_t *seconds,
 			     uint32_t *ret_sec);
 
@@ -1973,6 +2018,8 @@ __zos_sys_alarm (int *errcode __attribute__ ((unused)), unsigned int seconds)
 
 /* The getpgrp syscall is implemented via __getpgid syscall in
    posix/getpgrp.c. */
+/* The setpgrp syscall is implemented via __setpgid syscall in
+   posix/setpgrp.c. */
 
 
 /* Signal syscalls.  */
