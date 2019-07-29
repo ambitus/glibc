@@ -84,11 +84,8 @@ _init (int argc, char **argv, char **envp)
 
   __init_misc (argc, argv, envp);
 
-  /* z/OS TODO: Work around a bug in ctype stuff. Remove when fixed.  */
-#ifndef __ZOS__
   /* Initialize ctype data.  */
   __ctype_init ();
-#endif
 
 #if defined SHARED && !defined NO_CTORS_DTORS_SECTIONS
   __libc_global_ctors ();
