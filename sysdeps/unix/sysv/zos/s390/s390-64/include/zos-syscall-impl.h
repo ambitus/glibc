@@ -1738,6 +1738,42 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
 }
 
 
+typedef void (*__bpx4sym_t) (const uint32_t *pathname_len,
+			     const char *pathname,
+			     const uint32_t *linkname_len,
+			     const char *linkname,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_symlink (int *errcode, const char *from, const char *to)
+{
+  int32_t retval, reason_code;
+  char tr_from[__BPXK_PATH_MAX], tr_to[__BPXK_PATH_MAX];
+  uint32_t from_len, to_len;
+  from_len = translate_and_check_size (from, tr_from);
+
+  if (__glibc_unlikely (from_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  to_len = translate_and_check_size (to, tr_to);
+
+  if (__glibc_unlikely (to_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (symlink, __bpx4sym_t, &from_len, tr_from, &to_len, tr_to,
+	    &retval, errcode, &reason_code);
+
+  return retval;
+}
+
+
 /* Notice that these have different prototypes from all the other
    syscalls.  */
 typedef void (*__bpx4uid_t) (const uint32_t *);
