@@ -28,7 +28,7 @@
 
 .*-.*-syllable.*	5	2.0.0	# just an arbitrary value
 
-.*-.*-zos.*		6	2.0.0	# z/OS TODO: set this to the earliest compatible z/OS version
+.*-.*-zos-gnu.*		6	2.1.0	# z/OS TODO: set this to the earliest compatible z/OS version
 
 # There is no catch-all default here because every supported OS that uses
 # ELF must have its own unique ABI tag.

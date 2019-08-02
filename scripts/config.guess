@@ -2,7 +2,7 @@
 # Attempt to guess a canonical system name.
 #   Copyright 1992-2018 Free Software Foundation, Inc.
 
-timestamp='2018-08-28'
+timestamp='2019-08-02'
 
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -147,6 +147,20 @@ Linux|GNU|GNU/*)
 	LIBC=dietlibc
 	#else
 	LIBC=gnu
+	#endif
+	EOF
+	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep '^LIBC' | sed 's, ,,g'`
+	;;
+OS/390|z/OS)
+	LIBC=le
+
+	eval "$set_cc_for_build"
+	cat <<-EOF > $dummy.c
+	#include <features.h>
+	#if defined(__GLIBC__)
+	LIBC=gnu
+	#else
+	LIBC=le
 	#endif
 	EOF
 	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep '^LIBC' | sed 's, ,,g'`
@@ -334,9 +348,9 @@ case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}" in
 	echo ${UNAME_MACHINE}-unknown-morphos
 	exit ;;
     *:OS/390:*:*)
-	case "`(uname -sI) 2>/dev/null`" in
-	    "z/OS")
-		echo s390x-ibm-zos ;;
+	case "$LIBC" in
+	    gnu)
+		echo s390x-ibm-zos-gnu ;;
 	    *)
 		echo i370-ibm-openedition ;;
 	esac
