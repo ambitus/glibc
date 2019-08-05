@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #define __need_size_t
 #include <stddef.h>
+#include <utime.h>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -510,6 +511,13 @@ __zos_sys_openat (int *errcode, int dirfd, const char *pathname,
 }
 
 
+static inline int
+__zos_sys_creat (int *errcode, const char *pathname, mode_t mode)
+{
+  return __zos_sys_open (errcode, pathname, O_WRONLY | O_CREAT | O_TRUNC, mode);
+}
+
+
 static inline ssize_t
 __zos_sys_read (int *errcode, int fd, void *buf, size_t nbytes)
 {
@@ -558,13 +566,38 @@ __zos_sys_write (int *errcode, int fd, const void *buf, size_t nbytes)
 }
 
 
-typedef void (*__bpx4wrv_t) (const int32_t *fd,
-			     const int32_t *iov_count,
-			     const struct iovec *iov,
-			     const int32_t *iov_alet,
-			     const int32_t *iov_buffer_alet,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
+typedef void (*__bpx4vecio_t) (const int32_t *fd,
+			       const int32_t *iov_count,
+			       const struct iovec *iov,
+			       const int32_t *iov_alet,
+			       const int32_t *iov_buffer_alet,
+			       int32_t *retval, int32_t *retcode,
+			       int32_t *reason_code);
+
+typedef __bpx4vecio_t __bpx4rdv_t;
+typedef __bpx4vecio_t __bpx4wrv_t;
+
+static inline ssize_t
+__zos_sys_readv (int *errcode,
+		 int fd, const struct iovec *iov, int iovcnt)
+{
+  /* TODO: Allow users to optionally specify the buffer ALET in some
+     way that cannot potentially break compatibility with other
+     platforms. Do this for all syscalls using ALETs.
+
+     TODO: Note that while the linux syscall returns an ssize_t, we can
+     only return an int. Address that somehow.  */
+
+  /* As it turns out, the z/OS format for iovecs exactly matches
+     the Linux format.  */
+  int32_t retval, reason_code;
+  const int32_t alet = 0;
+
+  BPX_CALL (readv, __bpx4rdv_t, &fd,
+	    &iovcnt, iov, &alet, &alet, &retval, errcode, &reason_code);
+  return retval;
+}
+
 
 static inline ssize_t
 __zos_sys_writev (int *errcode,
@@ -990,6 +1023,33 @@ __zos_sys_readlinkat (int *errcode, int dirfd,
   if (dirfd == AT_FDCWD || *pathname == '/')
     return __zos_sys_readlink (errcode, pathname, buf, bufsiz);
   SHIM_NOT_YET_IMPLEMENTED_FATAL ("readlinkat not implemented", -1);
+}
+
+
+typedef void (*__bpx4uti_t) (const uint32_t *pathname_len,
+			     const char *pathname,
+			     const int64_t *times,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_utime (int *errcode, const char *pathname,
+		 const struct utimbuf *times)
+{
+  int32_t retval, reason_code;
+  char translated_path[__BPXK_PATH_MAX];
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (utime, __bpx4uti_t, &path_len, translated_path,
+	    times, &retval, errcode, &reason_code);
+
+  return retval;
 }
 
 
@@ -1556,13 +1616,15 @@ __zos_sys_unlink (int *errcode, const char *pathname)
 }
 
 
-typedef void (*__bpx4lnk_t) (const uint32_t *filename_len,
-			     const char *filename,
-			     const uint32_t *linkname_len,
-			     const char *linkname,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
+typedef void (*__bpx4fname_t) (const uint32_t *fname1_len,
+			       const char *fname1,
+			       const uint32_t *fname2_len,
+			       const char *fname2,
+			       int32_t *retval, int32_t *retcode,
+			       int32_t *reason_code);
 
+typedef __bpx4fname_t __bpx4lnk_t;
+typedef __bpx4fname_t __bpx4ren_t;
 
 static inline int
 __zos_sys_link (int *errcode, const char *filename, const char *linkname)
@@ -1588,8 +1650,39 @@ __zos_sys_link (int *errcode, const char *filename, const char *linkname)
     }
 
   BPX_CALL (link, __bpx4lnk_t, &filename_len, translated_filename,
-	    &linkname_len, translated_linkname,
-	    &retval, errcode, &reason_code);
+	    &linkname_len, translated_linkname, &retval, errcode,
+	    &reason_code);
+
+  return retval;
+}
+
+
+static inline int
+__zos_sys_rename (int *errcode, const char *oldname, const char *newname)
+{
+  int32_t retval, reason_code;
+  char translated_oldname[__BPXK_PATH_MAX];
+  char translated_newname[__BPXK_PATH_MAX];
+
+  uint32_t oldname_len = translate_and_check_size (oldname,
+						   translated_oldname);
+  if (__glibc_unlikely (oldname_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  uint32_t newname_len = translate_and_check_size (newname,
+						   translated_newname);
+  if (__glibc_unlikely (newname_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (rename, __bpx4ren_t, &oldname_len, translated_oldname,
+	    &newname_len, translated_newname, &retval, errcode,
+	    &reason_code);
 
   return retval;
 }
@@ -1602,9 +1695,9 @@ typedef void (*__bpx4mkn_t) (const uint32_t *pathname_len,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-
 static inline int
-__zos_sys_mknod (int *errcode, const char *pathname, mode_t mode, dev_t dev)
+__zos_sys_mknod (int *errcode, const char *pathname, mode_t mode,
+		 dev_t dev)
 {
   int32_t retval, reason_code;
   char translated_path[__BPXK_PATH_MAX];
@@ -1618,7 +1711,6 @@ __zos_sys_mknod (int *errcode, const char *pathname, mode_t mode, dev_t dev)
       return -1;
     }
 
-
   BPX_CALL (mknod, __bpx4mkn_t, &path_len, translated_path,
 	    &mode_int, &dev_int, &retval, errcode, &reason_code);
 
@@ -1629,13 +1721,11 @@ __zos_sys_mknod (int *errcode, const char *pathname, mode_t mode, dev_t dev)
 typedef void (*__bpx4pas_t) (int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-
 static inline int
 __zos_sys_pause (int *errcode)
 {
   int32_t retval, reason_code;
-  BPX_CALL (pause, __bpx4pas_t, &retval,
-	    errcode, &reason_code);
+  BPX_CALL (pause, __bpx4pas_t, &retval, errcode, &reason_code);
   return retval;
 }
 
