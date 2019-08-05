@@ -1556,6 +1556,90 @@ __zos_sys_unlink (int *errcode, const char *pathname)
 }
 
 
+typedef void (*__bpx4lnk_t) (const uint32_t *filename_len,
+			     const char *filename,
+			     const uint32_t *linkname_len,
+			     const char *linkname,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_link (int *errcode, const char *filename, const char *linkname)
+{
+  int32_t retval, reason_code;
+  char translated_filename[__BPXK_PATH_MAX];
+  char translated_linkname[__BPXK_PATH_MAX];
+
+  uint32_t filename_len = translate_and_check_size (filename,
+						    translated_filename);
+  if (__glibc_unlikely (filename_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  uint32_t linkname_len = translate_and_check_size (linkname,
+						    translated_linkname);
+  if (__glibc_unlikely (linkname_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+  BPX_CALL (link, __bpx4lnk_t, &filename_len, translated_filename,
+	    &linkname_len, translated_linkname,
+	    &retval, errcode, &reason_code);
+
+  return retval;
+}
+
+
+typedef void (*__bpx4mkn_t) (const uint32_t *pathname_len,
+			     const char *pathname,
+			     const uint32_t *mode,
+			     const uint32_t *dev,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_mknod (int *errcode, const char *pathname, mode_t mode, dev_t dev)
+{
+  int32_t retval, reason_code;
+  char translated_path[__BPXK_PATH_MAX];
+  uint32_t mode_int = mode;
+  uint32_t dev_int = dev;
+  uint32_t path_len = translate_and_check_size (pathname,
+						translated_path);
+  if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
+    {
+      *errcode = ENAMETOOLONG;
+      return -1;
+    }
+
+
+  BPX_CALL (mknod, __bpx4mkn_t, &path_len, translated_path,
+	    &mode_int, &dev_int, &retval, errcode, &reason_code);
+
+  return retval;
+}
+
+
+typedef void (*__bpx4pas_t) (int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
+static inline int
+__zos_sys_pause (int *errcode)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (pause, __bpx4pas_t, &retval,
+	    errcode, &reason_code);
+  return retval;
+}
+
+
 typedef void (*__bpx4wat_t) (const int32_t *pid,
 			     const int32_t *options,
 			     int32_t * const *status,
