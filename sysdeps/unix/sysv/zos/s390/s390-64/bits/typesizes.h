@@ -47,6 +47,8 @@
 #define __PID_T_TYPE		__S32_TYPE
 #define __RLIM_T_TYPE		__U64_TYPE
 #define __RLIM64_T_TYPE		__U64_TYPE
+#define __BLKSIZE_T_TYPE	__S32_TYPE
+#define __CLOCK_T_TYPE		__S64_TYPE
 
 /* TODO: make sure that the following two types should actually
    be signed. */
@@ -61,7 +63,6 @@
 #define	__FSFILCNT64_T_TYPE	__UQUAD_TYPE
 #define	__FSWORD_T_TYPE		__SWORD_TYPE
 #define	__ID_T_TYPE		__U32_TYPE
-#define __CLOCK_T_TYPE		__SLONGWORD_TYPE
 #define __TIME_T_TYPE		__SLONGWORD_TYPE
 #define __USECONDS_T_TYPE	__U32_TYPE
 #define __SUSECONDS_T_TYPE	__SLONGWORD_TYPE
@@ -69,7 +70,6 @@
 #define __KEY_T_TYPE		__S32_TYPE
 #define __CLOCKID_T_TYPE	__S32_TYPE
 #define __TIMER_T_TYPE		void *
-#define __BLKSIZE_T_TYPE	__SLONGWORD_TYPE
 #define __FSID_T_TYPE		struct { int __val[2]; }
 #if defined __GNUC__ && __GNUC__ <= 2
 /* Compatibility with g++ 2.95.x.  */
