@@ -2017,7 +2017,16 @@ __zos_sys_fork (int *errcode)
 {
   pid_t pid;
   int32_t reason_code;
+
+  /* For some reason, fork unsets THLIccsid. We set it back up
+     manually.  */
+  uint16_t parent_ccsid = get_prog_ccsid ();
+
   BPX_CALL (fork, __bpx4frk_t, &pid, errcode, &reason_code);
+
+  if (pid == 0)
+    set_prog_ccsid (parent_ccsid);
+
   return pid;
 }
 

@@ -22,6 +22,7 @@
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <abort-instr.h>
 
 #define GET_PTR31_UNSAFE(x) ((uintptr_t)(*(uint32_t *)(x)))
@@ -45,8 +46,39 @@ static inline uintptr_t
 get_thli_ptr (void)
 {
   uintptr_t otcb = OTCB_PTR;
-
   return otcb ? GET_PTR31_SAFE (otcb + 188) : otcb;
+}
+
+/* Set the thread-local field that controls automatic character
+   conversion to the given ccsid, if possible.  */
+static inline bool
+set_prog_ccsid (uint16_t ccsid)
+{
+  uintptr_t thli = get_thli_ptr ();
+
+  if (thli == 0)
+    /* z/OS TODO: Instead of failing here, we should find the least
+       intrusive way to force the process to become dubbed.  */
+    return false;
+
+  /* This has very important side effects, so make access volatile.  */
+  *(volatile uint16_t *) (thli + 80) = ccsid;
+
+  return true;
+}
+
+/* Set the thread-local field that controls automatic character
+   conversion to the given ccsid, if possible.  */
+static inline uint16_t
+get_prog_ccsid (void)
+{
+  uintptr_t thli = get_thli_ptr ();
+
+  if (thli == 0)
+    /* See above.  */
+    return 0;
+
+  return *(volatile uint16_t *) (thli + 80);
 }
 
 /* We use this instead of abort() in situations where signals might not

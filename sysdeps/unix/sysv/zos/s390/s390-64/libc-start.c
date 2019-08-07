@@ -297,9 +297,7 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   set_up_signals ();
 
   /* 6. We should now be dubbed. Set THLIccsid to 819 for ascii.  */
-  uintptr_t thli = get_thli_ptr ();
-  /* z/OS TODO: Should check if we're dubbed here at some point.  */
-  *(uint16_t *)(thli + 80) = 819;
+  set_prog_ccsid (819);
 
   /* 7. Do the regular __libc_start_main stuff.  */
   generic_start_main (main, *arg_info->argv.count, args_and_envs,
