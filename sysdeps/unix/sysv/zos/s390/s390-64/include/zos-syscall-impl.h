@@ -475,7 +475,6 @@ __zos_sys_open (int *errcode, const char *pathname,
 
   if (flags & O_CLOEXEC)
     {
-      int tmp_err;
       /* TODO: There's a race condition here, but we could mitigate it by
 	 incrementing a global hazard variable that all threads check
 	 before forking. If it's nonzero the forking thread waits for a
@@ -495,6 +494,18 @@ __zos_sys_open (int *errcode, const char *pathname,
 	  *errcode = tmp_err;
 	  return -1;
 	}
+    }
+
+  /* z/OS NOTE: Unilaterally tag everything opened for writing as
+     ASCII. This should only succeed when the file is empty.  */
+  if (flags & (O_WRONLY | O_RDWR))
+    {
+      struct zos_file_tag tag;
+
+      tag.ft_ccsid = 819;
+      tag.ft_flags = FT_PURETXT;
+
+      __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
     }
 
   return retval;
@@ -856,6 +867,9 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
       break;
 
     case F_SETTAG:
+      real_arg_ptr = &arg;
+      break;
+
     case F_CONTROL_CVT:
       real_arg_ptr = arg;
       break;
