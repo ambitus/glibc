@@ -1010,6 +1010,14 @@
 #define __shim_enabled_shmget(if_true, if_false) if_false
 #define __shim_enabled_accept(if_true, if_false) if_false
 #define __shim_enabled_opendir(if_true, if_false) if_false
+#define __shim_enabled_tcgetattr(if_true, if_false) if_true
+#define __shim_enabled_tcsetattr(if_true, if_false) if_true
+#define __shim_enabled_tcflow(if_true, if_false) if_true
+#define __shim_enabled_tcflush(if_true, if_false) if_true
+#define __shim_enabled_tcdrain(if_true, if_false) if_true
+#define __shim_enabled_tcsendbreak(if_true, if_false) if_true
+#define __shim_enabled_tcgetpgrp(if_true, if_false) if_true
+#define __shim_enabled_tcsetpgrp(if_true, if_false) if_true
 
 
 /* some things use these aliases */

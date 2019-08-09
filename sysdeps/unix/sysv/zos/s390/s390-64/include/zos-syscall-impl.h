@@ -45,6 +45,7 @@
 #include <sys/stat.h>
 #include <stdint.h>
 #include <string.h>
+#include <termios.h>
 
 #include <sys/mman.h>  /* for user-facing mmap constant values.  */
 #include <signal.h>
@@ -2393,6 +2394,143 @@ __zos_sys_sigaction (int *errcode, int sig, const struct sigaction *act,
 	oact->sa_flags |= SA_SIGINFO;
     }
 
+  return retval;
+}
+
+
+/* Terminal syscalls.  */
+
+
+typedef void (*__bpx4tga_t) (const int32_t *fd,
+			     struct termios *tios,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcgetattr (int *errcode, int fd, struct termios *termios_p)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (tcgetattr, __bpx4tga_t, &fd, termios_p, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+typedef void (*__bpx4tsa_t) (const int32_t *fd,
+			     const int32_t *actions,
+			     struct termios *tios,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcsetattr (int *errcode, int fd, int acts,
+		     const struct termios *termios_p)
+{
+  int32_t retval, reason_code;
+  struct termios real_tios;
+  const struct termios *real_tios_ptr;
+  speed_t ispeed = termios_p->c_cflag & 0x00ff0000;
+
+  /* Handle ispeed == 0 special case where ispeed should be set to
+     ospeed.
+     z/OS TODO: this approach seems wasteful.  */
+  if (ispeed == 0)
+    {
+      memcpy (&real_tios, termios_p, sizeof (real_tios));
+      real_tios.c_cflag &= ~0x00ff0000;
+      real_tios.c_cflag |= (real_tios.c_cflag & CBAUD) >> 8;
+      real_tios_ptr = &real_tios;
+    }
+  else
+    real_tios_ptr = termios_p;
+
+  BPX_CALL (tcsetattr, __bpx4tsa_t, &fd, &acts, real_tios_ptr, &retval,
+	    errcode, &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4tfw_t) (const int32_t *fd,
+			     const int32_t *actions,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcflow (int *errcode, int fd, int action)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (tcflow, __bpx4tfw_t, &fd, &action, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4tfh_t) (const int32_t *fd,
+			     const int32_t *queue_selector,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcflush (int *errcode, int fd, int queue_selector)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (tcflush, __bpx4tfh_t, &fd, &queue_selector, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4tdr_t) (const int32_t *fd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcdrain (int *errcode, int fd)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (tcdrain, __bpx4tdr_t, &fd, &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4tsb_t) (const int32_t *fd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcsendbreak (int *errcode, int fd, int duration)
+{
+  int32_t retval, reason_code;
+  /* z/OS TODO: The documentation suggests this doesn't do anything for
+     ptys. Also, it doesn't say what units duration is in.  */
+  BPX_CALL (tcsendbreak, __bpx4tsb_t, &fd, &duration, &retval, errcode,
+	    &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4tgp_t) (const int32_t *fd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcgetpgrp (int *errcode, int fd)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (tcgetpgrp, __bpx4tgp_t, &fd, &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4tsp_t) (const int32_t *fd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_tcsetpgrp (int *errcode, int fd, pid_t pgrp_id)
+{
+  int32_t retval, reason_code;
+  BPX_CALL (tcsetpgrp, __bpx4tsp_t, &fd, &pgrp_id, &retval, errcode,
+	    &reason_code);
   return retval;
 }
 
