@@ -2535,4 +2535,28 @@ __zos_sys_tcsetpgrp (int *errcode, int fd, pid_t pgrp_id)
 }
 
 
+/* Socket/networking related syscalls.  */
+
+typedef void (*__bpx4soc_t) (const int32_t *domain,
+			     const int32_t *type,
+			     const int32_t *protocol,
+			     const int32_t *dimension,
+			     int32_t vec[2],
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_socket (int *errcode, int domain, int type, int protocol)
+{
+  int32_t retval, reason_code;
+  int32_t socks[2];
+  const int dim = 1;
+
+  BPX_CALL (socket_pair, __bpx4soc_t, &domain, &type, &protocol, &dim,
+	    socks, &retval, errcode, &reason_code);
+
+  return retval ?: socks[0];
+}
+
+
 #endif /* _ZOS_DECL_H */
