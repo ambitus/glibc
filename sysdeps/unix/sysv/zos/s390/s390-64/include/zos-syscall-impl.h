@@ -38,6 +38,7 @@
 #define __need_size_t
 #include <stddef.h>
 #include <utime.h>
+#include <poll.h>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -115,6 +116,8 @@ __set_file_tag_if_empty_unsafe (int fd,
    and if necessary add in the body of the associated syscall
    wrapper.  */
 typedef uint32_t __bpxk_32_t;
+
+struct rusage;
 
 /***************************************************
  * Utility functions/macros
@@ -985,13 +988,139 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
 
 
 static inline int
-__zos_sys_dup2 (int *errcode, int oldfd, int newfd)
+__zos_sys_dup3 (int *errcode, int oldfd, int newfd, int flags)
 {
   int32_t retval, reason_code;
-  intptr_t nfd = newfd;
-  const int32_t fcntl_cmd = ZOS_SYS_F_DUPFD2;
+  int32_t nfd = newfd;
+  int32_t flg = (flags > 0) ? ZOS_SYS_FCTLCLOEXEC : 0;
+  int32_t fcntl_cmd = ZOS_SYS_F_DUPFD2;
+
+  if (((flags & ~O_CLOEXEC) != 0) || (oldfd == newfd))
+    {
+      *errcode = EINVAL;
+      return -1;
+    }
+
   BPX_CALL (fcntl, __bpx4fct_t, &oldfd, &fcntl_cmd, &nfd, &retval,
 	    errcode, &reason_code);
+
+  if (retval >= 0)
+    {
+      if (newfd != retval)
+	{
+	  __zos_sys_close (errcode, retval);
+	  *errcode = EIO;
+	  return -1;
+	}
+
+      if (flags != 0)
+	{
+	  fcntl_cmd = ZOS_SYS_F_SETFD;
+	  BPX_CALL (fcntl, __bpx4fct_t, &nfd, &fcntl_cmd, &flg, &retval,
+		    errcode, &reason_code);
+
+	  if (retval == 0)
+	    retval = newfd;
+	}
+    }
+
+  return retval;
+}
+
+
+typedef void (*__bpx4pol_t) (const struct pollfd **fds,
+			     const int32_t *nfds,
+			     const int32_t *timeout,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_poll (int *errcode, struct pollfd *fds, nfds_t nfds, int timeout)
+{
+  int32_t retval, reason_code;
+  int32_t numfds = nfds;
+  BPX_CALL (poll, __bpx4pol_t, &fds, &numfds, &timeout,
+	    &retval, errcode, &reason_code);
+  return retval;
+}
+
+
+typedef void (*__bpx4sel_t) (const int32_t *nfds,
+			     const int32_t *readfds_len,
+			     fd_set *readfds,
+			     const int32_t *writefds_len,
+			     fd_set *writefds,
+			     const int32_t *exceptfds_len,
+			     fd_set *exceptfds,
+			     const struct timeval *timeout,
+			     const int64_t *ecb,
+			     int32_t *usropt,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_select (int *errcode, int nfds, fd_set *readfds, fd_set *writefds,
+		  fd_set *exceptfds, struct timeval *timeout)
+{
+  int32_t retval, reason_code;
+  int64_t ecb = 0;
+  int32_t usropt = 0; /* SEL#BITSBACKWARD */
+
+  int i,j,k;
+  fd_set *fds[3] = {readfds, writefds, exceptfds};
+  int32_t fds_len[3];
+  unsigned char *bytes;
+  unsigned char tmp_byte;
+
+  int fdset_dbl_len = nfds / 64;
+  fdset_dbl_len += ((nfds % 64) == 0) ? 0 : 1;
+  int fdset_len = fdset_dbl_len * 8;
+
+  for (k=0; k<3; k++)
+    {
+      fds_len[k] = 0;
+      if (fds[k] != NULL)
+	{
+	  fds_len[k] = fdset_len;
+	  bytes=(unsigned char *)(fds[k]);
+	  for (i=0; i<fdset_dbl_len; i++)
+	    {
+	      for (j=0; j<4; j++)
+		{
+		  tmp_byte = bytes[j];
+		  bytes[j] = bytes[j+4];
+		  bytes[j+4] = tmp_byte;
+		}
+	      bytes += 8;
+	    }
+	}
+    }
+
+  BPX_CALL (select, __bpx4sel_t, &nfds, &fds_len[0], fds[0],
+	    &fds_len[1], fds[1], &fds_len[2], fds[2], &timeout,
+	    &ecb, &usropt, &retval, errcode, &reason_code);
+
+  if (retval >= 0)
+    {
+      for (k=0; k<3; k++)
+	{
+	  if (fds[k] != NULL)
+	    {
+	      bytes=(unsigned char *)(fds[k]);
+	      for (i=0; i<fdset_dbl_len; i++)
+		{
+		  for (j=0; j<4; j++)
+		    {
+		      tmp_byte = bytes[j];
+		      bytes[j] = bytes[j+4];
+		      bytes[j+4] = tmp_byte;
+		    }
+		  bytes += 8;
+		}
+	    }
+	}
+    }
+
   return retval;
 }
 
@@ -1779,8 +1908,8 @@ __zos_sys_mknod (int *errcode, const char *pathname, mode_t mode,
 {
   int32_t retval, reason_code;
   char translated_path[__BPXK_PATH_MAX];
-  uint32_t mode_int = mode;
-  uint32_t dev_int = dev;
+  uint32_t mod = mode;
+  uint32_t devid = dev;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
   if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
@@ -1790,7 +1919,7 @@ __zos_sys_mknod (int *errcode, const char *pathname, mode_t mode,
     }
 
   BPX_CALL (mknod, __bpx4mkn_t, &path_len, translated_path,
-	    &mode_int, &dev_int, &retval, errcode, &reason_code);
+	    &mod, &devid, &retval, errcode, &reason_code);
 
   return retval;
 }
@@ -1814,13 +1943,12 @@ typedef void (*__bpx4wat_t) (const int32_t *pid,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-
 static inline pid_t
 __zos_sys_waitpid (int *errcode, pid_t pid, int *status, int options)
 {
   int32_t retval, reason_code;
-  int32_t pid_int = pid;
-  BPX_CALL (wait, __bpx4wat_t, &pid_int, &options, &status,
+  int32_t prid = pid;
+  BPX_CALL (wait, __bpx4wat_t, &prid, &options, &status,
 	    &retval, errcode, &reason_code);
   return retval;
 }
@@ -1830,6 +1958,15 @@ static inline pid_t
 __zos_sys_wait (int *errcode, int *status)
 {
   return __zos_sys_waitpid (errcode, -1, status, 0);
+}
+
+
+static inline pid_t
+__zos_sys_wait4 (int *errcode, pid_t pid, int *status, int options, struct rusage *rusage)
+{
+  if (rusage == NULL)
+    return __zos_sys_waitpid (errcode, pid, status, options);
+  SHIM_NOT_YET_IMPLEMENTED_FATAL ("No rusage support", -1);
 }
 
 
@@ -2191,8 +2328,8 @@ static inline pid_t
 __zos_sys_getpgid (int *errcode, pid_t pid)
 {
   int32_t retval, reason_code;
-  int32_t pid_int = pid;
-  BPX_CALL (getpgid, __bpx4gep_t, &pid_int,
+  int32_t prid = pid;
+  BPX_CALL (getpgid, __bpx4gep_t, &prid,
 	    &retval, errcode, &reason_code);
   return (pid_t)retval;
 }
@@ -2228,8 +2365,8 @@ static inline pid_t
 __zos_sys_getsid (int *errcode, pid_t pid)
 {
   int32_t retval, reason_code;
-  int32_t pid_int = pid;
-  BPX_CALL (getsid, __bpx4ges_t, &pid_int,
+  int32_t prid = pid;
+  BPX_CALL (getsid, __bpx4ges_t, &prid,
 	    &retval, errcode, &reason_code);
   return (pid_t)retval;
 }
@@ -2244,9 +2381,9 @@ static inline int
 __zos_sys_setpgid (int *errcode, pid_t pid, pid_t pgid)
 {
   int32_t retval, reason_code;
-  int32_t pid_int = pid;
-  int32_t pgid_int = pgid;
-  BPX_CALL (setpgid, __bpx4spg_t, &pid_int, &pgid_int,
+  int32_t prid = pid;
+  int32_t pgrid = pgid;
+  BPX_CALL (setpgid, __bpx4spg_t, &prid, &pgrid,
 	    &retval, errcode, &reason_code);
   return retval;
 }
