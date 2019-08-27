@@ -171,6 +171,10 @@
 /* Define if the linker defines __ehdr_start.  */
 #undef HAVE_EHDR_START
 
+/* Define if, on the target OS, binary files need to be treated
+   differently from regular text files.  */
+#undef HAVE_SIGNIFICANT_BINARY_FILES
+
 /*
  */
 

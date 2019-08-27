@@ -96,6 +96,7 @@ typedef union
 #define _IO_FLAGS2_NOCLOSE 32
 #define _IO_FLAGS2_CLOEXEC 64
 #define _IO_FLAGS2_NEED_LOCK 128
+#define _IO_FLAGS2_BINARY 256
 
 /* _IO_pos_BAD is an off64_t value indicating error, unknown, or EOF.  */
 #define _IO_pos_BAD ((off64_t) -1)

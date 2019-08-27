@@ -88,6 +88,11 @@ __zos_sys_fstat (int *errcode, int fd, struct stat *statbuf);
 static inline int
 __zos_sys_close (int *errcode, int fd);
 
+extern int
+__set_file_tag_if_empty_unsafe (int fd,
+				const struct zos_file_tag *tag)
+  attribute_hidden;
+
 /* There is ambiguity in the USS callable services documentation.
    The __bpxk_32_t type serves as an indicator of where that ambiguity
    is. This type is mostly just an annotation for us.
