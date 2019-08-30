@@ -221,10 +221,13 @@ __map_common_oflags_to_zos (int flags)
        don't know how to emulate that behavior, so we make it return
        a readonly fd.  */
     zflags = ZOS_SYS_O_RDONLY;
+    break;
   case O_WRONLY:
     zflags = ZOS_SYS_O_WRONLY;
+    break;
   case O_RDWR:
     zflags = ZOS_SYS_O_RDWR;
+    break;
   }
 
   /* Get the bit we want and shift it to where we want it.
@@ -270,14 +273,18 @@ __map_common_oflags_from_zos (int zflgs)
     {
     case ZOS_SYS_O_RDONLY:
       flags = O_RDONLY;
+      break;
     case ZOS_SYS_O_WRONLY:
       flags = O_WRONLY;
+      break;
     case ZOS_SYS_O_RDWR:
       flags = O_RDWR;
+      break;
     case 0:
       /* This isn't actually documented to be a possibility, but we need
 	 to cover all bases.  */
       flags = 0x3;
+      break;
     }
 
 #define shift_up(flg)							\
