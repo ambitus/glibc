@@ -1584,6 +1584,9 @@ __zos_sys_getcwd (int *errcode, char *buf, size_t size)
   BPX_CALL (getcwd, __bpx4gcw_t, &buf_len, buf, &retval, errcode,
 	    &reason_code);
 
+  if (retval > 0)
+    tr_a_until_len_in_place (buf, retval);
+
   return retval;
 }
 
