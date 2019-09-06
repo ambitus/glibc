@@ -905,6 +905,7 @@
 #define __shim_enabled_mkdirat(if_true, if_false) if_false
 #define __shim_enabled_mknodat(if_true, if_false) if_false
 #define __shim_enabled_fchownat(if_true, if_false) if_true
+#define __shim_enabled_futimes(if_true, if_false) if_true
 #define __shim_enabled_futimesat(if_true, if_false) if_false
 #define __shim_enabled_newfstatat(if_true, if_false) if_false
 #define __shim_enabled_unlinkat(if_true, if_false) if_false

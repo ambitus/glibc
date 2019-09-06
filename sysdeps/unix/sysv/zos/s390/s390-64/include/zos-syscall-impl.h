@@ -1080,6 +1080,51 @@ __zos_sys_utime (int *errcode, const char *pathname,
 }
 
 
+typedef void (*__bpx4ioc_t) (const uint32_t *fd,
+			     const uint32_t *cmd,
+			     const uint32_t *arg_len,
+			     char *arg,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_futimes (int *errcode, int fd, const struct timeval tv[2])
+{
+  int32_t retval, reason_code;
+  int32_t fileds = fd;
+  const int32_t cmd = 17; /* IOCC#GETPATHNAME */
+  uint32_t path_len = __BPXK_PATH_MAX;
+  char buf[__BPXK_PATH_MAX];
+  struct utimbuf times;
+  int i;
+
+  BPX_CALL (w_ioctl, __bpx4ioc_t, &fileds, &cmd, &path_len, buf,
+	    &retval, errcode, &reason_code);
+
+  if (retval != 0)
+    return -1;
+
+  for (i=0; (i<path_len) && (buf[i]!='\0'); i++);
+  path_len = i;
+
+  if (tv != NULL)
+    {
+      times.actime  = tv[0].tv_sec + tv[0].tv_usec / 1000000;
+      times.modtime = tv[1].tv_sec + tv[1].tv_usec / 1000000;
+    }
+  else
+    {
+      times.actime  = (time_t)-1;
+      times.modtime = (time_t)-1;
+    }
+
+  BPX_CALL (utime, __bpx4uti_t, &path_len, buf,
+	    &times, &retval, errcode, &reason_code);
+
+  return retval;
+}
+
+
 typedef void (*__bpx4exi_t) (const int32_t *status);
 
 static inline int
