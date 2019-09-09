@@ -1092,11 +1092,10 @@ __zos_sys_futimes (int *errcode, int fd, const struct timeval tv[2])
 {
   int32_t retval, reason_code;
   int32_t fileds = fd;
-  const int32_t cmd = 17; /* IOCC#GETPATHNAME */
+  const int32_t cmd = 17;	/* IOCC#GETPATHNAME */
   uint32_t path_len = __BPXK_PATH_MAX;
   char buf[__BPXK_PATH_MAX];
   struct utimbuf times;
-  int i;
 
   BPX_CALL (w_ioctl, __bpx4ioc_t, &fileds, &cmd, &path_len, buf,
 	    &retval, errcode, &reason_code);
@@ -1104,18 +1103,22 @@ __zos_sys_futimes (int *errcode, int fd, const struct timeval tv[2])
   if (retval != 0)
     return -1;
 
-  for (i=0; (i<path_len) && (buf[i]!='\0'); i++);
-  path_len = i;
+  path_len = __strnlen (buf, path_len);
 
   if (tv != NULL)
     {
-      times.actime  = tv[0].tv_sec + tv[0].tv_usec / 1000000;
-      times.modtime = tv[1].tv_sec + tv[1].tv_usec / 1000000;
+      /* We can't support sub-second precisions. For now, strictly round
+	 up to avoid issues with files going back in time.
+	 z/OS TODO: Is this rounding behavior correct?
+	 z/OS TODO: What's the best behavior for tv_usec >= 1000000?
+      */
+      times.actime  = tv[0].tv_sec + (tv[0].tv_usec != 0);
+      times.modtime = tv[1].tv_sec + (tv[1].tv_usec != 0);
     }
   else
     {
-      times.actime  = (time_t)-1;
-      times.modtime = (time_t)-1;
+      times.actime  = (time_t) -1;
+      times.modtime = (time_t) -1;
     }
 
   BPX_CALL (utime, __bpx4uti_t, &path_len, buf,
@@ -1932,7 +1935,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   do {									\
     for (uint32_t i = 0; i < count; i++)				\
       {									\
-	lengths[i] = strnlen (list[i], UINT32_MAX - 1) + 1;		\
+	lengths[i] = __strnlen (list[i], UINT32_MAX - 1) + 1;		\
 	if (lengths[i] == UINT32_MAX && list[i][UINT32_MAX] != '\0')	\
 	  {								\
 	    /* z/OS TODO: free lens.  */				\
