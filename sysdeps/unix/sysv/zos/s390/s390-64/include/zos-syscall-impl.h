@@ -1,7 +1,7 @@
-/* z/OS syscall wrapper prototypes.
-   Copyright (C) 2018 Rocket Software
+/* z/OS syscall wrappers.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -17,11 +17,11 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.
 
-   TODO: The static inline stuff is really a crutch. We're bleeding
+   z/OS TODO: The static inline stuff is really a crutch. We're bleeding
    way too many headers. This library-in-a-header stuff is bad practice,
    but without it linking gets really complicated.
 
-   TODO: merge this with zos-syscall-base.h.  */
+   z/OS TODO: merge this with zos-syscall-base.h.  */
 
 #ifndef _ZOS_DECL_H
 #define _ZOS_DECL_H 1
@@ -2622,4 +2622,4 @@ __zos_sys_socket (int *errcode, int domain, int type, int protocol)
 }
 
 
-#endif /* _ZOS_DECL_H */
+#endif /* !_ZOS_DECL_H */

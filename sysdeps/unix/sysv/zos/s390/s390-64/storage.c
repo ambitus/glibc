@@ -1,7 +1,7 @@
 /* C interface to z/OS storage allocation services.
-   Copyright (C) 2018 Rocket Software
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -28,8 +28,8 @@ unsigned int __ipt_zos_tcb __attribute__ ((nocommon));
 hidden_data_def (__ipt_zos_tcb)
 
 /* Our memory model for z/OS:
-   TODO: Implement this.
-   TODO: what about the .text, global/static var area (.data/.bss)?
+   z/OS TODO: Implement this.
+   z/OS TODO: what about the .text, global/static var area (.data/.bss)?
    4 separate memory area category
        1. per-thread stack
        2. common sbrk heap

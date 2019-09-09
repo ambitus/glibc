@@ -1,3 +1,20 @@
+/* Copyright (C) 2019 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, see
+   <http://www.gnu.org/licenses/>.  */
 
 #ifndef _LOCK_FREE_H
 #define _LOCK_FREE_H 1
@@ -238,4 +255,4 @@ __lf_hash_table_pop (uint64_t key, lf_hash_table *hash_table)
 #define subpool_size(type) \
   subpool_real_size (sizeof (type), _Alignof (type))
 
-#endif /* _LOCK_FREE_H  */
+#endif /* !_LOCK_FREE_H  */

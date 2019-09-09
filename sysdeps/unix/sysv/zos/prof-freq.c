@@ -20,7 +20,7 @@
 #include <sys/time.h>
 #include <libc-internal.h>
 
-/* TODO: Implement this for real.  */
+/* z/OS TODO: Implement this for real.  */
 int
 __profile_frequency (void)
 {

@@ -1,7 +1,7 @@
 /* ESTAEX routines and SDWA mappings
-   Copyright (C) 2018 Rocket Software
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Michael Colavita <mcolavita@rocketsoftware.com>, 2018.
+   Contributed by Michael Colavita <mcolavita@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #ifndef _ZOS_ESTAEX_H
-#define _ZOS_ESTAEX_H
+#define _ZOS_ESTAEX_H 1
 
 #include <stdint.h>
 
@@ -95,4 +95,4 @@ extern void (*__estaex_handler_wrapper) (void);
 extern void __zos_dump_stack (int fd, void *r13);
 
 
-#endif  /* _ZOS_ESTAEX_H  */
+#endif  /* !_ZOS_ESTAEX_H  */

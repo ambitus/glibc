@@ -1,7 +1,7 @@
 /* mmap - map files or devices into memory.  z/OS version.
-   Copyright (C) 2018 Rocket Software.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -42,11 +42,11 @@ __mmap64 (void *addr, size_t len, int prot, int flags, int fd,
 	  || (~prot & (PROT_READ | PROT_WRITE)))
 	{
 	  /* We don't support MAP_SHARED with MAP_ANONYMOUS yet.
-	     TODO: implemented shared anonymous mappings.
+	     z/OS TODO: implemented shared anonymous mappings.
 	     We could do it by creating a second list for shared anon
 	     mappings and using IARVSERV with them.
-	     TODO: We haven't implemented read-only anonymous mappings
-	     yet.  */
+	     z/OS TODO: We haven't implemented read-only anonymous
+	     mappings yet.  */
 	  __set_errno (ENOSYS);
 	  return MAP_FAILED;
 	}

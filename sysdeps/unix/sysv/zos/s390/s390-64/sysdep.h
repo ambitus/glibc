@@ -1,7 +1,7 @@
 /* Assembler macros for 64 bit z/OS.
-   Copyright (C) 2018 Rocket Software.
-   Contributed by Giancarlo Frix (gfrix@rocketsoftware.com).
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -112,9 +112,9 @@
 #else
 /* For the time being just use stack_guard rather than a separate
    pointer_guard.  */
-/* TODO: PTR_MANGLE, depends on tls.  */
+/* z/OS TODO: PTR_MANGLE, depends on tls.  */
 # ifdef __ASSEMBLER__
-/* TODO: linux implementation of PTR_MANGLE uses access registers.
+/* z/OS TODO: linux implementation of PTR_MANGLE uses access registers.
    We can't (right?). xor with stack guard some other way. See the
    z/Linux implementation for example.  */
 /* #  define PTR_MANGLE(reg, tmpreg) */
@@ -126,4 +126,4 @@
 # endif
 #endif
 
-#endif /* _ZOS_SYSDEP_H */
+#endif /* !_ZOS_SYSDEP_H */

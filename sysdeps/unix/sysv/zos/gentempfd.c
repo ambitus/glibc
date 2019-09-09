@@ -1,5 +1,5 @@
 /* Generate a temporary file descriptor.  z/OS version.
-   Copyright (C) 2018 Rocket Software
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -22,7 +22,7 @@
 #include <errno.h>
 #include <string.h>
 
-/* TODO: this whole file. We need to figure out a way to emulate
+/* z/OS TODO: this whole file. We need to figure out a way to emulate
    O_TMPFILE safely and securely. See linux impl for reference.  */
 int
 __gen_tempfd (int flags)

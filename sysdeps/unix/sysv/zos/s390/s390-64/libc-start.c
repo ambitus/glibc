@@ -17,7 +17,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-/* TODO: figure out how much of this file needs to be adapted to
+/* z/OS TODO: figure out how much of this file needs to be adapted to
    support shared cases.  */
 
 /* The main work is done in the generic function.  */
@@ -39,10 +39,10 @@
 #include <map-info.h>
 #include <sir.h>
 
-/* TODO: What to we need to change here to handle shared cases?
+/* z/OS TODO: What do we need to change here to handle shared cases?
    Where is the shared env init?
 
-   TODO: Signal setup.  */
+   z/OS TODO: Signal setup.  */
 
 #define roundup16(val) (((val) + 16 - 1) & ~(16 - 1))
 #define ZOS_THREAD_BUCKETS 64

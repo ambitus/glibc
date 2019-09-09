@@ -1,4 +1,4 @@
-/* Copyright (C) 2018 Rocket Software
+/* Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -40,10 +40,10 @@
       args. The wrapper wraps the syscall, smoothing over differences
       in the calling convention.
 
-      TODO: We might end up changing the calling convention in the
+      z/OS TODO: We might end up changing the calling convention in the
       compiler. If we do, delete some of this.
 
-      TODO: Make this a hidden symbol.  */
+      z/OS TODO: Make this a hidden symbol.  */
 
 	.text
 ENTRY (__bpxk_syscall)

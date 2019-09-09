@@ -1,7 +1,7 @@
 /* z/OS Signal Interface Routine entry point.  64 bit version.
-   Copyright (C) 2018 Free Software Foundation, Inc.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2019.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public

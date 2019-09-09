@@ -19,7 +19,7 @@
 #include <time.h>
 
 /* Return frequency of times().
-   TODO: Implement this for real.  */
+   z/OS TODO: Implement this for real.  */
 int
 __getclktck (void)
 {

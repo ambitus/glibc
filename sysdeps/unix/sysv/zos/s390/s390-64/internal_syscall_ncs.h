@@ -1,7 +1,7 @@
 /* Definition of the INTERNAL_SYSCALL_NCS macro.
-   Copyright (C) 2018 Rocket Software.
-   Contributed by Giancarlo Frix (gfrix@rocketsoftware.com).
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -17,11 +17,11 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.
 
-   TODO: This is only here to get glibc working, its an absolute kludge.
-   This whole mechanism might need to be reworked. The only user of this
-   macro seems to be nptl, and it probably only requires a very small
-   subset of sycalls. Of course, we might just end up dummying out the
-   files/caller functions altogether.
+   z/OS TODO: This is only here to get glibc working, its an absolute
+   kludge. This whole mechanism might need to be reworked. The only user
+   of this macro seems to be nptl, and it probably only requires a very
+   small subset of sycalls. Of course, we might just end up dummying out
+   the files/caller functions altogether.
 
    They seem to only be used to support the nptl SIGSETXID signal
    system, so only the _id syscalls need to be implemented.

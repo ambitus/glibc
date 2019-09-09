@@ -1,5 +1,5 @@
 /* setjmp for 64 bit S/390, z/OS version.
-   Copyright (C) 2018 Rocket Software
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -42,8 +42,8 @@
 #include <stap-probe.h>
 #include <jmpbuf-offsets.h>
 
-/* TODO: do we need the compat stuff?  */
-/* TODO: Why doesn't the z/Linux version have any cfi stuff?  */
+/* z/OS TODO: do we need the compat stuff?  */
+/* z/OS TODO: Why doesn't the z/Linux version have any cfi stuff?  */
 #if !IS_IN (rtld) && defined SHARED \
   && SHLIB_COMPAT (libc, GLIBC_2_19, GLIBC_2_20)
 # define NEED_COMPAT_SYMBOLS 1

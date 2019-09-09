@@ -1,6 +1,6 @@
-/* Copyright (C) 2018 Free Software Foundation, Inc.
+/* Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,9 @@
 /* Test if longjmp to JMPBUF would unwind the frame
    containing a local variable at ADDRESS.
 
-   TODO: Is this right?
-   TODO: This will not work if the stack ever splits. (If we are being
-   called by foreign code).
+   z/OS TODO: Is this right?
+   z/OS TODO: This will not work if the stack ever splits. (If we are
+   being called by foreign code).
    FIXME: We probably shouldn't examine the memory around the address,
    but without checking the NAB (which is the stack pointer), we don't
    know where the given frame ends.  */

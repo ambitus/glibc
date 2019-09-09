@@ -1,7 +1,7 @@
 /* Futex emulation for z/OS.
-   Copyright (C) 2018 Rocket Software
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -24,13 +24,13 @@
 #include <zos-futex.h>
 #include <unimplemented.h>
 
-/* TODO: At the moment this is not being built. Finish this up and link
-   it into the rest of the library.  */
+/* z/OS TODO: At the moment this is not being built. Finish this up and
+   link it into the rest of the library.  */
 
-/* TODO: PEs or ECBs? Both would work, PEs would be more reliable, and
-   would handle some parts of process termination for us, if we decide to
-   handle shared cases with the same mechanism. ECBs are actually less
-   complicated and faster.
+/* z/OS TODO: PEs or ECBs? Both would work, PEs would be more reliable,
+   and would handle some parts of process termination for us, if we
+   decide to handle shared cases with the same mechanism. ECBs are
+   actually less complicated and faster.
 
    ECBs are easier to reuse for our use-case. Our current approach would
    not allow us to reuse PEs. Right now, we would have to deallocate
@@ -42,9 +42,9 @@
    cond_timed_wait() is the only mechanism I can see that allows timeouts
    with waits.  */
 
-/* TODO: make a resource manager to implement robust futexes.  */
+/* z/OS TODO: make a resource manager to implement robust futexes.  */
 
-/* TODO: Maybe use the shared memory lock mechanism to implement
+/* z/OS TODO: Maybe use the shared memory lock mechanism to implement
    non-private futexes.  */
 
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,8 @@
 #include <time.h>
 #include <sysdep.h>
 #include <errno.h>
+
+/* z/OS TODO: I think we need to implement this, this is just copied.  */
 
 /* Set TS to calendar time based in time base BASE.  */
 int

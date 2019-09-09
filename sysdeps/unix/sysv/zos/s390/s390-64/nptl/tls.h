@@ -1,5 +1,5 @@
 /* Definition for thread-local data handling.  NPTL / z/OS version.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -43,7 +43,7 @@ typedef struct
   /* GCC split stack support.  */
   void *__private_ss;
 } tcbhead_t;
-#else /* __ASSEMBLER__ */
+#else /* !__ASSEMBLER__ */
 # include <tcb-offsets.h>
 #endif
 
@@ -201,6 +201,6 @@ extern void __zos_clear_thread_pointer (void);
 #define THREAD_GSCOPE_WAIT() \
   GL(dl_wait_lookup_done) ()
 
-#endif /* __ASSEMBLER__ */
+#endif /* !__ASSEMBLER__ */
 
 #endif	/* tls.h */

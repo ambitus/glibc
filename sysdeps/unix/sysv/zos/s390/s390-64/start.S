@@ -1,8 +1,8 @@
 /* Startup code for z/OS program objects.
-   Copyright (C) 2018 Rocket Software
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Michael Colavita <mcolavita@rocketsoftware.com> and
-   Giancarlo Frix <gfrix@rocketsoftware.com>.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com> and
+   Michael Colavita <mcolavita@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,8 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.
 
-   TODO: this is all experimental right now.
-   TODO: Make this work with shared stuff.  */
+   z/OS TODO: This is all experimental right now.
+   z/OS TODO: Make this work with shared stuff.  */
 
 #include <zos-core.h>
 #include <sysdep.h>
@@ -46,18 +46,18 @@
    segment. Most registers' values are unspecified, except for:
 
    %r0		Maybe something, at some point?
-		TODO: Initialize r0 with rtld_fini, like %r14 is on
-		zLinux.
+		z/OS TODO: Initialize r0 with rtld_fini, like %r14 is for
+		the s390 linux port.
    %r1		Pointer to a structure that contains the program
 		arguments and environment in the kernel's format.
    %r12		?
-		TODO: Anything interesting?
+		z/OS TODO: Anything interesting?
    %r13		Pointer to a DSA.
    %r14		Return address. Technically we should branch here on
 		exit, however I'm not sure how necessary that is.
-		TODO: Check how necessary that is. Looks like ret addr is
-		a stub that sets %r15 to retcode then does an SVC 3,
-		at least for exec()ed programs.
+		z/OS TODO: Check how necessary that is. Looks like ret
+		addr is a stub that sets %r15 to retcode then does an
+		SVC 3, at least for exec()ed programs.
    %r15		?
 */
 
@@ -84,15 +84,15 @@ _start:
 
 	/* Obtain storage
 
-	   TODO: This can only allocate storage below the bar right now.
-	   There's no reason why we shouldn't be able to put our stack
-	   above the bar, so we should use a different memory allocation
-	   facility.
+	   z/OS TODO: This can only allocate storage below the bar right
+	   now. There's no reason why we shouldn't be able to put our
+	   stack above the bar, so we should use a different memory
+	   allocation facility.
 
-	   TODO: Will this get reclaimed by the OS without an explicit
-	   release? What about if we exit early? What about if we abend?
-	   We need to be 100% certain that whatever allocation method
-	   we use the operating system will reclaim our unfreed
+	   z/OS TODO: Will this get reclaimed by the OS without an
+	   explicit release? What about if we exit early? What about if
+	   we abend? We need to be 100% certain that whatever allocation
+	   method we use the operating system will reclaim our unfreed
 	   resources whenever a process ends.  */
 	larl	%r15, .Lmain_stack_length
 
@@ -104,10 +104,10 @@ _start:
 	l	%r14, 160(%r14)
 	pc	0(%r14)
 	/* r15 has the return code and r1 has the address.  */
-	/* TODO: Check if the call failed here.  */
+	/* z/OS TODO: Check if the call failed here.  */
 
-	/* TODO: ensure 16-byte stack alignment. They do it on z/Linux so
-	   presumably there's a reason.  */
+	/* z/OS TODO: ensure 16-byte stack alignment. They do it on the
+	   other s390 port so presumably there's a reason.  */
 
 	/* Store address of our next DSA in old DSA.  */
 	stg	%r1, 136(%r13)

@@ -1,7 +1,7 @@
 /* Signal Interface Routine declarations for z/OS.
-   Copyright (C) 2018 Rocket Software.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -17,7 +17,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-/* TODO: make sure everything is properly hidden.  */
+/* z/OS TODO: make sure symbols are properly hidden.  */
 
 #ifndef _ZOS_SIR_H
 #define _ZOS_SIR_H 1
@@ -186,4 +186,4 @@ kern_to_user_sigset (sigset_t *oset, uint64_t kset)
 }
 #undef __mapflg
 
-#endif /* _ZOS_SIR_H  */
+#endif /* !_ZOS_SIR_H  */

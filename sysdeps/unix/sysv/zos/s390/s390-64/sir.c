@@ -1,7 +1,7 @@
 /* Signal Interface Routine for z/OS.
-   Copyright (C) 2018 Rocket Software.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,9 @@
 #include <zos-core.h>
 #include <zos-syscall-base.h>
 
-/* TODO: we have many questions about what we need to do here:
+/* The USS assembler docs explain most of the constants/terminology in
+   this file.
+   z/OS TODO: we have many questions about what we need to do here:
      * Is the SIR responsible for blocking/ignoring signals?
        * Is it run for literally every single non-lost signal the
          program gets, and is charged with discriminating between which
@@ -42,57 +44,49 @@
      * Can signals be delivered when inside of code that is in a
        different addressing mode? What PPSD format would I get then?
        What addressing mode would the SIR be in in that case?
-     * How to force dump creation on signal-based termination (like
-       linux)? Maybe just raise a SIGABRT?
+     * How to force dump creation on signal-based termination?
      * What is a superkill?
      * SA_NOCLDSTOP, SA_ONSTACK, and SA_RESTART
-   linux research TODO:
-     * What is return code for process terminated by signal?
-     * does linux support the extra SIGFPE argument?
-     * how is the signal mask restored after return or exit from a
-       signal handler on arches that don't use sigreturn?
-       * what about on arches that use sigreturn?
-     * how does longjmp work with the above problem?
-       * I think longjmp restores sigmask.
-   My TODO:
      * if signal handler exits via longjmp, longjmp restores sigmask
-   My decisions to make:
-   notes:
-       STORAGE is effectively atomic. Cannot be interrupted by signals.
-*/
+   Research TODO:
+     * What is the standard return code for process terminated by signal?
+     * Which OS's support the extra SIGFPE argument?
+     * How is the signal mask restored after return or exit from a
+       signal handler on arches that don't use sigreturn?
+       * what about on arches that use sigreturn?  */
 
 
-/* TODO: There are a lot of flags here we don't know much about.
-   Either have to figure it out ourselves or ask IBM.  */
-/* TODO: remove the asserts in this file once this has been tested.  */
-/* TODO: Allocating a stack for each signal probably isn't viable
+/* z/OS TODO: There are a lot of flags here we don't know much about.
+   Either have to figure it out ourselves or ask the vendor.  */
+/* z/OS TODO: remove the asserts in this file once this has been tested.  */
+/* z/OS TODO: Allocating a stack for each signal probably isn't viable
    performance-wise, write a bench test to determine how bad it can get
    in the worst case.  */
-/* TODO: Maybe change sigset_t to be real.  */
-/* TODO: Probably a bad idea to try to remap signal numbers.  */
-/* TODO: What are we going to do about sigaltstack?  */
-/* TODO: We will always recieve control in AMODE 64, right?  */
-/* TODO: port the context functions.  */
-/* TODO: Do we need to do the longjmp free stack stuff for
+/* z/OS TODO: Maybe change sigset_t to be real.  */
+/* z/OS TODO: Probably a bad idea to try to remap signal numbers.  */
+/* z/OS TODO: What are we going to do about sigaltstack?  */
+/* z/OS TODO: We will always recieve control in AMODE 64, right?  */
+/* z/OS TODO: port the context functions.  */
+/* z/OS TODO: Do we need to do the longjmp free stack stuff for
    swapcontext?  */
-/* TODO: the longjmp() part of things is currently half done.  */
+/* z/OS TODO: the longjmp() part of things is currently half done.  */
 
 
 /* Bits for testing the ppsd.  */
 
 /* For flags1  */
 #define QUIESCEFREEZE 0x80000000
-#define SIRCOMPLETE 0x40000000
-#define PROCDFT   0x20000000
-#define SIGQUEUE  0x10000000
-#define REDRIVE   0x08000000
-#define JUMPBACK  0x04000000
-#define MASKONLY  0x02000000
+#define SIRCOMPLETE 0x40000000 /* z/OS TODO: What does this do?  */
+#define PROCDFT   0x20000000 /* z/OS TODO: What does this do? */
+#define SIGQUEUE  0x10000000 /*  z/OS TODO: What does this do? */
+#define REDRIVE   0x08000000 /* z/OS TODO: What does this do? */
+#define JUMPBACK  0x04000000 /* z/OS TODO: What does this do? */
+#define MASKONLY  0x02000000 /* z/OS TODO: What does this do? */
 #define THSTOP 0x01000000
 
 /* For flags2  */
 #define QUIESCEANDGET 0x00800000
-#define F2_64     0x00400000
+#define F2_64     0x00400000 /* z/OS TODO: does this mean AMODE 64? */
 
 /* For flags3  */
 #define ASYNC     0x00008000
@@ -147,7 +141,7 @@ struct l16j1_params
 _Static_assert (L16J1_SIZE == sizeof (struct l16j1_params), "");
 
 
-/* TODO: It looks like CSRL16J takes as an argument a pointer to an
+/* z/OS TODO: It looks like CSRL16J takes as an argument a pointer to an
    area to put a return code, however we never actually need to use
    it. We don't need that information right now. It's unclear if
    passing in NULL is valid. We probably shouldn't make it a stack
@@ -265,7 +259,7 @@ mvs_load_jump_and_deallocate (struct l16j1_params *params)
   register int routine_addr asm ("r15") = csrl16j_call_ptr;
   __asm__ __volatile__ ("stg	%%r1, 0(%1)\n\t"
 			"mvc	136(8,%%r13), 144(%%r13)\n\t"
-			/* TODO: 72-byte save area.  */
+			/* z/OS TODO: 72-byte save area.  */
 			"sam31\n\t"
 			"lgr	%%r1, %2\n\t"
 			"basr	%%r14, %3\n\t"
@@ -321,7 +315,7 @@ populate_siginfo_for_sig (siginfo_t *info, const struct sigcontext *ppsd)
   info->si_signo = kern_to_user_signo (ppsd->sig_si_signo);
   info->si_errno = ppsd->sig_si_errno;
   info->si_code = ppsd->sig_si_code;
-  /* TODO: Check if the kernel actually populates si_code for all
+  /* z/OS TODO: Check if the kernel actually populates si_code for all
      of these cases.  */
 
   switch (info->si_signo)
@@ -330,8 +324,8 @@ populate_siginfo_for_sig (siginfo_t *info, const struct sigcontext *ppsd)
       info->si_pid = ppsd->sig_si_pid;
       info->si_uid = ppsd->sig_si_uid;
       info->si_status = ppsd->sig_si_status;
-      info->si_utime = 0;  /* TODO: Something about this.  */
-      info->si_stime = 0;  /* TODO: Something about this.  */
+      info->si_utime = 0;  /* z/OS TODO: Something about this.  */
+      info->si_stime = 0;  /* z/OS TODO: Something about this.  */
       break;
 
     case SIGILL:
@@ -340,38 +334,38 @@ populate_siginfo_for_sig (siginfo_t *info, const struct sigcontext *ppsd)
     case SIGBUS:
       info->si_addr = ppsd->sig_si_addr;
       info->si_addr_lsb = (short) (uintptr_t) ppsd->sig_si_addr & 0x1;
-      /* TODO: something about _bounds and _sigfault.  */
+      /* z/OS TODO: something about _bounds and _sigfault.  */
       break;
 
     case SIGPOLL:
       info->si_band = ppsd->sig_si_band;
-      info->si_fd = 0;  /* TODO: can we populate this?  */
+      info->si_fd = 0;  /* z/OS TODO: can we populate this?  */
       break;
 
     case SIGTRAP:
       break;
 
     case SIGSYS:
-      /* TODO: Everything about SIGSYS. Does kernel set si_code, do
+      /* z/OS TODO: Everything about SIGSYS. Does kernel set si_code, do
 	 we get extra information?  */
       memset (&info->_sifields._sigsys, 0,
 	      sizeof (info->_sifields._sigsys));
       break;
 
     case SIGALRM:
-      /* TODO: Can we populate the required info for SIGALRM?  */
+      /* z/OS TODO: Can we populate the required info for SIGALRM?  */
       memset (&info->_sifields._rt, 0, sizeof (info->_sifields._rt));
       break;
 
-    /* TODO: Check if signal was sent from kill().  */
+    /* z/OS TODO: Check if signal was sent from kill().  */
     default:
       info->si_pid = ppsd->sig_si_pid;
       info->si_uid = ppsd->sig_si_uid;
-      /* TODO: What is this field, what belongs here?  */
+      /* z/OS TODO: What is this field, what belongs here?  */
       memset (&info->si_value, 0, sizeof (info->si_value));
       break;
     }
-  /* TODO: in the kill() wrapper, set correct si_code.  */
+  /* z/OS TODO: in the kill() wrapper, set correct si_code.  */
 }
 
 
@@ -387,7 +381,7 @@ populate_ucontext_for_sig (ucontext_t *ucont,
 
   /* vrregs and fpregs have already been saved.  */
 
-  /* TODO: Finish ucontext SA_SIGINFO arg handling.  */
+  /* z/OS TODO: Finish ucontext SA_SIGINFO arg handling.  */
 }
 
 /* Since the sigmasks need to be declared as char arrays in the PPSD
@@ -408,14 +402,14 @@ mask_from_array (char in[8])
 
 /* Do everything we need to do in order to handle a regular old
    signal.  */
-/* z/OS TODO: override pthread_sigmask to just use sigprocmask.  */
+/* z/OS z/OS TODO: override pthread_sigmask to just use sigprocmask.  */
 
 static void
 handle_signals (struct sigcontext *ppsd, int flags, ucontext_t *ucont)
 {
   sir_assert (flags & SIGNAL);
 
-  /* TODO: Check that all signals are blocked here.  */
+  /* z/OS TODO: Check that all signals are blocked here.  */
 
   uint64_t ret_sigmask = mask_from_array (ppsd->sigmask_on_return);
   void *sighandler = ppsd->handler;
@@ -472,7 +466,7 @@ static void
 handle_cancellation (struct sigcontext *ppsd, int flags)
 {
   sir_assert (flags & CANCEL);
-  /* TODO: Async cancellation.  */
+  /* z/OS TODO: Async cancellation.  */
 }
 
 /* Handle thread quiesce interrupts, which are similar to but distinct
@@ -486,11 +480,11 @@ handle_quiesce (struct sigcontext *ppsd, int flags)
   /* We were either issued a freeze request or a termination request.  */
   if (flags & QUIESCEFREEZE)
     {
-      /* TODO: how do we freeze a thread?  */
+      /* z/OS TODO: how do we freeze a thread?  */
     }
   else  /* Terminate.  */
     {
-      /* TODO: End the thread.  */
+      /* z/OS TODO: End the thread.  */
     }
 }
 
@@ -500,7 +494,7 @@ handle_quiesce (struct sigcontext *ppsd, int flags)
 static void
 save_fprs_and_vrs (mcontext_t *mcont)
 {
-  /* z/OS TODO: Should I be more exact with the constraint inputs?  */
+  /* z/OS z/OS TODO: Should I be more exact with the constraint inputs?  */
   /* Store the fp control register.  */
   __asm__ __volatile__ ("stfpc	%0"
 			: "=Q" (mcont->fpregs.fpc)
@@ -539,7 +533,7 @@ save_fprs_and_vrs (mcontext_t *mcont)
 			 "I" ((uintptr_t) &mcont->fpregs.fprs[1].d -
 			      (uintptr_t) &mcont->fpregs.fprs[0].d)
 			: "memory");
-  /* TODO: check the PSA bit in setjmp.S and longjmp().  */
+  /* z/OS TODO: check the PSA bit in setjmp.S and longjmp().  */
 }
 
 /* Load all floating point registers and vector registers from the
@@ -583,8 +577,8 @@ load_fprs_and_vrs (mcontext_t *mcont)
 			:: "r" (&mcont->fpregs.fprs[0].d),
 			 "I" ((uintptr_t) &mcont->fpregs.fprs[1].d  -
 			      (uintptr_t) &mcont->fpregs.fprs[0].d));
-  /* TODO: check the PSA bit in setjmp.S and longjmp().  */
-  /* TODO: check if we save fpc in setjmp.  */
+  /* z/OS TODO: check the PSA bit in setjmp.S and longjmp().  */
+  /* z/OS TODO: check if we save fpc in setjmp.  */
 }
 
 /* The main part of the SIR.  */
@@ -597,20 +591,20 @@ __sir_body (struct sir_stack *ss, int should_free)
   sir_assert (ss && (should_free == 0 || should_free == 1));
   bool freeing = should_free ? true : false;
 
-  /* TODO: What about quiesce exits.  */
+  /* z/OS TODO: What about quiesce exits.  */
 
   atomic_store_release (&__sig_tdata.in_sighandler, true);
   __sig_tdata.is_not_cached_stack = freeing;
   __sig_tdata.stack_start = ss;
 
-  /* TODO: Right now, I'm assuming that the floating point state that
+  /* z/OS TODO: Right now, I'm assuming that the floating point state that
      we recieve control in is the the one that was interrupted. Test
      this assumption.  */
 
   /* Save the FP state, regs, and vector regs.
      This ucontext is the same one we might pass to the signal handler,
      we initialize it peicemeal as we go.
-     z/OS TODO: we could save 200-odd bytes of stack space on almost all
+     z/OS z/OS TODO: we could save 200-odd bytes of stack space on almost all
      signal handlers by only declaring the vrregset and fpregset
      here.  */
   ucontext_t ucont = {0};
@@ -630,11 +624,11 @@ __sir_body (struct sir_stack *ss, int should_free)
     | (int) ppsd->flags3 << 8
     | (int) ppsd->flags4;
 
-  /* TODO: Start of testing section. Remove later.  */
+  /* z/OS TODO: Start of testing section. Remove later.  */
   sir_warn (flags & F2_64);
   if (flags & IPT)
     sir_warn (TCB_PTR == __ipt_zos_tcb);
-  /* TODO: End of testing section. Remove later.  */
+  /* z/OS TODO: End of testing section. Remove later.  */
 
   /* Determine reason for interruption.  */
   switch (flags & (SIGNAL | CANCEL | QUIESCE))

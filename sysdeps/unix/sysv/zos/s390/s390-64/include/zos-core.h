@@ -1,7 +1,7 @@
 /* C interface to core z/OS functionality.
-   Copyright (C) 2018 Rocket Software
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2018.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -93,5 +93,5 @@ int __storage_release (unsigned int storage_addr, unsigned int length,
 		       unsigned int tcbaddr,
 		       bool noexec) attribute_hidden;
 
-#endif  /* __ASSEMBLER__  */
-#endif /* _ZOS_CORE_H  */
+#endif  /* !__ASSEMBLER__  */
+#endif /* !_ZOS_CORE_H  */

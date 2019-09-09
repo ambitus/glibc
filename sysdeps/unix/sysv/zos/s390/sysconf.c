@@ -1,5 +1,5 @@
-/* Get file-specific information about a file.  Linux version.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Get file-specific information about a file.  z/OS version.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or

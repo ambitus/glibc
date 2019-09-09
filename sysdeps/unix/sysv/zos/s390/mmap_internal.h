@@ -1,5 +1,5 @@
 /* mmap - map files or devices into memory.  z/OS version.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,4 +23,4 @@
 
 #include <sysdeps/unix/sysv/linux/mmap_internal.h>
 
-#endif /* MMAP_ZOS_INTERNAL_H */
+#endif /* !MMAP_ZOS_INTERNAL_H */

@@ -1,4 +1,4 @@
-/* TODO: dummy. PLT trampolines go here.  */
+/* z/OS TODO: dummy. PLT trampolines go here.  */
 
 	.text
 	.globl _dl_runtime_resolve

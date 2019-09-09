@@ -1,6 +1,25 @@
-/* (C) 2018 Rocket Software */
-#ifndef _ASM_ZOS_BPX_OFFSETS_H
-#define _ASM_ZOS_BPX_OFFSETS_H 1
+/* Syscall list and mapping macros.
+   Copyright (C) 2019 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+   Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, see
+   <http://www.gnu.org/licenses/>.  */
+
+
+#ifndef _ZOS_BPX_OFFSETS_H
+#define _ZOS_BPX_OFFSETS_H 1
 #include <asm/unistd_64.h>
 
 /* Fake syscall numbers for syscalls that don't exist on s390x linux,
@@ -1031,4 +1050,4 @@
 #define __shim_enabled_preadv64(if_true, if_false) __shim_enabled_preadv(if_true, if_false)
 #define __shim_enabled_preadv64v2(if_true, if_false) __shim_enabled_preadv2(if_true, if_false)
 
-#endif /* _ASM_ZOS_BPX_OFFSETS_H */
+#endif /* !_ZOS_BPX_OFFSETS_H */

@@ -1,6 +1,7 @@
-/* Copyright (C) 2019 Rocket Software
+/* Copyright (C) 2019 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Vladimir Kudryakov <vkudryakov@rocketsoftware.com>, 2019.
+
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
