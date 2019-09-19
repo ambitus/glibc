@@ -52,6 +52,10 @@
 
 #if PREINIT_FUNCTION_WEAK
 	weak_extern (PREINIT_FUNCTION)
+	/* We can't do pc-relative relocs against weak symbols on
+	   z/OS.  */
+	.section .rodata
+2:	.quad	PREINIT_FUNCTION
 #else
 	.hidden PREINIT_FUNCTION
 #endif
@@ -74,7 +78,7 @@ _init:
 	lgr	%r13, %r15
 
 #if PREINIT_FUNCTION_WEAK
-	larl	%r15, 2f
+	larl	%r15, 2b
 	lg	%r15, 0(%r15)
 	ltgr	%r15, %r15
 	je	1f
@@ -86,15 +90,6 @@ _init:
 #endif
 	mvc	136(8,%r13), 144(%r13)
 	.align	8, 0x07
-
-#if PREINIT_FUNCTION_WEAK
-	/* We can't do pc-relative relocs against weak symbols on
-	   z/OS.  */
-	.section .rodata
-	.align	8, 0x07
-2:
-	.quad	PREINIT_FUNCTION
-#endif
 
 
 	.section .fini,"ax",@progbits
