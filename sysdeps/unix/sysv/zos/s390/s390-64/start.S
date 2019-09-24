@@ -33,10 +33,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <http://www.gnu.org/licenses/>.  */
 
-   z/OS TODO: This is all experimental right now.
-   z/OS TODO: Make this work with shared stuff.  */
+/* NOTE: This is different from a normal start.S, because our loader
+   doesn't give control to the dynamic loader. We need to check for
+   PT_INTERP ourselves, and if we find it, load the dynamic linker
+   and transfer control.  */
 
 #include <zos-core.h>
 #include <sysdep.h>
@@ -45,11 +47,9 @@
    This is the canonical entry point, usually the first thing in the text
    segment. Most registers' values are unspecified, except for:
 
-   %r0		Maybe something, at some point?
-		z/OS TODO: Initialize r0 with rtld_fini, like %r14 is for
-		the s390 linux port.
    %r1		Pointer to a structure that contains the program
 		arguments and environment in the kernel's format.
+   %r4		rtld_fini
    %r12		?
 		z/OS TODO: Anything interesting?
    %r13		Pointer to a DSA.
@@ -68,19 +68,22 @@
 _start:
 	cfi_startproc
 	cfi_undefined (r14)
+#ifdef PIC
+	/* This is the entry point the dynamic loader sees and calls.
+	   The dynamic loader sets up a stack for us and preprocesses
+	   our args and envs.  */
+	j	.Lskip_setup
+.Los_start:
+	/* This is the entry point the OS sees and gives control to.
+           NOTE: This must be EXACTLY 4 bytes after _start.  */
+#else
+	/* Static applications get NULL for rtld_fini.  */
+	lghi	%r4, 0
+#endif
 
-	/* Save initial registers.
-	   TODO: Do we need to do this? Do we need to restore them?  */
-	stmg	%r14, %r12, 8(%r13)
-
-	/* TODO: This is a stopgap measure. Until we figure out what to
-	   do about rtld_fini, we're just going to pass in NULL.  */
-	lghi	%r0, 0
-
-	/* Prevent the value we got in %r1 and %r0 from being clobbered
+	/* Prevent the value we got in %r1 from being clobbered
 	   by the storage call.  */
 	lgr	%r3, %r1	# arg_info
-	lgr	%r4, %r0	# rtld_fini
 
 	/* Obtain storage
 
@@ -123,7 +126,19 @@ _start:
 
 	/* Initialize NAB  */
 	la	%r14, 200(%r13)
-	stg	%r14, 136(%r13)		/* Fake NAB (144(%r13)) unused.  */
+	stg	%r14, 136(%r13)
+
+#ifdef PIC
+	/* Call a helper to load the linker (avoiding the PLT).  */
+	brasl	%r14, __GI___load_pt_interp
+
+	/* Call the linker. Pass in our original r1.  */
+	lgr	%r1, %r3
+	basr	%r14, %r15
+
+	/* We should not return, trap if we do.  */
+	.long	0
+#endif
 
 	/* Set up args for __libc_start_main. Our __libc_start_main
 	   is not the generic one, and it takes slightly different
@@ -132,7 +147,14 @@ _start:
 	/* __libc_start_main (main, arg_info, rtld_fini, init, fini,
 			      stack_end)  */
 
+#ifdef PIC
+.Lskip_setup:
+	/* Our args and envs have been processed properly.  */
+	larl	%r2, main@GOTENT
+	lg	%r2,0(%r2)
+#else
 	larl	%r2, main		# main
+#endif
 	larl	%r5, __libc_csu_init	# init
 	larl	%r6, __libc_csu_fini	# fini
 	lgr	%r7, %r13		# stack_end
@@ -140,20 +162,17 @@ _start:
 
 	la	%r1, 152(%r13)	/* load arg pointer into r1.  */
 
+#ifdef PIC
+	brasl	%r14, __libc_start_main@plt
+#else
 	brasl	%r14, __libc_start_main
-
+#endif
 	cfi_endproc
 
 .Lmain_stack_length:
 	.long 10 * (1 << 20)	/* 10 MiB  */
 .Lmain_stack_flags:
 	.long REGULAR_OBTAIN_FLAGS  /* Flags for STORAGE OBTAIN.  */
-
-	/* z/OS TODO: This is a stopgap measure to enable our minimal
-	   elf header to work. Rework the elf header generation soon,
-	   and remove this when it's no longer needed.  */
-	.section __tls_ptr
-	.quad __tdata_start
 
 /* Define a symbol for the first piece of initialized data.  */
 	.data
