@@ -74,6 +74,9 @@ extern uintptr_t __bpx_call_table attribute_hidden;
 #include <unimplemented.h>
 
 extern void __bpxk_syscall (void *, ...);
+#if IS_IN (libc) || IS_IN (rtld)
+hidden_proto (__bpxk_syscall)
+#endif
 
 /* I miss type checking...  */
 #define BPX_CALL(name, ftype, args...)					\

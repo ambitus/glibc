@@ -41,12 +41,13 @@
       in the calling convention.
 
       z/OS TODO: We might end up changing the calling convention in the
-      compiler. If we do, delete some of this.
-
-      z/OS TODO: Make this a hidden symbol.  */
+      compiler. If we do, delete some of this.  */
 
 	.text
-ENTRY (__bpxk_syscall)
+	.type __bpxk_syscall,@function
+	.align 8
+__bpxk_syscall:
+	cfi_startproc
 	# We don't bother sticking to the save area convention here,
 	# since the syscalls don't use it.
 
@@ -116,4 +117,6 @@ ENTRY (__bpxk_syscall)
 	# return
 	br	%r14
 
-END (__bpxk_syscall)
+	cfi_endproc
+	.size __bpxk_syscall,.-__bpxk_syscall
+hidden_def (__bpxk_syscall)
