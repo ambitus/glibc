@@ -24,6 +24,12 @@
 #include <zos-core.h>
 #include <zos-estaex.h>
 
+/* z/OS TODO: Allow all estaex processing (including registration) to
+   work with an unrelocated PLT so we can set it up in the dynamic
+   linker for dynamically linked executables/static PIEs. Without doing
+   that, we can't get any sort of dumps for errors in the dynamic
+   linker.  */
+
 int
 __set_estaex_handler (void (*user_handler) (struct sdwa *, void *),
 		      void *user_data)

@@ -30,21 +30,21 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <alloca.h>
 #include <zos-utils.h>
 #include <zos-core.h>
 #include <zos-syscall-base.h>
 #include <zos-estaex.h>
 #include <zos-futex.h>
+#include <zos-init.h>
 #include <lock-free.h>
 #include <map-info.h>
 #include <sir.h>
 
 /* z/OS TODO: What do we need to change here to handle shared cases?
-   Where is the shared env init?
+   Where is the shared env init?  */
 
-   z/OS TODO: Signal setup.  */
-
-#define roundup16(val) (((val) + 16 - 1) & ~(16 - 1))
+#define roundup16(val) (((uintptr_t) (val) + 16 - 1) & ~(16 - 1))
 #define ZOS_THREAD_BUCKETS 64
 #define ZOS_FUTEX_BUCKETS 64
 
@@ -66,19 +66,6 @@
    /* Anon map data object pool header.	*/				\
    /* roundup16 (subpool_real_size_type (struct map_info))  */)
 
-struct bpxk_arg_list
-  {
-    uint32_t *count;
-    uint32_t **lens;
-    char     **vals;
-  };
-
-/* The format of %r1 when we first receive control.  */
-struct bpxk_args
-{
-  struct bpxk_arg_list argv;
-  struct bpxk_arg_list argp;
-};
 
 /* The thread pointer table.  */
 extern lf_hash_table *__zos_tp_table;
@@ -98,69 +85,66 @@ libc_hidden_proto (__wait_token_pool)
 extern object_pool __alloc_info_pool;
 libc_hidden_proto (__alloc_info_pool)
 
+/* A very basic fixed size non-freeing allocator that somewhat simplifies
+   early initialization allocation.  */
 
-static struct
-  {
-    void *next;
-    size_t used;
-    size_t size;
-  } perm_store = { NULL, 0, 0};
-
-
-static inline __attribute__ ((always_inline))
-void
-perm_store_init (size_t total_size)
+struct storage
 {
-  void *res;
+  void *next;
+  size_t used;
+  size_t size;
+};
 
-  total_size = roundup16 (total_size);
-  res = __storage_obtain_simple (total_size);
+static inline void __attribute__ ((always_inline))
+perm_store_init (struct storage *store, size_t total_size)
+{
+  void *res = __storage_obtain_simple (roundup16 (total_size + 15));
 
-  if (!res)
+  if (res == NULL)
     CRASH_NOW ();
 
-  perm_store.used = 0;
-  perm_store.next = res;
-  perm_store.size = total_size;
+  store->used = 0;
+  store->next = (void *) roundup16 (res);
+  store->size = total_size;
 }
 
-
 /* Align everything to 16 bytes, or not at all.  */
-static inline __attribute__ ((always_inline))
-void *
-perm_store_alloc (size_t size, bool align)
+static inline void * __attribute__ ((always_inline))
+perm_store_alloc (struct storage *store, size_t size, bool align)
 {
   uintptr_t new_next, ret, prev;
 
-  ret = prev = (uintptr_t) perm_store.next;
+  ret = prev = (uintptr_t) store->next;
   if (align)
     ret = roundup16 (prev);
   new_next = ret + size;
 
-  size_t new_used = perm_store.used + new_next - prev;
-  if (new_used > perm_store.size)
+  size_t new_used = store->used + new_next - prev;
+  if (new_used > store->size)
     CRASH_NOW ();
-  perm_store.used = new_used;
-  perm_store.next = (void *) new_next;
+  store->used = new_used;
+  store->next = (void *) new_next;
 
   return (void *) ret;
 }
 
+/* Initializer for object pool elements.  */
+static void
+node_init (void *addr)
+{
+  ((lfl_node_t *) addr)->next.tag = 0;
+}
 
-static inline __attribute__ ((always_inline))
-void
+static inline void __attribute__ ((always_inline))
 global_structures_init (void)
 {
+  struct storage store;
   object_pool *node_pool;
 
-  /* Initialize object pools.  */
-  void node_init (void *addr)
-  {
-    ((lfl_node_t *) addr)->next.tag = 0;
-  }
+  perm_store_init (&store, PERM_STORE_CONST_SIZE);
 
   /* The lock-free list node pool, to be shared between all lists.  */
-  node_pool = perm_store_alloc (subpool_size (lfl_node_t), true);
+  node_pool = perm_store_alloc (&store, subpool_size (lfl_node_t), true);
 
   __obj_pool_initialize (node_pool, sizeof (lfl_node_t),
 			 _Alignof (lfl_node_t), false, node_init);
@@ -172,51 +156,17 @@ global_structures_init (void)
   /* Initialize primary data structures.  */
 
   /* Thread pointer hashtable.  */
-  __zos_tp_table = perm_store_alloc (ZOS_THREAD_TABLE_SIZE, true);
+  __zos_tp_table = perm_store_alloc (&store, ZOS_THREAD_TABLE_SIZE, true);
   __lf_hash_table_initialize (__zos_tp_table, ZOS_THREAD_BUCKETS,
 			      lfl_set, node_pool);
 
   /* Futex hashtable.  */
-  __zos_futex_table = perm_store_alloc (ZOS_FUTEX_TABLE_SIZE, true);
+  __zos_futex_table = perm_store_alloc (&store, ZOS_FUTEX_TABLE_SIZE, true);
   __lf_hash_table_initialize (__zos_futex_table, ZOS_FUTEX_BUCKETS,
 			      lfl_hashed_wait_queue_bucket, node_pool);
 
   /* mmap() MAP_ANONYMOUS accounting structures.  */
   __lfl_initialize (&__zos_tracked_allocs, lfl_set, node_pool);
-
-}
-
-
-static inline __attribute__ ((always_inline))
-size_t
-args_min_size (struct bpxk_arg_list *arglist)
-{
-  size_t total = 0;
-  for (uint32_t i = 0; i < *arglist->count; i++)
-    total += *arglist->lens[i] + 1;
-
-  return total;
-}
-
-
-static inline __attribute__ ((always_inline))
-void
-translate_and_copy_args (char **dest, struct bpxk_arg_list *arglist)
-{
-  size_t narg;
-  for (narg = 0; narg < *arglist->count; narg++)
-    {
-      uint32_t arg_len = *arglist->lens[narg];
-      char *tr_arg = perm_store_alloc (arg_len + 1, false);
-
-      /* Translate the argument to ASCII.
-	 z/OS TODO: in a pure ASCII environment, this will fail.  */
-      tr_a_until_len (arglist->vals[narg], tr_arg, arg_len);
-
-      tr_arg[arg_len] = '\0';
-      dest[narg] = tr_arg;
-    }
-  dest[narg] = NULL;
 }
 
 
@@ -227,8 +177,7 @@ typedef void (*__bpx4mss_t) (void (**sir_addr) (struct sigcontext *),
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-static inline
-void
+static inline void
 set_up_signals (void)
 {
   int32_t retval, retcode, reason_code;
@@ -245,62 +194,46 @@ set_up_signals (void)
 
 int
 __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
-		   struct bpxk_args *arg_info,
+		   void *arg_info,
 		   void (*rtld_fini) (void),
 		   __typeof (main) init,
 		   void (*fini) (void),
 		   void *stack_end)
 {
-
   char **args_and_envs;
-  size_t total_args_size, ae_size;
+  int argc;
 
-  /* Do several things here.  */
-  /* 1. Save the IPT Task Control Block address. This will be needed
+  /* Save the IPT Task Control Block address. This will be needed
      throughout the life of the program.  */
   __ipt_zos_tcb = TCB_PTR;
 
-  /* 2. Set up an ESTAEX handler for debugging. */
+  /* Set up an ESTAEX handler for debugging. */
   int estaex_set = __set_estaex_handler (__estaex_handler_dump, NULL);
   if (estaex_set != 0)
     CRASH_NOW ();
 
-  /* 3. Obtain storage for and initialize the major global structures.
-	We will use the same storage area for the translated
-	args/environ.  */
+#ifndef PIC
+  argc = *((struct bpxk_args *) arg_info)->argv.count;
+  /* Process program arguments and environ, set up signals, and register
+     ourselves as an ASCII program. Args and envs are copied onto the
+     stack.  */
+  ESSENTIAL_PROC_INIT (alloca, arg_info, set_up_signals, &args_and_envs);
+#else
+  /* The dynamic linker already translated our args and envs for us.  */
+  args_and_envs = arg_info;
 
-  /*  Total size of the argv/argp array.  */
-  ae_size =
-    (*arg_info->argv.count + *arg_info->argp.count + 2) * sizeof (char*);
+  /* z/OS TODO: Have the dynamic linker pass in argc directly.  */
+  for (argc = 0; args_and_envs[argc] != NULL; ++argc);
 
-  total_args_size = roundup16 (ae_size);
-  total_args_size += roundup16 (args_min_size (&arg_info->argv));
-  total_args_size += roundup16 (args_min_size (&arg_info->argp));
+  /* Register our SIR.  */
+  set_up_signals ();
+#endif
 
-  /* Get our storage.  */
-  perm_store_init (PERM_STORE_CONST_SIZE + total_args_size);
-
-  /* Initialize structures.  */
+  /* Obtain storage for and initialize the major global structures.  */
   global_structures_init ();
 
-  /* 4. Convert argv and argc into a Linux-like format, and convert to
-	EBCDIC. Note that argv[argc + 1] must be __environ[0].  */
-
-  /* Allocate the argv/p array itself.  */
-  args_and_envs = perm_store_alloc (ae_size, true);
-
-  char **argp_start = &args_and_envs[*arg_info->argv.count + 1];
-  translate_and_copy_args (args_and_envs, &arg_info->argv);
-  translate_and_copy_args (argp_start, &arg_info->argp);
-
-  /* 5. Register our SIR.  */
-  set_up_signals ();
-
-  /* 6. We should now be dubbed. Set THLIccsid to 819 for ascii.  */
-  set_prog_ccsid (819);
-
-  /* 7. Do the regular __libc_start_main stuff.  */
-  generic_start_main (main, *arg_info->argv.count, args_and_envs,
+  /* Do the regular __libc_start_main stuff.  */
+  generic_start_main (main, argc, args_and_envs,
 		      init, fini, rtld_fini, stack_end);
 
   /* This should never be reached.  */

@@ -42,7 +42,7 @@
 #define OTCB_PTR	GET_PTR31_SAFE (STCB_PTR + 216)
 
 /* Pointer to a thread-local structure set up by the OS. May be null.  */
-static inline uintptr_t
+static inline uintptr_t __attribute__ ((always_inline))
 get_thli_ptr (void)
 {
   uintptr_t otcb = OTCB_PTR;
@@ -51,7 +51,7 @@ get_thli_ptr (void)
 
 /* Set the thread-local field that controls automatic character
    conversion to the given ccsid, if possible.  */
-static inline bool
+static inline bool __attribute__ ((always_inline))
 set_prog_ccsid (uint16_t ccsid)
 {
   uintptr_t thli = get_thli_ptr ();
@@ -67,9 +67,9 @@ set_prog_ccsid (uint16_t ccsid)
   return true;
 }
 
-/* Set the thread-local field that controls automatic character
+/* Get the thread-local field that controls automatic character
    conversion to the given ccsid, if possible.  */
-static inline uint16_t
+static inline uint16_t __attribute__ ((always_inline))
 get_prog_ccsid (void)
 {
   uintptr_t thli = get_thli_ptr ();
