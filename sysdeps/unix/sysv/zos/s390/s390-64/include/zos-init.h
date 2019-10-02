@@ -33,7 +33,8 @@ struct bpxk_arg_list
   char     **vals;
 };
 
-/* The format of the structure r1 points to when we receive control.  */
+/* The format of the structure %r1 points to when we receive control.  */
+
 struct bpxk_args
 {
   struct bpxk_arg_list argv;
@@ -43,9 +44,18 @@ struct bpxk_args
 /* Helpers to translate program arguments and environ from the OS format
    and encoding to the internally usable format and encoding.  */
 
-#define ARGS_POINTERS_SIZE(arg_info)					\
-  ((*arg_info->argv.count + *arg_info->envp.count + 2) * sizeof (char*))
+#ifdef SHARED
+# define EHDR_WORDS 1
+#else
+# define EHDR_WORDS 0
+#endif
 
+/* Minimal size for the argv/envp pointers themselves, plus an extra
+   word for argc, and another for the ehdr address in shared cases.  */
+
+#define ARGS_POINTERS_SIZE(arg_info)					\
+  ((*arg_info->argv.count + *arg_info->envp.count + 3 + EHDR_WORDS)	\
+   * sizeof (char *))
 
 static inline size_t __attribute__ ((always_inline))
 args_min_size (const struct bpxk_args *arg_info)
@@ -82,12 +92,23 @@ translate_and_copy_one_set (void *mem, char **dest,
   return mem;
 }
 
-static inline char ** __attribute__ ((always_inline))
+static inline void * __attribute__ ((always_inline))
 translate_and_copy_args (void *mem,
-			 const struct bpxk_args *arg_info)
+			 const struct bpxk_args *arg_info,
+			 void *ehdr __attribute_used__)
 {
-  char **args_and_envs = mem;
+  /* Reserve a word for argc.  */
+  char **args_and_envs =
+    (void *) ((uintptr_t) mem + sizeof (long int) * (1 + EHDR_WORDS));
   char **envp_start = &args_and_envs[*arg_info->argv.count + 1];
+
+#ifdef SHARED
+  /* Store the ehdr pointer, if we have one.  */
+  *(uintptr_t *) mem = (uintptr_t) ehdr;
+#endif
+
+  /* Store argc.  */
+  *((long int *) mem + EHDR_WORDS) = *arg_info->argv.count;
 
   /* Reserve space for the argv/p array itself.  */
   mem = (void *) ((uintptr_t) mem + ARGS_POINTERS_SIZE (arg_info));
@@ -98,48 +119,48 @@ translate_and_copy_args (void *mem,
   /* Set up the envs.  */
   mem = translate_and_copy_one_set (mem, envp_start, &arg_info->envp);
 
-  return args_and_envs;
+  return mem;
 }
 
 /* Do essential process start up. We need to allocate some memory that
    will never get freed, so the user should supply an allocator. This
    is a macro instead of a function to allow that allocator to be
-   alloca in a noreturn function. arg_info should be the value of r1 when
-   the process received control. The properly processed args in the
-   standard format are stored into final_arg_ptr.  */
+   alloca in a noreturn function. arg_info should be the value of %r1
+   when the process received control. Return a pointer to the properly
+   processed args.  */
 
-#define ESSENTIAL_PROC_INIT(allocator, arg_info, dub_fun,		\
-			    fin_args_ptr_ptr)				\
-  do									\
-    {									\
-      /* Convert argv and argc into a Linux-like format, and convert	\
-	 to ASCII. Note that argv[argc + 1] must be __environ[0].  */	\
-									\
-      size_t __total_args_size = args_min_size (arg_info);		\
-      /* Don't assume the allocator alligns as much as we want.  */	\
-      void *__mem =							\
-	allocator (__total_args_size + __alignof__ (char *) - 1);	\
-      __mem = (void *) (((uintptr_t) __mem + __alignof__ (char *) - 1)	\
-			& ~(__alignof__ (char *) - 1));			\
-      *(fin_args_ptr_ptr) = translate_and_copy_args (__mem, arg_info);	\
-									\
-      /* We need to guaruantee that this task is dubbed as a process	\
-	 before proceeding. The easiest way to do that seems to be	\
-	 to do an arbitrary syscall and ignore the result. Our consumer	\
-	 may have some processing they would do anyway that would	\
-	 dub, so let them run that instead.				\
-	 z/OS TODO: Find the absolute minimum-cost way to dub.	*/	\
-									\
-      if ((dub_fun) != NULL)						\
-	(dub_fun) ();							\
-      else								\
-	(void) INLINE_SYSCALL_CALL (getpid);				\
-									\
-      /* We should now be dubbed. Set THLIccsid to 819 for ASCII to	\
-	 register that our intput and output are typically expected to	\
-	 be ASCII, or at least should not be translated by other ASCII	\
-	 consumers and producers.  */					\
-      (void) set_prog_ccsid (819);					\
-    } while (0)
-
+#define ESSENTIAL_PROC_INIT(allocator, arg_info, dub_fun, ehdr)		\
+  ({									\
+    void *__ret;							\
+    /* Convert argv and argc into a Linux-like format, and convert	\
+       to ASCII. Note that argv[argc + 1] must be __environ[0].  */	\
+    									\
+    size_t __total_args_size = args_min_size (arg_info);		\
+    /* Don't assume the allocator alligns as much as we want.  */	\
+    void *__mem =							\
+      (allocator) (__total_args_size + __alignof__ (char *) - 1);	\
+    __mem = (void *) (((uintptr_t) __mem + __alignof__ (char *) - 1)	\
+		      & ~(__alignof__ (char *) - 1));			\
+    __ret = __mem;							\
+    __mem = translate_and_copy_args (__mem, arg_info, ehdr);		\
+    									\
+    /* We need to guaruantee that this task is dubbed as a process	\
+       before proceeding. The easiest way to do that seems to be	\
+       to do an arbitrary syscall and ignore the result. Our consumer	\
+       may have some processing they would do anyway that would		\
+       dub, so let them run that instead.				\
+       z/OS TODO: Find the absolute minimum-cost way to dub.	*/	\
+    									\
+    if ((dub_fun) != NULL)						\
+      (dub_fun) ();							\
+    else								\
+      (void) INLINE_SYSCALL_CALL (getpid);				\
+    									\
+    /* We should now be dubbed. Set THLIccsid to 819 for ASCII to	\
+       register that our intput and output are typically expected to	\
+       be ASCII, or at least should not be translated by other ASCII	\
+       consumers and producers.  */					\
+    (void) set_prog_ccsid (819);					\
+    __ret;								\
+  })
 #endif /* !_ZOS_INIT_H  */

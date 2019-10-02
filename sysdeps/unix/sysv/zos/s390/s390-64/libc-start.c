@@ -200,6 +200,7 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 		   void (*fini) (void),
 		   void *stack_end)
 {
+  void *cookie;
   char **args_and_envs;
   int argc;
 
@@ -213,21 +214,20 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
     CRASH_NOW ();
 
 #ifndef PIC
-  argc = *((struct bpxk_args *) arg_info)->argv.count;
   /* Process program arguments and environ, set up signals, and register
      ourselves as an ASCII program. Args and envs are copied onto the
      stack.  */
-  ESSENTIAL_PROC_INIT (alloca, arg_info, set_up_signals, &args_and_envs);
+  cookie = ESSENTIAL_PROC_INIT (alloca, arg_info, set_up_signals, NULL);
 #else
   /* The dynamic linker already translated our args and envs for us.  */
-  args_and_envs = arg_info;
-
-  /* z/OS TODO: Have the dynamic linker pass in argc directly.  */
-  for (argc = 0; args_and_envs[argc] != NULL; ++argc);
+  cookie = arg_info;
 
   /* Register our SIR.  */
   set_up_signals ();
 #endif
+
+  argc = (int) *(long int *) cookie;
+  args_and_envs = (char **) ((long int *) cookie + 1);
 
   /* Obtain storage for and initialize the major global structures.  */
   global_structures_init ();

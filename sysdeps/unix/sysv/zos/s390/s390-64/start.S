@@ -43,21 +43,43 @@
 #include <zos-core.h>
 #include <sysdep.h>
 
-/*
-   This is the canonical entry point, usually the first thing in the text
-   segment. Most registers' values are unspecified, except for:
+/* This is the canonical entry point, usually the first thing in the text
+   segment. Most registers' values are unspecified on entry, except for:
 
-   %r1		Pointer to a structure that contains the program
-		arguments and environment in the kernel's format.
-   %r4		rtld_fini
-   %r12		?
-		z/OS TODO: Anything interesting?
-   %r13		Pointer to a DSA.
+   %r1		NOTE: We do something tricky with this that impacts the ABI.
+
+		When we recieve control from the OS, the only thing we
+		can easily guarantee about our execution environment is that
+		%r1 points to a list of pointers to our args and env vars
+		(in the kernel's peculiar format).
+
+		We exploit the fact that the kernel will never give us an
+		unaligned pointer to determine whether the dynamic linker
+		has already run.
+
+		We have chosen to have the dynamic linker set up %r1 with
+		a pointer to our args (in environ format), however it
+		sets the low bit of %r1 so we know the dynamic linker and
+		not the OS is giving us control, and has already done some
+		initialization.
+
+		When we have to manually call the dynamic linker, we use
+		nonstandard linkage, passing  the address of our ehdr in
+		%r2.
+
+   %r4		If the dynamic linker gives us control, this is rtld_fini,
+		otherwise it's undefined.
+
+   %r13		Pointer to a DSA. If The dynamic linker has given us
+		control, then this points to a full stack. If not, then
+		its literally just the save area.
+
    %r14		Return address. Technically we should branch here on
 		exit, however I'm not sure how necessary that is.
 		z/OS TODO: Check how necessary that is. Looks like ret
 		addr is a stub that sets %r15 to retcode then does an
 		SVC 3, at least for exec()ed programs.
+
    %r15		?
 */
 
@@ -68,14 +90,15 @@
 _start:
 	cfi_startproc
 	cfi_undefined (r14)
+
+	/* Save initial registers.
+	TODO: Do we need to do this? Do we need to restore them?  */
+	stmg    %r14, %r12, 8(%r13)
+
 #ifdef PIC
-	/* This is the entry point the dynamic loader sees and calls.
-	   The dynamic loader sets up a stack for us and preprocesses
-	   our args and envs.  */
-	j	.Lskip_setup
-.Los_start:
-	/* This is the entry point the OS sees and gives control to.
-           NOTE: This must be EXACTLY 4 bytes after _start.  */
+	/* Check the above-mentioned hack.  */
+	tmll	%r1, 1
+	je	.Lskip_setup
 #else
 	/* Static applications get NULL for rtld_fini.  */
 	lghi	%r4, 0
@@ -86,6 +109,9 @@ _start:
 	lgr	%r3, %r1	# arg_info
 
 	/* Obtain storage
+
+	   NOTE: When this code is changed here it should also be changed
+	   in RTLD_INIT.
 
 	   z/OS TODO: This can only allocate storage below the bar right
 	   now. There's no reason why we shouldn't be able to put our
@@ -109,8 +135,10 @@ _start:
 	/* r15 has the return code and r1 has the address.  */
 	/* z/OS TODO: Check if the call failed here.  */
 
-	/* z/OS TODO: ensure 16-byte stack alignment. They do it on the
-	   other s390 port so presumably there's a reason.  */
+	/* Ensure 16-byte stack alignment. They do it on the other
+	   port so presumably there's a reason.  */
+	aghi	%r1, 15
+	nill	%r1, 65520
 
 	/* Store address of our next DSA in old DSA.  */
 	stg	%r1, 136(%r13)
@@ -130,10 +158,16 @@ _start:
 
 #ifdef PIC
 	/* Call a helper to load the linker (avoiding the PLT).  */
+	.hidden  __GI___load_pt_interp
 	brasl	%r14, __GI___load_pt_interp
 
-	/* Call the linker. Pass in our original r1.  */
+	/* Call the linker. Pass in our original r1, and set the
+	   low bit.  */
 	lgr	%r1, %r3
+	oill	%r1, 1
+	/* See above note about nonstandard linkage.  */
+	.hidden __ehdr_start
+	larl	%r2, __ehdr_start
 	basr	%r14, %r15
 
 	/* We should not return, trap if we do.  */
@@ -150,6 +184,8 @@ _start:
 #ifdef PIC
 .Lskip_setup:
 	/* Our args and envs have been processed properly.  */
+	nill	%r1, 65534
+
 	larl	%r2, main@GOTENT
 	lg	%r2,0(%r2)
 #else
