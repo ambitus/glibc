@@ -47,80 +47,6 @@ rtld_hidden_data_def(__libc_stack_end)
 /* z/OS TODO: This isn't the true stack end.  */
 #define DL_STACK_END(cookie) ((void *) (cookie))
 
-/* z/OS TODO: remove these when we update to recent glibc sources.  */
-#ifndef HWCAP_S390_VXRS_EXT2
-# define HWCAP_S390_VXRS_EXT2 0
-#endif
-#ifndef HWCAP_S390_VXRS_PDE
-# define HWCAP_S390_VXRS_PDE 0
-#endif
-#ifndef HWCAP_S390_SORT
-# define HWCAP_S390_SORT 0
-#endif
-#ifndef HWCAP_S390_DFLT
-# define HWCAP_S390_DFLT 0
-#endif
-
-static inline uint64_t
-check_hwcaps (void)
-{
-  /* We always support these.  */
-  uint64_t hwcap = HWCAP_S390_HIGH_GPRS;
-
-  /* Check the stfl facilities. Assume the stfl PSA bytes are ok.  */
-  uint32_t stfl = *(uint32_t *) ((volatile uintptr_t) (200));
-  if ((stfl & 0x80000000) != 0) hwcap |= HWCAP_S390_ESAN3;
-  if ((stfl & 0x20000000) != 0) hwcap |= HWCAP_S390_ZARCH;
-  if ((stfl & 0x01000000) != 0) hwcap |= HWCAP_S390_STFLE;
-  if ((stfl & 0x00004000) != 0) hwcap |= HWCAP_S390_MSA;
-  if ((stfl & 0x00001000) != 0) hwcap |= HWCAP_S390_LDISP;
-  if ((stfl & 0x00000400) != 0) hwcap |= HWCAP_S390_EIMM;
-  if ((stfl & 0x00000202) == 0x00000202) hwcap |= HWCAP_S390_ETF3EH;
-  /* z/OS TODO: When should HWCAP_S390_HPAGE be valid? What EXACT features
-     does it indicate the presence of? How do we test their availability?
-     right now we use it as a proxy for EDAT-1, which probably isn't
-     correct.  */
-  if ((stfl & 0x00800000) != 0) hwcap |= HWCAP_S390_HPAGE;
-
-  if (hwcap & HWCAP_S390_STFLE)
-    {
-      /* z/OS TODO: Can we rely on the PSA bits, do we need to use STFLE?  */
-      uint64_t stfle_list[4] = {0};
-      register uint64_t reg0 __asm__ ("0") = (sizeof (stfle_list) / 8) - 1;
-      /* z/OS TODO: We definitely shouldn't use stfle twice per program
-	 (here and in the ifunc resolver code).  */
-      __asm__ (".machine push"        "\n\t"
-	       ".machine \"z9-109\""  "\n\t"
-	       ".machinemode \"zarch_nohighgprs\"\n\t"
-	       "stfle %0"             "\n\t"
-	       ".machine pop"         "\n"
-	       : "=QS" (stfle_list), "+d" (reg0)
-	       : : "cc");;
-
-      if ((stfle_list[0] & 0x00280000UL) == 0x00280000UL)
-	hwcap |= HWCAP_S390_DFP;
-
-      /* HWCAP_S390_TE requires constrained and regular transactions.  */
-      if ((stfle_list[1] & 0x0040000000000000UL)
-	  && (stfle_list[0] & 0x00002000UL))
-	hwcap |= HWCAP_S390_TE;
-
-      if (stfle_list[2] & 0x0400000000000000UL) hwcap |= HWCAP_S390_GS;
-      if (stfle_list[2] & 0x0000020000000000UL) hwcap |= HWCAP_S390_SORT;
-      if (stfle_list[2] & 0x0000010000000000UL) hwcap |= HWCAP_S390_DFLT;
-      if (stfle_list[2] & 0x4000000000000000UL)
-	{
-	  hwcap |= HWCAP_S390_VX;
-	  if (stfle_list[2] & 0x0200000000000000UL) hwcap |= HWCAP_S390_VXE;
-	  if (stfle_list[2] & 0x0100000000000000UL) hwcap |= HWCAP_S390_VXD;
-	  if (stfle_list[2] & 0x0000080000000000UL) hwcap |= HWCAP_S390_VXRS_EXT2;
-	  if (stfle_list[2] & 0x0000008000000000UL) hwcap |= HWCAP_S390_VXRS_PDE;
-	}
-
-    }
-  return hwcap;
-}
-
 ElfW(Addr)
 _dl_sysdep_start (void **start_argptr,
 		  void (*dl_main) (const ElfW(Phdr) *phdr, ElfW(Word) phnum,
@@ -136,24 +62,25 @@ _dl_sysdep_start (void **start_argptr,
   __libc_stack_end = DL_STACK_END (start_argptr);
   DL_FIND_ARG_COMPONENTS (start_argptr, ehdr, _dl_argc, _dl_argv, _environ);
 
-  if (ehdr->e_entry == 0)
-    /* z/OS TODO: Fail out here.  */;
-
-  GLRO(dl_platform) = NULL; /* Default to nothing known about the platform.  */
   user_entry = (ElfW(Addr)) ehdr + ehdr->e_entry;
-
-  phdr = (const void *) ehdr + ehdr->e_phoff;
+  phdr = (const void *) ((ElfW(Addr)) ehdr + ehdr->e_phoff);
   phnum = ehdr->e_phnum;
-  /* z/OS TODO: How?  */
-  GLRO(dl_pagesize) = __getpagesize ();
-  user_entry = (ElfW(Addr)) ehdr + ehdr->e_entry;
-  GLRO(dl_platform) = (void *) 0;		/* z/OS TODO: How?  */
+
+  /* z/OS TODO: What IS page size on z/OS? _SC_PAGE_SIZE is always 1 MB
+     for AMODE 64 procs, but other things still operate on 4 KB
+     chunks.  */
+  GLRO(dl_pagesize) = 4096;
+  GLRO(dl_platform) = _dl_check_platform ();
   GLRO(dl_platformlen) = strlen (GLRO(dl_platform));
-  GLRO(dl_hwcap) = check_hwcaps;
+  GLRO(dl_hwcap) = _dl_check_hwcaps ();
   GLRO(dl_hwcap2) = 0;
-  GLRO(dl_clktck) = 100;			/* z/OS TODO: How?  */
-  GLRO(dl_fpu_control) = 0;			/* z/OS TODO: How?  */
-  _dl_random = (void *) 0x7f7f7f7f;		/* z/OS TODO: How?  */
+  /* This is defined as the resolution of times(). On z/OS times() counts
+     in hundreths of a second.  */
+  GLRO(dl_clktck) = 100;
+  /* z/OS TODO: What should this be?  */
+  GLRO(dl_fpu_control) = 0;
+  /* z/OS TODO: IMPORTANT: For security, we need 16 random bits. Find some.  */
+  _dl_random = (void *) 0x7f7f7f7f;
 
   uid ^= __getuid ();
   uid ^= __geteuid ();
@@ -164,6 +91,12 @@ _dl_sysdep_start (void **start_argptr,
   __libc_enable_secure = uid | gid;
 
   __tunables_init (_environ);
+
+  DL_PLATFORM_INIT;
+
+  /* Determine the length of the platform name.  */
+  if (GLRO(dl_platform) != NULL)
+    GLRO(dl_platformlen) = strlen (GLRO(dl_platform));
 
   /* if this is a suid program we make sure that fds 0, 1, and 2 are
      allocated.  if necessary we are doing it ourself.  if it is not
@@ -183,5 +116,7 @@ _dl_sysdep_start_cleanup (void)
 void
 _dl_show_auxv (void)
 {
+  _dl_printf ("z/OS does not provide an aux vector\n",
+	      auxvars[idx].label, val);
 }
 #endif /* SHARED  */
