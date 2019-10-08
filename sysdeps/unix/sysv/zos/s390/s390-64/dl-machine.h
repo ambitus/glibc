@@ -30,9 +30,17 @@
 
 static void __attribute_used__ __attribute__ ((noreturn))
 _dl_zos_early_init (void *arg_info,
-		    void (*cont) (void *) __attribute__ ((noreturn)))
+		    void (*cont) (void *) __attribute__ ((noreturn)),
+		    ElfW(Ehdr) *ehdr)
 {
-  void *cookie = ESSENTIAL_PROC_INIT (alloca, arg_info, NULL);
+  extern ElfW(Ehdr) __ehdr_start
+    __attribute__ ((visibility ("hidden")));
+
+  /* If ehdr is NULL, then ld.so was directly invoked as a program.  */
+  if (ehdr == NULL)
+    ehdr = &__ehdr_start;
+
+  void *cookie = ESSENTIAL_PROC_INIT (alloca, arg_info, NULL, ehdr);
   cont (cookie);
   __builtin_unreachable ();
 }
