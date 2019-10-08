@@ -162,6 +162,14 @@ dl_symbol_visibility_binds_local_p (const ElfW(Sym) *sym)
 
 #define RTLD_PROGNAME (rtld_progname ?: "<program name unknown>")
 
+/* Sometimes the file to be loaded is not a strictly conforming ELF file,
+   however it does contain all necessary data structures. Such targets
+   should define this macro, which should reposition the the given fd's
+   file pointer to the start of the ehdr.  */
+#ifndef DL_FIND_HEADER
+# define DL_FIND_HEADER(fd, mode)
+#endif
+
 /* For the version handling we need an array with only names and their
    hash values.  */
 struct r_found_version

@@ -1538,6 +1538,10 @@ open_verify (const char *name, int fd,
       __set_errno (0);
       fbp->len = 0;
       assert (sizeof (fbp->buf) > sizeof (ElfW(Ehdr)));
+
+      /* Do target-specific processing on fd, if necessary.  */
+      DL_FIND_HEADER (fd, mode);
+
       /* Read in the header.  */
       do
 	{

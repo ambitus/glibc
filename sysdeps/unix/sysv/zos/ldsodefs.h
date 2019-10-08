@@ -16,7 +16,26 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#ifndef	_LDSODEFS_H
+#ifndef	_ZOS_LDSODEFS_H
+#define	_ZOS_LDSODEFS_H 1
+
+#include <features.h>
+
+#include <stdbool.h>
+#define __need_size_t
+#define __need_NULL
+#include <stddef.h>
+#include <stdint.h>
+
+#include <unistd.h>
+
+#define DL_FIND_HEADER(fd, mode) _dl_find_header (fd, mode)
+
+static inline void
+_dl_find_header (int fd, int mode)
+{
+  __lseek (fd, 0, SEEK_CUR);
+}
 
 /* Get the real definitions.  */
 #include_next <ldsodefs.h>
@@ -28,4 +47,4 @@
 #undef HAVE_AUX_SECURE
 #undef HAVE_AUX_PAGESIZE
 
-#endif /* ldsodefs.h */
+#endif /* _ZOS_LDSODEFS_H  */
