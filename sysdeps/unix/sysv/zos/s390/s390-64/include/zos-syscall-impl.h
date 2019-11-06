@@ -2004,7 +2004,9 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   char *translated;
   void *lens;
 
-  extern int printf(const char *, ...);
+  uint32_t def_envlen = 17;
+  const char def_env[] = "_BPXK_AUTOCVT=ON";
+
   /* Support argv == NULL or envp == NULL like linux does.  */
   char *const dummy[] = { NULL };
   if (argv == NULL)
@@ -2026,6 +2028,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   count_args (argv, argc);
   count_args (envp, envc);
 #undef count_args
+  envc++;
 
   /* Structure of this allocation:
      -----------------------
@@ -2068,6 +2071,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   envlens = (uint32_t *) ((uintptr_t) lens + envlen_off);
 
   total_size = 0;
+  envc--;
 #define count_lengths(list, count, lengths, len_ptrs)			\
   do {									\
     for (uint32_t i = 0; i < count; i++)				\
@@ -2088,6 +2092,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   count_lengths (argv, argc, arglens, arglen_ptrs);
   count_lengths (envp, envc, envlens, envlen_ptrs);
 #undef count_lengths
+  envlen_ptrs[envc] = &def_envlen;
 
   translated = __storage_obtain_simple ((total_size + 7UL) & ~7UL);
   if (translated == NULL)
@@ -2111,10 +2116,15 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   copy_and_translate (argv, argc, arglens, args);
   copy_and_translate (envp, envc, envlens, envs);
 #undef copy_and_translate
+  envs[envc] = translated;
+  tr_e_until_len (def_env, translated, def_envlen);
+  envc++;
 
   /* z/OS TODO: We might want to define an exit to clean up any
      resources.  */
   void *exit_addr = NULL, *exit_params = NULL;
+
+  set_prog_ccsid (1047);
 
   BPX_CALL (exec, __bpx4exc_t, &path_len, translated_path, &argc,
 	    arglen_ptrs, args, &envc, envlen_ptrs, envs, &exit_addr,
