@@ -1,5 +1,5 @@
 /* Syscall list and mapping macros.
-   Copyright (C) 2019 Free Software Foundation, Inc.
+   Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -775,7 +775,7 @@
 #define __shim_enabled_sigreturn(if_true, if_false) if_false
 #define __shim_enabled_clone(if_true, if_false) if_false
 #define __shim_enabled_setdomainname(if_true, if_false) if_false
-#define __shim_enabled_uname(if_true, if_false) if_false
+#define __shim_enabled_uname(if_true, if_false) if_true
 #define __shim_enabled_adjtimex(if_true, if_false) if_false
 #define __shim_enabled_mprotect(if_true, if_false) if_true
 #define __shim_enabled_sigprocmask(if_true, if_false) if_true

@@ -1,5 +1,5 @@
 /* z/OS syscall wrappers.
-   Copyright (C) 2019 Free Software Foundation, Inc.
+   Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -49,6 +49,7 @@
 #include <termios.h>
 
 #include <sys/mman.h>  /* for user-facing mmap constant values.  */
+#include <sys/utsname.h>
 #include <signal.h>
 #include <sir.h>
 
@@ -2772,6 +2773,66 @@ __zos_sys_socket (int *errcode, int domain, int type, int protocol)
 	    socks, &retval, errcode, &reason_code);
 
   return retval ?: socks[0];
+}
+
+
+/* System syscalls */
+
+/* z/OS internal structure that is used in BPX4UNA callable service. */
+/* Remove one null byte from name fields as it is not used here. */
+typedef struct
+{
+  int32_t sysname_len;
+  char sysname[_UTSNAME_SYSNAME_LENGTH-1];
+  int32_t nodename_len;
+  char nodename[_UTSNAME_NODENAME_LENGTH-1];
+  int32_t release_len;
+  char release[_UTSNAME_RELEASE_LENGTH-1];
+  int32_t version_len;
+  char version[_UTSNAME_VERSION_LENGTH-1];
+  int32_t machine_len;
+  char machine[_UTSNAME_MACHINE_LENGTH-1];
+} __bpxk_uname_data;
+
+typedef void (*__bpx4una_t) (const int32_t *data_len,
+			     void * const *data,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+static inline int
+__zos_sys_uname (int *errcode, struct utsname *buf)
+{
+  int32_t retval, reason_code;
+  __bpxk_uname_data data;
+  void *pdata = (void*)&data;
+  int32_t data_len = sizeof(__bpxk_uname_data);
+
+  if (buf == NULL)
+    {
+      *errcode = EFAULT;
+      return -1;
+    }
+
+  BPX_CALL (uname, __bpx4una_t, &data_len, &pdata,
+	    &retval, errcode, &reason_code);
+
+  if (retval != -1)
+    {
+      /* Translate data from z/OS internal structure to ASCII and copy it
+	 to glibc structure 'utsname'. Add null byte for each field. */
+      tr_a_until_len(data.sysname,  buf->sysname,  data.sysname_len);
+      buf->sysname[data.sysname_len] = '\0';
+      tr_a_until_len(data.nodename, buf->nodename, data.nodename_len);
+      buf->nodename[data.nodename_len] = '\0';
+      tr_a_until_len(data.release,  buf->release,  data.release_len);
+      buf->release[data.release_len] = '\0';
+      tr_a_until_len(data.version,  buf->version,  data.version_len);
+      buf->version[data.version_len] = '\0';
+      tr_a_until_len(data.machine,  buf->machine,  data.machine_len);
+      buf->machine[data.machine_len] = '\0';
+    }
+
+  return retval;
 }
 
 
