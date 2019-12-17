@@ -385,7 +385,13 @@ __zos_sys_open (int *errcode, const char *pathname,
       SHIM_NOT_YET_IMPLEMENTED_FATAL ("O_PATH", -1);
     }
 
-  if (flags & O_TMPFILE)
+  /* O_TMPFILE flag implicitly includes flag O_DIRECTORY, so here
+     we have to compare the result (flags & O_TMPFILE) exactly with
+     O_TMPFILE value, not just with zero as it is done by default
+     with other flags. Otherwise, if we specify O_DIRECTORY flag
+     without O_TMPFILE, the resut (flags & O_TMPFILE) will be nonzero,
+     i.e. we will get the message about unimplemented function. */
+  if ((flags & O_TMPFILE) == O_TMPFILE)
     {
       /* TODO: This! */
       SHIM_NOT_YET_IMPLEMENTED_FATAL ("O_TMPFILE", -1);
