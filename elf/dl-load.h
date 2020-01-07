@@ -91,11 +91,13 @@ _dl_postprocess_loadcmd (struct link_map *l, const ElfW(Ehdr) *header,
     l->l_text_end = l->l_addr + c->mapend;
 
   if (l->l_phdr == 0
-      && c->mapoff <= header->e_phoff
+      && c->mapoff <= FADJ (l, header->e_phoff)
       && ((size_t) (c->mapend - c->mapstart + c->mapoff)
-          >= header->e_phoff + header->e_phnum * sizeof (ElfW(Phdr))))
+          >= (FADJ (l, header->e_phoff)
+	      + header->e_phnum * sizeof (ElfW(Phdr)))))
     /* Found the program header in this segment.  */
-    l->l_phdr = (void *) (uintptr_t) (c->mapstart + header->e_phoff
+    l->l_phdr = (void *) (uintptr_t) (c->mapstart
+				      + FADJ (l, header->e_phoff)
                                       - c->mapoff);
 }
 

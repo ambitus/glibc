@@ -31,10 +31,37 @@
 
 #define DL_FIND_HEADER(fd, mode) _dl_find_header (fd, mode)
 
-static inline void
+/* Used by static binaries for initialization.  */
+extern void _dl_psuedo_aux_init (void)
+  attribute_hidden;
+
+/* Find the ehdr in FD, if present. MODE indicates in which capacity we
+   are opening the file. Assumes that the current file offset is at the
+   start of the file.  */
+
+static inline ssize_t
 _dl_find_header (int fd, int mode)
 {
-  __lseek (fd, 0, SEEK_CUR);
+  /* Check for a Program Object eyecatcher. If it's present, we're
+     reading an executable. If not assume it's a shared library. Shared
+     libraries are assumed to have the usual ELF structure, so nothing
+     else is required for them.  */
+  size_t readlen = 8;
+  char eyecatcher[8];
+  do
+    {
+      ssize_t retlen =
+	__read_nocancel (fd, (char *) eyecatcher + 8 - readlen, readlen);
+      if (retlen <= 0)
+	break;
+      readlen -= retlen;
+    }
+  while (__glibc_unlikely (readlen > 0));
+
+  if (readlen != 0)
+    return 0;
+
+
 }
 
 /* Get the real definitions.  */

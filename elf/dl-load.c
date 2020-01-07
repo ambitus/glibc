@@ -53,6 +53,9 @@ struct filebuf
 #else
 # define FILEBUF_SIZE 832
 #endif
+#ifdef EHDR_IS_NOT_FILE_START
+  ssize_t l_ehdr_offset;
+#endif
   char buf[FILEBUF_SIZE] __attribute__ ((aligned (__alignof (ElfW(Ehdr)))));
 };
 
@@ -1013,6 +1016,9 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
   l->l_entry = header->e_entry;
   type = header->e_type;
   l->l_phnum = header->e_phnum;
+#ifdef EHDR_IS_NOT_FILE_START
+  l->l_ehdr_offset = fbp->l_ehdr_offset;
+#endif
 
   maplength = header->e_phnum * sizeof (ElfW(Phdr));
   if (header->e_phoff + maplength <= (size_t) fbp->len)
@@ -1020,7 +1026,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
   else
     {
       phdr = alloca (maplength);
-      __lseek (fd, header->e_phoff, SEEK_SET);
+      __lseek (fd, FADJ (l, header->e_phoff), SEEK_SET);
       if ((size_t) __read_nocancel (fd, (void *) phdr, maplength) != maplength)
 	{
 	  errstring = N_("cannot read file data");
@@ -1085,7 +1091,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	  c->mapend = ALIGN_UP (ph->p_vaddr + ph->p_filesz, GLRO(dl_pagesize));
 	  c->dataend = ph->p_vaddr + ph->p_filesz;
 	  c->allocend = ph->p_vaddr + ph->p_memsz;
-	  c->mapoff = ALIGN_DOWN (ph->p_offset, GLRO(dl_pagesize));
+	  c->mapoff = ALIGN_DOWN (FADJ (l, ph->p_offset), GLRO(dl_pagesize));
 
 	  /* Determine whether there is a gap between the last segment
 	     and this one.  */
@@ -1539,8 +1545,10 @@ open_verify (const char *name, int fd,
       fbp->len = 0;
       assert (sizeof (fbp->buf) > sizeof (ElfW(Ehdr)));
 
+#ifdef EHDR_IS_NOT_FILE_START
       /* Do target-specific processing on fd, if necessary.  */
-      DL_FIND_HEADER (fd, mode);
+      fbp->l_ehdr_offset = DL_FIND_HEADER (fd, mode);
+#endif
 
       /* Read in the header.  */
       do
@@ -1668,7 +1676,7 @@ open_verify (const char *name, int fd,
       else
 	{
 	  phdr = alloca (maplength);
-	  __lseek (fd, ehdr->e_phoff, SEEK_SET);
+	  __lseek (fd, FADJ (fbp, ehdr->e_phoff), SEEK_SET);
 	  if ((size_t) __read_nocancel (fd, (void *) phdr, maplength)
 	      != maplength)
 	    {
@@ -1719,7 +1727,7 @@ open_verify (const char *name, int fd,
 
 		    abi_note = abi_note_malloced;
 		  }
-		__lseek (fd, ph->p_offset, SEEK_SET);
+		__lseek (fd, FADJ (l, ph->p_offset), SEEK_SET);
 		if (__read_nocancel (fd, (void *) abi_note, size) != size)
 		  {
 		    free (abi_note_malloced);

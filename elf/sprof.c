@@ -554,16 +554,21 @@ load_shobj (const char *name)
     error (EXIT_FAILURE, errno, _("Reopening shared object `%s' failed"),
 	   map->l_name);
 
+#ifdef EHDR_IS_NOT_FILE_START
+  /* Do target-specific processing on fd, if necessary.  */
+  DL_FIND_HEADER (fd, 0);
+#endif
+
   /* Map the section header.  */
   size_t size = ehdr->e_shnum * sizeof (ElfW(Shdr));
   shdr = (ElfW(Shdr) *) alloca (size);
-  if (pread (fd, shdr, size, ehdr->e_shoff) != size)
+  if (pread (fd, shdr, size, FADJ (map, ehdr->e_shoff)) != size)
     error (EXIT_FAILURE, errno, _("reading of section headers failed"));
 
   /* Get the section header string table.  */
   char *shstrtab = (char *) alloca (shdr[ehdr->e_shstrndx].sh_size);
   if (pread (fd, shstrtab, shdr[ehdr->e_shstrndx].sh_size,
-	     shdr[ehdr->e_shstrndx].sh_offset)
+	     FADJ (map, shdr[ehdr->e_shstrndx].sh_offset))
       != shdr[ehdr->e_shstrndx].sh_size)
     error (EXIT_FAILURE, errno,
 	   _("reading of section header string table failed"));
@@ -584,12 +589,13 @@ load_shobj (const char *name)
 
   /* Get the file name of the debuginfo file if necessary.  */
   int symfd = fd;
+  ElfW(Off) symfd_ehdr_off = FADJ (map, 0);
   if (symtab_entry == NULL && debuglink_entry != NULL)
     {
       size_t size = debuglink_entry->sh_size;
       char *debuginfo_fname = (char *) alloca (size + 1);
       debuginfo_fname[size] = '\0';
-      if (pread (fd, debuginfo_fname, size, debuglink_entry->sh_offset)
+      if (pread (fd, debuginfo_fname, size, FADJ (map, debuglink_entry->sh_offset))
 	  != size)
 	{
 	  fprintf (stderr, _("*** Cannot read debuginfo file name: %m\n"));
@@ -642,23 +648,27 @@ load_shobj (const char *name)
       if (fd2 != -1)
 	{
 	  ElfW(Ehdr) ehdr2;
+	  ElfW(Off) ehdr2_off = 0;
+#ifdef EHDR_IS_NOT_FILE_START
+	  ehdr2_off = DL_FIND_HEADER (fd, 0);
+#endif
 
 	  /* Read the ELF header.  */
-	  if (pread (fd2, &ehdr2, sizeof (ehdr2), 0) != sizeof (ehdr2))
+	  if (pread (fd2, &ehdr2, sizeof (ehdr2), ehdr2_off) != sizeof (ehdr2))
 	    error (EXIT_FAILURE, errno,
 		   _("reading of ELF header failed"));
 
 	  /* Map the section header.  */
 	  size_t size = ehdr2.e_shnum * sizeof (ElfW(Shdr));
 	  ElfW(Shdr) *shdr2 = (ElfW(Shdr) *) alloca (size);
-	  if (pread (fd2, shdr2, size, ehdr2.e_shoff) != size)
+	  if (pread (fd2, shdr2, size, ehdr2_off + ehdr2.e_shoff) != size)
 	    error (EXIT_FAILURE, errno,
 		   _("reading of section headers failed"));
 
 	  /* Get the section header string table.  */
 	  shstrtab = (char *) alloca (shdr2[ehdr2.e_shstrndx].sh_size);
 	  if (pread (fd2, shstrtab, shdr2[ehdr2.e_shstrndx].sh_size,
-		     shdr2[ehdr2.e_shstrndx].sh_offset)
+		     ehdr2_off + shdr2[ehdr2.e_shstrndx].sh_offset)
 	      != shdr2[ehdr2.e_shstrndx].sh_size)
 	    error (EXIT_FAILURE, errno,
 		   _("reading of section header string table failed"));
@@ -671,6 +681,7 @@ load_shobj (const char *name)
 		symtab_entry = &shdr2[idx];
 		shdr = shdr2;
 		symfd = fd2;
+		symfd_ehdr_off = ehdr2_off;
 		break;
 	      }
 
@@ -699,13 +710,17 @@ load_shobj (const char *name)
 	 table and the string table.  */
       if (symtab_entry->sh_offset < strtab_entry->sh_offset)
 	{
-	  min_offset = symtab_entry->sh_offset & ~(pagesize - 1);
-	  max_offset = strtab_entry->sh_offset + strtab_entry->sh_size;
+	  min_offset =
+	    (symfd_ehdr_off + symtab_entry->sh_offset) & ~(pagesize - 1);
+	  max_offset =
+	    (symfd_ehdr_off + strtab_entry->sh_offset) + strtab_entry->sh_size;
 	}
       else
 	{
-	  min_offset = strtab_entry->sh_offset & ~(pagesize - 1);
-	  max_offset = symtab_entry->sh_offset + symtab_entry->sh_size;
+	  min_offset =
+	    (symfd_ehdr_off + strtab_entry->sh_offset) & ~(pagesize - 1);
+	  max_offset =
+	    (symfd_ehdr_off + symtab_entry->sh_offset) + symtab_entry->sh_size;
 	}
 
       result->symbol_map = mmap (NULL, max_offset - min_offset,

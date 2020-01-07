@@ -63,6 +63,27 @@ __BEGIN_DECLS
 # define D_PTR(map, i) (map)->i->d_un.d_ptr
 #endif
 
+/* Sometimes the file to be loaded is not a strictly conforming ELF file,
+   however it does contain all necessary data structures. Such targets
+   should define this macro, which should reposition the the given fd's
+   file pointer to the start of the ehdr.
+
+   All references to ELF file offsets (p_offset, sh_offset, e_phoff,
+   e_shoff) should go through the FADJ macro, unless already made
+   relative to the ehdr.  */
+#ifndef DL_FIND_HEADER
+# define DL_FIND_HEADER(fd, mode) (0)
+# ifdef EHDR_IS_NOT_FILE_START
+#  error "DL_FIND_HEADER must be defined"
+# endif
+#endif
+
+#ifdef EHDR_IS_NOT_FILE_START
+# define FADJ(map, off) ((map)->l_ehdr_offset + (off))
+#else
+# define FADJ(map, off) ((map), (off))
+#endif
+
 /* Result of the lookup functions and how to retrieve the base address.  */
 typedef struct link_map *lookup_t;
 #define LOOKUP_VALUE(map) map
@@ -161,14 +182,6 @@ dl_symbol_visibility_binds_local_p (const ElfW(Sym) *sym)
 			    : (rtld_progname ?: "<main program>"))
 
 #define RTLD_PROGNAME (rtld_progname ?: "<program name unknown>")
-
-/* Sometimes the file to be loaded is not a strictly conforming ELF file,
-   however it does contain all necessary data structures. Such targets
-   should define this macro, which should reposition the the given fd's
-   file pointer to the start of the ehdr.  */
-#ifndef DL_FIND_HEADER
-# define DL_FIND_HEADER(fd, mode)
-#endif
 
 /* For the version handling we need an array with only names and their
    hash values.  */

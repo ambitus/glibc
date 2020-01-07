@@ -28,7 +28,7 @@
 #define check_ptr(ptr)						\
 do								\
   {								\
-    if ((void *)(ptr) < file_contents				\
+    if ((void *)(ptr) < (void *) elf_header			\
 	|| (void *)(ptr) > (file_contents+file_length))		\
       {								\
 	error (0, 0, _("file %s is truncated\n"), file_name);	\
@@ -56,6 +56,10 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
   char *dynamic_strings;
 
   elf_header = (ElfW(Ehdr) *) file_contents;
+#ifdef EHDR_IS_NOT_FILE_START
+  /* check for plmh eyecatcher. If present, find elf.  */
+  elf_header = (ElfW(Ehdr) *) DL_FIND_HEADER (file_contents);
+#endif
   *osversion = 0;
 
   if (elf_header->e_ident [EI_CLASS] != ElfW (CLASS))
@@ -80,7 +84,7 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
     }
 
   /* Get information from elf program header.  */
-  elf_pheader = (ElfW(Phdr) *) (elf_header->e_phoff + file_contents);
+  elf_pheader = (ElfW(Phdr) *) (elf_header->e_phoff + (void *) elf_header);
   check_ptr (elf_pheader);
 
   /* The library is an elf library, now search for soname and
@@ -107,12 +111,12 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
 	  if (dynamic_addr)
 	    error (0, 0, _("more than one dynamic segment\n"));
 
-	  dynamic_addr = segment->p_offset;
+	  dynamic_addr = FADJ (segment->p_offset);
 	  dynamic_size = segment->p_filesz;
 	  break;
 
 	case PT_INTERP:
-	  program_interpreter = (char *) (file_contents + segment->p_offset);
+	  program_interpreter = (char *) elf_header + segment->p_offset;
 	  check_ptr (program_interpreter);
 
 	  /* Check if this is enough to classify the binary.  */
@@ -128,7 +132,7 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
 	case PT_NOTE:
 	  if (!*osversion && segment->p_filesz >= 32 && segment->p_align >= 4)
 	    {
-	      ElfW(Word) *abi_note = (ElfW(Word) *) (file_contents
+	      ElfW(Word) *abi_note = (ElfW(Word) *) ((void *) elf_header
 						     + segment->p_offset);
 	      ElfW(Addr) size = segment->p_filesz;
 	      /* NB: Some PT_NOTE segment may have alignment value of 0
@@ -186,7 +190,7 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
   if (dynamic_size == 0)
     return 1;
 
-  dynamic_segment = (ElfW(Dyn) *) (file_contents + dynamic_addr);
+  dynamic_segment = (ElfW(Dyn) *) ((void *) elf_header + dynamic_addr);
   check_ptr (dynamic_segment);
 
   /* Find the string table.  */
@@ -197,7 +201,7 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
       check_ptr (dyn_entry);
       if (dyn_entry->d_tag == DT_STRTAB)
 	{
-	  dynamic_strings = (char *) (file_contents + dyn_entry->d_un.d_val - loadaddr);
+	  dynamic_strings = (char *) elf_header + dyn_entry->d_un.d_val - loadaddr;
 	  check_ptr (dynamic_strings);
 	  break;
 	}

@@ -157,6 +157,10 @@ process_file (const char *real_file_name, const char *file_name,
     }
 
   elf_header = (ElfW(Ehdr) *) file_contents;
+#ifdef EHDR_IS_NOT_FILE_START
+  /* check for plmh eyecatcher. If present, find elf.  */
+
+#endif
   if (memcmp (elf_header->e_ident, ELFMAG, SELFMAG) != 0)
     {
       /* The file is neither ELF nor aout.  Check if it's a linker

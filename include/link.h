@@ -322,6 +322,10 @@ struct link_map
 
     unsigned long long int l_serial;
 
+#ifdef EHDR_NOT_FILE_START
+    /* File offset of the Ehdr.  */
+    ElfW(Off) l_ehdr_offset;
+#endif
     /* Audit information.  This array apparent must be the last in the
        structure.  Never add something after it.  */
     struct auditstate
