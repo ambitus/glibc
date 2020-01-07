@@ -27,26 +27,22 @@
 #define _ZOS_DL_MACHINE_H 1
 
 #include <zos-init.h>
+#include <zos-core.h>
 
-static void __attribute_used__ __attribute__ ((noreturn))
-_dl_zos_early_init (void *arg_info,
-		    void (*cont) (void *) __attribute__ ((noreturn)),
-		    ElfW(Ehdr) *ehdr)
+#define _ZOS_DL_MACHINE_STRING1(x) #x
+#define _ZOS_DL_MACHINE_STRING(x) _ZOS_DL_MACHINE_STRING1 (x)
+
+static void __attribute__ ((used, noreturn))
+_dl_zos_early_init (void *arg_info, ElfW(Ehdr) * ehdr,
+		    void (*cont) (void *) __attribute__ ((noreturn)))
 {
-  extern ElfW(Ehdr) __ehdr_start
-    __attribute__ ((visibility ("hidden")));
-
-  /* If ehdr is NULL, then ld.so was directly invoked as a program.  */
-  if (ehdr == NULL)
-    ehdr = &__ehdr_start;
-
   void *cookie = ESSENTIAL_PROC_INIT (alloca, arg_info, NULL, ehdr);
   cont (cookie);
   __builtin_unreachable ();
 }
 
 /* We do some trickery with %r1, see the note about it in start.S.
-   We duplicate some code from start.S for stack allocation.  */
+   We also duplicate some code from start.S for stack allocation.  */
 
 #undef RTLD_START
 #define RTLD_START __asm__ ("\n\
@@ -55,34 +51,51 @@ _dl_zos_early_init (void *arg_info,
 .globl _start\n\
 .globl _dl_start_user\n\
 _start:\n\
-	lgr   %r2,%r15\n\
-	# Alloc stack frame\n\
-	aghi  %r15,-160\n\
-	# Set the back chain to zero\n\
-	xc    0(8,%r15),0(%r15)\n\
-	# Call _dl_start with %r2 pointing to arg on stack\n\
-	brasl %r14,_dl_start	     # call _dl_start\n\
+	tmll	%r1, 1\n\
+	jne	.Lstack_setup\n\
+.Lsetup_done:\n\
+	# Mark this as the top stack frame\n\
+	xc	128(8,%r13), 128(%r13)\n\
+	# Alloc stack frame. Just use the current one, but expand it.\n\
+	lg	%r15, 136(%r13)\n\
+	lgr	%r4, %r15\n\
+	# 32 more bytes.\n\
+	la	%r15, 32(%r15)\n\
+	stg	%r15, 136(%r13)\n\
+	# Call our special setup function, but pass a continuation to be\n\
+	# called instead of returning, so that we can put our translated\n\
+	# args on the stack and avoid another storage allocation.\n\
+	# %r2 is either the executable's ehdr or NULL\n\
+	larl	%r3, .Lvery_early_init_done\n\
+	stmg	%r1, %r3, 0(%r4)\n\
+	lgr	%r1, %r4\n\
+	brasl	%r14, _dl_zos_early_init\n\
+.Lvery_early_init_done:\n\
+	# %r1 should now point to a 1 arg arglist pointing to argc,\n\
+	# argv, and the envs in the standard format, and mabye an\n\
+	# ehdr, without an aux vector.\n\
+	lg	%r5, 0(%r1)\n\
+	brasl	%r14, _dl_start\n\
 _dl_start_user:\n\
-	# Save the user entry point address in %r8.\n\
-	lgr   %r8,%r2\n\
+	# User's entry point address should now be in %r15\n\
+	lgr   	%r8, %r15\n\
 	# Point %r12 at the GOT.\n\
-	larl  %r12,_GLOBAL_OFFSET_TABLE_\n\
+	larl	%r12, _GLOBAL_OFFSET_TABLE_\n\
 	# See if we were run as a command with the executable file\n\
 	# name as an extra leading argument.\n\
-	lghi  %r1,_dl_skip_args@GOT\n\
-	lg    %r1,0(%r1,%r12)\n\
-	lgf   %r1,0(%r1)	  # load _dl_skip_args\n\
+	lghi	%r3, _dl_skip_args@GOT\n\
+	lg	%r3, 0(%r3,%r12)\n\
+	lgf	%r3, 0(%r3)	  # load _dl_skip_args\n\
 	# Get the original argument count.\n\
-	lg    %r0,160(%r15)\n\
+	lgr	%r1, %r5\n\
+	lg	%r6, 8(%r1)\n\
 	# Subtract _dl_skip_args from it.\n\
-	sgr   %r0,%r1\n\
-	# Adjust the stack pointer to skip _dl_skip_args words.\n\
-	sllg  %r1,%r1,3\n\
-	agr   %r15,%r1\n\
-	# Set the back chain to zero again\n\
-	xc    0(8,%r15),0(%r15)\n\
+	sgr	%r6, %r3\n\
+	# Adjust the arg pointer to skip _dl_skip_args words.\n\
+	sllg	%r7, %r3, 3\n\
+	agr	%r10, %r7\n\
 	# Store back the modified argument count.\n\
-	stg   %r0,160(%r15)\n\
+	stg	%r6, 0(%r10)\n\
 	# The special initializer gets called with the stack just\n\
 	# as the application's entry point will see it; it can\n\
 	# switch stacks if it moves these contents over.\n\
@@ -90,23 +103,58 @@ _dl_start_user:\n\
 	# Call the function to run the initializers.\n\
 	# Load the parameters:\n\
 	# (%r2, %r3, %r4, %r5) = (_dl_loaded, argc, argv, envp)\n\
-	lghi  %r2,_rtld_local@GOT\n\
-	lg    %r2,0(%r2,%r12)\n\
-	lg    %r2,0(%r2)\n\
-	lg    %r3,160(%r15)\n\
-	la    %r4,168(%r15)\n\
-	lgr   %r5,%r3\n\
-	sllg  %r5,%r5,3\n\
-	la    %r5,176(%r5,%r15)\n\
-	brasl %r14,_dl_init@PLT\n\
-	# Pass our finalizer function to the user in %r14, as per ELF ABI.\n\
-	lghi  %r14,_dl_fini@GOT\n\
-	lg    %r14,0(%r14,%r12)\n\
-	# Free stack frame\n\
-	aghi  %r15,160\n\
+	lg	%r1, 136(%r13)\n\
+	lghi	%r2, _rtld_local@GOT\n\
+	lg	%r2, 0(%r2,%r12)\n\
+	lg	%r2, 0(%r2)\n\
+	lg	%r3, %r6\n\
+	la	%r4, 8(%r10)\n\
+	lgr	%r5, %r3\n\
+	sllg	%r5, %r5, 3\n\
+	la	%r5, 16(%r5,%r10)\n\
+	la	%r7, 32(%r1)\n\
+	stg	%r7, 136(%r13)\n\
+	stmg	%r2, %r5, 0(%r1)\n\
+	brasl	%r14, _dl_init@PLT\n\
+	# Pass our finalizer function to the user in %r4.\n\
+	lghi	%r4, _dl_fini@GOT\n\
+	lg	%r4, 0(%r4,%r12)\n\
+	# Load the real arguments and shrink stack frame\n\
+	lg	%r2, 136(%r13)\n\
+	sgr	%r2, 32(%r13)\n\
+	stg	%r2, 136(%r13)\n\
+	lgr	%r1, %r10\n\
 	# Jump to the user's entry point (saved in %r8).\n\
-	br    %r8\n\
+	br	%r15\n\
+.Lstack_setup:\n\
+	stmg    %r14, %r12, 8(%r13)\n\
+	# Record that %r2 doesn't contain our ehdr since we jumped.\n\
+	lghi	%r2, 0\n\
+	# Set up a stack\n\
+	lgr	%r6, %r1\n\
+	larl	%r15, .Lmain_stack_length\n\
+	l	%r0, 0(%r15)\n\
+	l	%r15, .Lmain_stack_flags-.Lmain_stack_length(%r15)\n\
+	llgt	%r14, 16\n\
+	l	%r14, 772(%r14)\n\
+	l	%r14, 160(%r14)\n\
+	pc	0(%r14)\n\
+	aghi	%r1, 15\n\
+	nill	%r1, 65520\n\
+	stg	%r1, 136(%r13)\n\
+	stg	%r13, 128(%r1)\n\
+	lgr	%r13, %r1\n\
+	llilh	%r14, 50932\n\
+	oill	%r14, 58049\n\
+	st	%r14, 4(%r13)\n\
+	la	%r15, 160(%r13)\n\
+	stg	%r15, 136(%r13)\n\
+	lgr	%r1, %r6\n\
+	j	.Lsetup_done\n\
+.Lmain_stack_length:\n\
+	.long 10 * (1 << 20)\n\
+.Lmain_stack_flags:\n\
+	.long " _ZOS_DL_MACHINE_STRING (REGULAR_OBTAIN_FLAGS) "\n\
 ");
-
 
 #endif /* !_ZOS_DL_MACHINE_H  */

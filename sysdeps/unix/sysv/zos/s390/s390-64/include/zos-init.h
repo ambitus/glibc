@@ -17,14 +17,17 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-/* PLT/GOT indirection must be avoided in this file.  */
+/* PLT/GOT indirection must be avoided for parts of this file.  */
 
 #ifndef _ZOS_INIT_H
 #define _ZOS_INIT_H 1
 
+#include <elf.h>
 #include <stdint.h>
 #include <sysdep.h>
 #include <zos-utils.h>
+#include <ldsodefs.h>
+#include <dl-procinfo.h>
 
 struct bpxk_arg_list
 {
@@ -44,18 +47,11 @@ struct bpxk_args
 /* Helpers to translate program arguments and environ from the OS format
    and encoding to the internally usable format and encoding.  */
 
-#ifdef SHARED
-# define EHDR_WORDS 1
-#else
-# define EHDR_WORDS 0
-#endif
-
 /* Minimal size for the argv/envp pointers themselves, plus an extra
    word for argc, and another for the ehdr address in shared cases.  */
 
 #define ARGS_POINTERS_SIZE(arg_info)					\
-  ((*arg_info->argv.count + *arg_info->envp.count + 3 + EHDR_WORDS)	\
-   * sizeof (char *))
+  ((*arg_info->argv.count + *arg_info->envp.count + 4) * sizeof (char *))
 
 static inline size_t __attribute__ ((always_inline))
 args_min_size (const struct bpxk_args *arg_info)
@@ -98,8 +94,7 @@ translate_and_copy_args (void *mem,
 			 void *ehdr __attribute_used__)
 {
   /* Reserve a word for argc.  */
-  char **args_and_envs =
-    (void *) ((uintptr_t) mem + sizeof (long int) * (1 + EHDR_WORDS));
+  char **args_and_envs = (void *) ((uintptr_t) mem + sizeof (long int));
   char **envp_start = &args_and_envs[*arg_info->argv.count + 1];
 
 #ifdef SHARED
@@ -108,7 +103,7 @@ translate_and_copy_args (void *mem,
 #endif
 
   /* Store argc.  */
-  *((long int *) mem + EHDR_WORDS) = *arg_info->argv.count;
+  *((long int *) mem + 1) = *arg_info->argv.count;
 
   /* Reserve space for the argv/p array itself.  */
   mem = (void *) ((uintptr_t) mem + ARGS_POINTERS_SIZE (arg_info));
@@ -163,4 +158,38 @@ translate_and_copy_args (void *mem,
     (void) set_prog_ccsid (819);					\
     __ret;								\
   })
+
+/* Do the initialization that is common between _dl_aux_init and
+   _dl_sysdep_start. This doesn't need to avoid the PLT.  */
+
+static inline void
+_dl_min_init (void)
+{
+  uid_t uid = 0;
+  gid_t gid = 0;
+
+  /* z/OS TODO: What IS page size on z/OS? _SC_PAGE_SIZE is always 1 MB
+     for AMODE 64 procs, but other things still operate on 4 KB
+     chunks.  */
+  GLRO(dl_pagesize) = 4096;
+  GLRO(dl_platform) = _dl_check_platform ();
+  GLRO(dl_hwcap) = _dl_check_hwcaps ();
+  GLRO(dl_hwcap2) = 0;
+  /* This is defined as the resolution of times(). On z/OS times() counts
+     in hundreths of a second.  */
+  GLRO(dl_clktck) = 100;
+  /* z/OS TODO: What should this be?  */
+  GLRO(dl_fpu_control) = 0;
+  /* z/OS TODO: IMPORTANT: For security, we need 16 random bits. Find some.  */
+  _dl_random = (void *) 0x7f7f7f7f;
+
+  uid ^= __getuid ();
+  uid ^= __geteuid ();
+  gid ^= __getgid ();
+  gid ^= __getegid ();
+  /* If one of the two pairs of IDs does not match this is a setuid
+     or setgid run.  */
+  __libc_enable_secure = uid | gid;
+}
+
 #endif /* !_ZOS_INIT_H  */

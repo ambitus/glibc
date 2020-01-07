@@ -218,6 +218,9 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
      ourselves as an ASCII program. Args and envs are copied onto the
      stack.  */
   cookie = ESSENTIAL_PROC_INIT (alloca, arg_info, set_up_signals, NULL);
+  /* Skip the unused ELF header word.  */
+  cookie += sizeof (ElfW(Ehdr) *);
+  _dl_psuedo_aux_init ();
 #else
   /* The dynamic linker already translated our args and envs for us.  */
   cookie = arg_info;

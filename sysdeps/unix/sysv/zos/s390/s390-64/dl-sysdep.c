@@ -22,6 +22,9 @@
 
 #ifdef SHARED
 
+#include <elf.h>
+#include <zos-init.h>
+
 extern char **_environ attribute_hidden;
 extern char _end[] attribute_hidden;
 
@@ -38,8 +41,8 @@ rtld_hidden_data_def(__libc_stack_end)
 
 #define DL_FIND_ARG_COMPONENTS(cookie, ehdr, argc, argv, envp)	\
   do {								\
-    (ehdr) = *(const ElfW(Ehdr) **) cookie;			\
-    (argc) = *((long int *) cookie + 1);			\
+    (argc) = *(long int *) cookie;				\
+    (argc) = *((long int *) cookie + 1);				\
     (argv) = (char **) ((long int *) cookie + 2);		\
     (envp) = (argv) + (argc) + 1;				\
   } while (0)
@@ -52,47 +55,41 @@ _dl_sysdep_start (void **start_argptr,
 		  void (*dl_main) (const ElfW(Phdr) *phdr, ElfW(Word) phnum,
 				   ElfW(Addr) *user_entry, ElfW(auxv_t) *auxv))
 {
-  const ElfW(Ehdr) *ehdr;
+  const ElfW(Phdr) *ehdr;
   const ElfW(Phdr) *phdr;
-  ElfW(Word) phnum = 0;
+  ElfW(Word) phnum;
   ElfW(Addr) user_entry;
-  uid_t uid = 0;
-  gid_t gid = 0;
 
   __libc_stack_end = DL_STACK_END (start_argptr);
   DL_FIND_ARG_COMPONENTS (start_argptr, ehdr, _dl_argc, _dl_argv, _environ);
+
+  if (ehdr == NULL)
+    {
+      /* The dynamic linker was run as a program, we use our own ehdr.  */
+      extern ElfW(Ehdr) __ehdr_start
+	__attribute__ ((visibility ("hidden")));
+      ehdr == &__ehdr_start;
+    }
 
   user_entry = (ElfW(Addr)) ehdr + ehdr->e_entry;
   phdr = (const void *) ((ElfW(Addr)) ehdr + ehdr->e_phoff);
   phnum = ehdr->e_phnum;
 
-  /* z/OS TODO: What IS page size on z/OS? _SC_PAGE_SIZE is always 1 MB
-     for AMODE 64 procs, but other things still operate on 4 KB
-     chunks.  */
-  GLRO(dl_pagesize) = 4096;
-  GLRO(dl_platform) = _dl_check_platform ();
-  GLRO(dl_platformlen) = strlen (GLRO(dl_platform));
-  GLRO(dl_hwcap) = _dl_check_hwcaps ();
-  GLRO(dl_hwcap2) = 0;
-  /* This is defined as the resolution of times(). On z/OS times() counts
-     in hundreths of a second.  */
-  GLRO(dl_clktck) = 100;
-  /* z/OS TODO: What should this be?  */
-  GLRO(dl_fpu_control) = 0;
-  /* z/OS TODO: IMPORTANT: For security, we need 16 random bits. Find some.  */
-  _dl_random = (void *) 0x7f7f7f7f;
+  /* Nothing should ever reference GL(dl_rtld_map).l_ehdr_offset, as we
+     currently have no way to properly initialize it.
+     z/OS TODO: Do we need to implement some way of initializing it?  */
 
-  uid ^= __getuid ();
-  uid ^= __geteuid ();
-  gid ^= __getgid ();
-  gid ^= __getegid ();
-  /* If one of the two pairs of IDs does not match this is a setuid
-     or setgid run.  */
-  __libc_enable_secure = uid | gid;
+  _dl_min_init ();
 
   __tunables_init (_environ);
 
+#ifdef DL_SYSDEP_INIT
+  DL_SYSDEP_INIT;
+#endif
+
+#ifdef DL_PLATFORM_INIT
   DL_PLATFORM_INIT;
+#endif
 
   /* Determine the length of the platform name.  */
   if (GLRO(dl_platform) != NULL)
