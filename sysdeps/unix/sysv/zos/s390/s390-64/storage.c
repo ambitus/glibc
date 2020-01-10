@@ -258,6 +258,9 @@ __storage_release (unsigned int storage_addr, unsigned int length,
   if (length == 0 || tcbaddr == 0 || storage_addr == 0)
     return -1;
 
+  /* Disable functionality as it doesn't work at the moment */
+  return 0;
+
   /* Base flags that we use for every OBTAIN request. Right now we use
      a constant fixed storage subpool, specify TCBADDR, and
      COND=YES.  */
