@@ -36,7 +36,8 @@ static void __attribute__ ((used, noreturn))
 _dl_zos_early_init (void *arg_info, ElfW(Ehdr) * ehdr,
 		    void (*cont) (void *) __attribute__ ((noreturn)))
 {
-  void *cookie = ESSENTIAL_PROC_INIT (alloca, arg_info, NULL, ehdr);
+  void *cookie = ESSENTIAL_PROC_INIT (alloca, arg_info,
+				      (void (*)(void)) NULL, ehdr);
   cont (cookie);
   __builtin_unreachable ();
 }
@@ -121,7 +122,7 @@ _dl_start_user:\n\
 	lg	%r4, 0(%r4,%r12)\n\
 	# Load the real arguments and shrink stack frame\n\
 	lg	%r2, 136(%r13)\n\
-	sgr	%r2, 32(%r13)\n\
+	aghi	%r2, -32\n\
 	stg	%r2, 136(%r13)\n\
 	lgr	%r1, %r10\n\
 	# Jump to the user's entry point (saved in %r8).\n\

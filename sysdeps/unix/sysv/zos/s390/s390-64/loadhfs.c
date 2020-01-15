@@ -37,6 +37,8 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <sysdep.h>
+#include <link.h>
+#include <zos-core.h>
 
 typedef void (*__bpx4lod_t) (const int *filename_len,
 			     const char *filename,
@@ -85,13 +87,14 @@ hidden_def (__loadhfs)
 void *
 __load_pt_interp (void)
 {
-  ElfW(Phdr) *first_phdr, *phdr;
+  const ElfW(Phdr) *first_phdr, *phdr;
   size_t phnum;
   size_t offset = 0;
   extern const ElfW(Ehdr) __ehdr_start
     __attribute__ ((visibility ("hidden")));
 
-  first_phdr = &__ehdr_start + __ehdr_start.e_phoff;
+  first_phdr = ((const ElfW(Phdr) *)
+		((const char *) &__ehdr_start + __ehdr_start.e_phoff));
   phnum = __ehdr_start.e_phnum;
 
   for (phdr = first_phdr; phdr < &first_phdr[phnum]; ++phdr)

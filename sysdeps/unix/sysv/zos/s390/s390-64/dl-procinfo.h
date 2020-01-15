@@ -20,7 +20,7 @@
 #ifndef _DL_ZOS_PROCINFO_H
 #define _DL_ZOS_PROCINFO_H 1
 #include <sysdeps/unix/sysv/linux/s390/dl-procinfo.h>
-#include <hwcap.h>
+#include <sys/auxv.h>
 
 /* z/OS TODO: remove these when we update to recent glibc sources.  */
 #ifndef HWCAP_S390_VXRS_EXT2

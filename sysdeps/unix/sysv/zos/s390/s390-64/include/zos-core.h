@@ -93,5 +93,17 @@ int __storage_release (unsigned int storage_addr, unsigned int length,
 		       unsigned int tcbaddr,
 		       bool noexec) attribute_hidden;
 
+hidden_proto (__storage_obtain)
+hidden_proto (__storage_obtain_simple)
+hidden_proto (__storage_release)
+
+extern void * __loadhfs (char *path);
+extern void * __load_pt_interp (void);
+
+#if IS_IN (libc) || IS_IN (rtld)
+hidden_proto (__loadhfs)
+hidden_proto (__load_pt_interp)
+#endif
+
 #endif  /* !__ASSEMBLER__  */
 #endif /* !_ZOS_CORE_H  */

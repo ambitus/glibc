@@ -22,7 +22,9 @@
 
 #ifdef SHARED
 
+#include <stdbool.h>
 #include <elf.h>
+#include <dl-tunables.h>
 #include <zos-init.h>
 
 extern char **_environ attribute_hidden;
@@ -39,12 +41,12 @@ void *__libc_stack_end attribute_relro = NULL;
 rtld_hidden_data_def(__libc_stack_end)
   void *_dl_random attribute_relro = NULL;
 
-#define DL_FIND_ARG_COMPONENTS(cookie, ehdr, argc, argv, envp)	\
-  do {								\
-    (argc) = *(long int *) cookie;				\
+#define DL_FIND_ARG_COMPONENTS(cookie, ehdr, argc, argv, envp)		\
+  do {									\
+    (ehdr) = *(const ElfW(Ehdr) **) cookie;				\
     (argc) = *((long int *) cookie + 1);				\
-    (argv) = (char **) ((long int *) cookie + 2);		\
-    (envp) = (argv) + (argc) + 1;				\
+    (argv) = (char **) ((long int *) cookie + 2);			\
+    (envp) = (argv) + (argc) + 1;					\
   } while (0)
 
 /* z/OS TODO: This isn't the true stack end.  */
@@ -55,7 +57,7 @@ _dl_sysdep_start (void **start_argptr,
 		  void (*dl_main) (const ElfW(Phdr) *phdr, ElfW(Word) phnum,
 				   ElfW(Addr) *user_entry, ElfW(auxv_t) *auxv))
 {
-  const ElfW(Phdr) *ehdr;
+  const ElfW(Ehdr) *ehdr;
   const ElfW(Phdr) *phdr;
   ElfW(Word) phnum;
   ElfW(Addr) user_entry;
@@ -63,12 +65,14 @@ _dl_sysdep_start (void **start_argptr,
   __libc_stack_end = DL_STACK_END (start_argptr);
   DL_FIND_ARG_COMPONENTS (start_argptr, ehdr, _dl_argc, _dl_argv, _environ);
 
+  /* z/OS TODO: prevent usage of dl_auxv.  */
+
   if (ehdr == NULL)
     {
       /* The dynamic linker was run as a program, we use our own ehdr.  */
-      extern ElfW(Ehdr) __ehdr_start
+      extern const ElfW(Ehdr) __ehdr_start
 	__attribute__ ((visibility ("hidden")));
-      ehdr == &__ehdr_start;
+      ehdr = &__ehdr_start;
     }
 
   user_entry = (ElfW(Addr)) ehdr + ehdr->e_entry;
@@ -113,7 +117,6 @@ _dl_sysdep_start_cleanup (void)
 void
 _dl_show_auxv (void)
 {
-  _dl_printf ("z/OS does not provide an aux vector\n",
-	      auxvars[idx].label, val);
+  _dl_printf ("z/OS does not provide an aux vector\n");
 }
 #endif /* SHARED  */
