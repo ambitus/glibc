@@ -110,6 +110,7 @@
 /* We cannot use the thread descriptor because in ld.so we use setjmp
    earlier than the descriptor is initialized.  */
 #else
+
 /* For the time being just use stack_guard rather than a separate
    pointer_guard.  */
 /* z/OS TODO: PTR_MANGLE, depends on tls.  */
@@ -121,8 +122,8 @@
 /* #  define PTR_MANGLE2(reg, tmpreg) */
 /* #  define PTR_DEMANGLE(reg, tmpreg) */
 # else
-/* #  define PTR_MANGLE(var) */
-/* #  define PTR_DEMANGLE(var) */
+#  define PTR_MANGLE(var)  /* z/OS TODO: This.  */
+#  define PTR_DEMANGLE(var)  /* z/OS TODO: This.  */
 # endif
 #endif
 
