@@ -73,7 +73,10 @@ __longjmp (__jmp_buf env, int val)
 			/* Load vector regs.
 			   TODO: figure out how to make this work with
 			   lower archlevels.  */
-			"vlm	%v16, %v23, 176(%1), 0 \n\t"
+			".machine push \n\t"
+			".machine \"z13\" \n\t"
+			"vlm	%%v16, %%v23, 176(%1) \n\t"
+			".machine pop \n\t"
 #endif
 
 			LIBC_PROBE_ASM (longjmp_target, 8@%1 -4@%0 8@%%r14)

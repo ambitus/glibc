@@ -134,7 +134,10 @@ ENTRY (__sigsetjmp)
 	/* TODO: How can we get this to run on lower archlevels without
 	   using separate binaries?  */
 	/* save vector regs.  */
-	vstm	%v16, %v23, 8 * (__JB_GPR14 + __JB_FPR15 + 2)(%r15), 0
+	.machine push
+	.machine "z13"
+	vstm	%v16, %v23, 8 * (__JB_GPR14 + __JB_FPR15 + 2)(%r15)
+	.machine pop
 #endif
 
 #if IS_IN (rtld)
