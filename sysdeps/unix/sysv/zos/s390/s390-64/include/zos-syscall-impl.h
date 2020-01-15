@@ -2004,6 +2004,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   char *translated;
   void *lens;
 
+  /* Part of a workaround to allow us to exec ascii scripts.  */
   uint32_t def_envlen = 17;
   const char def_env[] = "_BPXK_AUTOCVT=ON";
 
@@ -2124,11 +2125,16 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
      resources.  */
   void *exit_addr = NULL, *exit_params = NULL;
 
+  /* Temporarily turn us into an EBCDIC program to allow us to
+     directly exec ASCII scripts.  */
   set_prog_ccsid (1047);
 
   BPX_CALL (exec, __bpx4exc_t, &path_len, translated_path, &argc,
 	    arglen_ptrs, args, &envc, envlen_ptrs, envs, &exit_addr,
 	    &exit_params, &retval, errcode, &reason_code);
+
+  /* Go back to ascii if it failed.  */
+  set_prog_ccsid (819);
 
   /* If we returned, something has gone wrong.  */
   /* z/OS TODO: do a storage release here when that's working.  */
