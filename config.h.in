@@ -175,6 +175,10 @@
    differently from regular text files.  */
 #undef HAVE_SIGNIFICANT_BINARY_FILES
 
+/* Define if the ELF header is not located at the start of the file for
+   the target executable format.  */
+#undef EHDR_IS_NOT_FILE_START
+
 /*
  */
 

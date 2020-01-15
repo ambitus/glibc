@@ -322,7 +322,7 @@ struct link_map
 
     unsigned long long int l_serial;
 
-#ifdef EHDR_NOT_FILE_START
+#ifdef EHDR_IS_NOT_FILE_START
     /* File offset of the Ehdr.  */
     ElfW(Off) l_ehdr_offset;
 #endif

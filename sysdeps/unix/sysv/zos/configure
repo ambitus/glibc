@@ -2,3 +2,5 @@
  # Local configure fragment for sysdeps/unix/sysv/zos.
 
 $as_echo "#define HAVE_SIGNIFICANT_BINARY_FILES 1" >>confdefs.h
+
+$as_echo "#define EHDR_IS_NOT_FILE_START 1" >>confdefs.h
