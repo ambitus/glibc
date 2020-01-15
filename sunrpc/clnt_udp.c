@@ -445,6 +445,7 @@ send_again:
 	  free (cbuf);
 	}
 #endif
+#ifdef MSG_DONTWAIT
       do
 	{
 	  fromlen = sizeof (struct sockaddr);
@@ -453,6 +454,37 @@ send_again:
 			      (struct sockaddr *) &from, &fromlen);
 	}
       while (inlen < 0 && errno == EINTR);
+#else
+      /* Temporarily set O_NONBLOCK on the socket.
+         NOTE: Not thread-safe.  */
+      int orig = __fcntl64 (cu->cu_sock, F_GETFL);
+      if (orig < 0)
+	inlen = -1;
+      else
+	{
+	  if (__fcntl64 (cu->cu_sock,
+				  F_SETFL, orig | O_NONBLOCK) < 0)
+	    inlen = -1;
+	  else
+	    {
+	      int errno_save = 0;
+	      do
+		{
+		  fromlen = sizeof (struct sockaddr);
+		  inlen = __recvfrom (cu->cu_sock, cu->cu_inbuf,
+				      (int) cu->cu_recvsz, 0,
+				      (struct sockaddr *) &from,
+				      &fromlen);
+		}
+	      while (inlen < 0 && errno == EINTR);
+	      if (inlen < 0)
+		errno_save = errno;
+	      __fcntl64 (cu->cu_sock, F_SETFL, orig);
+	      if (inlen < 0)
+		errno = errno_save;
+	    }
+	}
+#endif
       if (inlen < 0)
 	{
 	  if (errno == EWOULDBLOCK)
