@@ -96,4 +96,3 @@ __set_file_tag_if_empty_unsafe (int fd, const struct zos_file_tag *tag)
 
   return st.st_size == 0 ? fchattr (fd, &attrs) : 0;
 }
-libc_hidden_def (__set_file_tag_if_empty_unsafe)

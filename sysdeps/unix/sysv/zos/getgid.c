@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -26,5 +26,4 @@ __getgid (void)
   /* TODO: Avoid this stack frame.  */
   return INLINE_SYSCALL_CALL (getgid);
 }
-libc_hidden_def (__getgid)
 weak_alias (__getgid, getgid)

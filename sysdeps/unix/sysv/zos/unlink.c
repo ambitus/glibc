@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Vladimir Kudryakov <vkudryakov@rocketsoftware.com>, 2019.
 
@@ -24,6 +24,4 @@ __unlink (const char *name)
 {
   return INLINE_SYSCALL_CALL (unlink, name);
 }
-
-libc_hidden_def (__unlink)
 weak_alias (__unlink, unlink)

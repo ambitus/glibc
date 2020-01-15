@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -53,4 +53,5 @@ __munmap (void *addr, size_t len)
   else
     return anon_ret || sc_ret ? -1 : 0;
 }
+libc_hidden_def (__munmap)
 weak_alias (__munmap, munmap)
