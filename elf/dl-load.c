@@ -1547,7 +1547,7 @@ open_verify (const char *name, int fd,
 
 #ifdef EHDR_IS_NOT_FILE_START
       /* Do target-specific processing on fd, if necessary.  */
-      fbp->l_ehdr_offset = DL_FIND_HEADER (fd, mode);
+      fbp->l_ehdr_offset = DL_FIND_HEADER (fd);
 #endif
 
       /* Read in the header.  */
@@ -1727,7 +1727,7 @@ open_verify (const char *name, int fd,
 
 		    abi_note = abi_note_malloced;
 		  }
-		__lseek (fd, FADJ (l, ph->p_offset), SEEK_SET);
+		__lseek (fd, FADJ (fbp, ph->p_offset), SEEK_SET);
 		if (__read_nocancel (fd, (void *) abi_note, size) != size)
 		  {
 		    free (abi_note_malloced);

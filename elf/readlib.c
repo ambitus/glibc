@@ -35,6 +35,7 @@
 #include <gnu/lib-names.h>
 
 #include <ldconfig.h>
+#include <ldsodefs.h>
 
 #define Elf32_CLASS ELFCLASS32
 #define Elf64_CLASS ELFCLASS64

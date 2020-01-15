@@ -65,17 +65,25 @@ __BEGIN_DECLS
 
 /* Sometimes the file to be loaded is not a strictly conforming ELF file,
    however it does contain all necessary data structures. Such targets
-   should define this macro, which should reposition the the given fd's
-   file pointer to the start of the ehdr.
+   should define these macros. The first should reposition the the given
+   fd's file pointer to the start of the ehdr and return the ehdr's file
+   offset, and the second should return a pointer to the ehdr of a file
+   in memory.
 
    All references to ELF file offsets (p_offset, sh_offset, e_phoff,
    e_shoff) should go through the FADJ macro, unless already made
    relative to the ehdr.  */
 #ifndef DL_FIND_HEADER
-# define DL_FIND_HEADER(fd, mode) (0)
 # ifdef EHDR_IS_NOT_FILE_START
 #  error "DL_FIND_HEADER must be defined"
 # endif
+# define DL_FIND_HEADER(fd) (0)
+#endif
+#ifndef DL_FIND_HEADER_MMAPPED
+# ifdef EHDR_IS_NOT_FILE_START
+#  error "DL_FIND_HEADER_MMAPPED must be defined"
+# endif
+# define DL_FIND_HEADER_MMAPPED(contents, length) (contents)
 #endif
 
 #ifdef EHDR_IS_NOT_FILE_START

@@ -556,7 +556,7 @@ load_shobj (const char *name)
 
 #ifdef EHDR_IS_NOT_FILE_START
   /* Do target-specific processing on fd, if necessary.  */
-  DL_FIND_HEADER (fd, 0);
+  DL_FIND_HEADER (fd);
 #endif
 
   /* Map the section header.  */
@@ -650,7 +650,7 @@ load_shobj (const char *name)
 	  ElfW(Ehdr) ehdr2;
 	  ElfW(Off) ehdr2_off = 0;
 #ifdef EHDR_IS_NOT_FILE_START
-	  ehdr2_off = DL_FIND_HEADER (fd, 0);
+	  ehdr2_off = DL_FIND_HEADER (fd2);
 #endif
 
 	  /* Read the ELF header.  */

@@ -55,10 +55,12 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
   ElfW(Dyn) *dynamic_segment, *dyn_entry;
   char *dynamic_strings;
 
-  elf_header = (ElfW(Ehdr) *) file_contents;
 #ifdef EHDR_IS_NOT_FILE_START
   /* check for plmh eyecatcher. If present, find elf.  */
-  elf_header = (ElfW(Ehdr) *) DL_FIND_HEADER (file_contents);
+  elf_header =
+    (ElfW(Ehdr) *) DL_FIND_HEADER_MMAPPED (file_contents, file_length);
+#else
+  elf_header = (ElfW(Ehdr) *) file_contents;
 #endif
   *osversion = 0;
 
@@ -84,7 +86,7 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
     }
 
   /* Get information from elf program header.  */
-  elf_pheader = (ElfW(Phdr) *) (elf_header->e_phoff + (void *) elf_header);
+  elf_pheader = (ElfW(Phdr) *) (elf_header->e_phoff + (char *) elf_header);
   check_ptr (elf_pheader);
 
   /* The library is an elf library, now search for soname and
@@ -111,7 +113,7 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
 	  if (dynamic_addr)
 	    error (0, 0, _("more than one dynamic segment\n"));
 
-	  dynamic_addr = FADJ (segment->p_offset);
+	  dynamic_addr = segment->p_offset;
 	  dynamic_size = segment->p_filesz;
 	  break;
 
@@ -190,7 +192,7 @@ process_elf_file (const char *file_name, const char *lib, int *flag,
   if (dynamic_size == 0)
     return 1;
 
-  dynamic_segment = (ElfW(Dyn) *) ((void *) elf_header + dynamic_addr);
+  dynamic_segment = (ElfW(Dyn) *) ((char *) elf_header + dynamic_addr);
   check_ptr (dynamic_segment);
 
   /* Find the string table.  */
