@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Free Software Foundation, Inc.
+# Copyright (C) 2019-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -34,4 +34,8 @@ zos-filter-out-misc := umount2 readahead setfsuid setfsgid \
 		       mlock2 pkey_mprotect pkey_set pkey_get sysctl \
 		       epoll_create inotify_init
 sysdep_routines := $(filter-out $(zos-filter-out-misc),$(sysdep_routines))
+endif
+
+ifeq ($(subdir),elf)
+sysdep_routines := $(filter-out dl-vdso,$(sysdep_routines))
 endif
