@@ -35,4 +35,10 @@ typedef struct
   };
 } wait_token;
 
+extern lf_hash_table *__zos_futex_table;
+libc_hidden_proto (__zos_futex_table)
+
+extern object_pool __wait_token_pool;
+libc_hidden_proto (__wait_token_pool)
+
 #endif /* !_ZOS_FUTEX_H  */

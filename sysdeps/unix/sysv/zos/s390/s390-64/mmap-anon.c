@@ -52,12 +52,9 @@
 
 /* List of allocations that we are keeping track of.  */
 lfl_list_t __zos_tracked_allocs = {0};
-libc_hidden_data_def (__zos_tracked_allocs)
 
 /* Object pool for map infos.  */
 object_pool __alloc_info_pool = {0};
-libc_hidden_data_def (__alloc_info_pool)
-
 
 static inline struct map_info *
 allocate_info (void)
@@ -160,7 +157,6 @@ __create_anon_mmap (void *addr __attribute__ ((unused)), size_t len,
 
   return mapping;
 }
-libc_hidden_def (__create_anon_mmap)
 
 
 static bool
@@ -300,7 +296,6 @@ __unmap_anon_mmap (void *addr, size_t length)
 
   return (int) callback_args[2];
 }
-libc_hidden_def (__unmap_anon_mmap)
 
 
 /* Set the read/write permissions for the given address range.
@@ -313,7 +308,6 @@ __set_protections_anon_mmap (void *addr, size_t length, int prot)
 {
   return -1;
 }
-libc_hidden_def (__set_protections_anon_mmap)
 
 
 /* Force all pages in range to be resident.
@@ -326,7 +320,6 @@ __mlock_anon_mmap (void *addr, size_t length)
 {
   return -1;
 }
-libc_hidden_def (__mlock_anon_mmap)
 
 
 /* Release all pages in range from a previous mlock.
@@ -339,4 +332,3 @@ __munlock_anon_mmap (void *addr, size_t length)
 {
   return -1;
 }
-libc_hidden_def (__munlock_anon_mmap)

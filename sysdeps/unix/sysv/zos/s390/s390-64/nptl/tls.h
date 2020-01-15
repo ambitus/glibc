@@ -64,9 +64,16 @@ typedef struct
    hash table right now.  */
 #include <lock-free.h>
 
+/* z/OS TODO: Do we need an explicit clear function? We could make it so
+   put 0 removes the entry.  */
+
 extern void *__zos_get_thread_pointer (void);
 extern void __zos_set_thread_pointer (void *addr);
 extern void __zos_clear_thread_pointer (void);
+
+libc_hidden_proto (__zos_get_thread_pointer)
+libc_hidden_proto (__zos_set_thread_pointer)
+libc_hidden_proto (__zos_clear_thread_pointer)
 
 /* Get system call information.  */
 # include <sysdep.h>

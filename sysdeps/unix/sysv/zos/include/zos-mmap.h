@@ -28,22 +28,25 @@
 
 #include <stddef.h>
 
+/* z/OS TODO: This should only be used within libc.  */
+
 /* TODO: implement correct msync, mprotect, madvise, etc for
    anon maps.  */
 
 extern void *__create_anon_mmap (void *addr, size_t len, int prot,
-				 int flags);
-extern int __unmap_anon_mmap (void *addr, size_t length);
+				 int flags) attribute_hidden;
+extern int __unmap_anon_mmap (void *addr, size_t length)
+  attribute_hidden;
 extern int __set_protections_anon_mmap (void *addr, size_t length,
-					int prot);
-extern int __mlock_anon_mmap (void *addr, size_t length);
-extern int __munlock_anon_mmap (void *addr, size_t length);
+					int prot) attribute_hidden;
+extern int __mlock_anon_mmap (void *addr, size_t length)
+  attribute_hidden;
+extern int __munlock_anon_mmap (void *addr, size_t length)
+  attribute_hidden;
 
-libc_hidden_proto (__create_anon_mmap)
-libc_hidden_proto (__unmap_anon_mmap)
-libc_hidden_proto (__set_protections_anon_mmap)
-libc_hidden_proto (__mlock_anon_mmap)
-libc_hidden_proto (__munlock_anon_mmap)
-
+/* List of some memory areas allocated with memory allocation
+   primitives. Used by mmap() MAP_ANONYMOUS.  */
+extern lfl_list_t __zos_tracked_allocs attribute_hidden;
+extern object_pool __alloc_info_pool attribute_hidden;
 
 #endif /* !_ZOS_MMAP_H  */

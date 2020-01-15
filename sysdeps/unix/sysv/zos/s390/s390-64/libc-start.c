@@ -39,6 +39,7 @@
 #include <zos-init.h>
 #include <lock-free.h>
 #include <map-info.h>
+#include <zos-mmap.h>
 #include <sir.h>
 
 /* z/OS TODO: What do we need to change here to handle shared cases?
@@ -67,23 +68,9 @@
    /* roundup16 (subpool_real_size_type (struct map_info))  */)
 
 
-/* The thread pointer table.  */
-extern lf_hash_table *__zos_tp_table;
-libc_hidden_proto (__zos_tp_table)
-
-extern lf_hash_table *__zos_futex_table;
-libc_hidden_proto (__zos_futex_table)
-
-/* List of some memory areas allocated with memory allocation
-   primitives. Used by mmap() MAP_ANONYMOUS.  */
-extern lfl_list_t __zos_tracked_allocs;
-libc_hidden_proto (__zos_tracked_allocs)
-
-extern object_pool __wait_token_pool;
-libc_hidden_proto (__wait_token_pool)
-
-extern object_pool __alloc_info_pool;
-libc_hidden_proto (__alloc_info_pool)
+/* The thread pointer table.
+   As long as this is set up here, TLS can't be used in rtld.  */
+extern lf_hash_table *__zos_tp_table attribute_hidden;
 
 /* A very basic fixed size non-freeing allocator that somewhat simplifies
    early initialization allocation.  */

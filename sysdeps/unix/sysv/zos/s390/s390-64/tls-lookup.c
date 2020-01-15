@@ -23,8 +23,7 @@
 #include <zos-core.h>
 
 /* The hash table in which we store thread pointers.  */
-lf_hash_table *__zos_tp_table = NULL;
-libc_hidden_data_def (__zos_tp_table)
+lf_hash_table *__zos_tp_table attribute_hidden = NULL;
 
 
 void *
@@ -34,7 +33,7 @@ __zos_get_thread_pointer (void)
   return (void *) (uintptr_t) __lf_hash_table_get (task_addr,
 						   __zos_tp_table);
 }
-libc_hidden_def (__zos_set_thread_pointer)
+libc_hidden_def (__zos_get_thread_pointer)
 
 
 void
