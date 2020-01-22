@@ -68,10 +68,6 @@
    /* roundup16 (subpool_real_size_type (struct map_info))  */)
 
 
-/* The thread pointer table.
-   As long as this is set up here, TLS can't be used in rtld.  */
-extern lf_hash_table *__zos_tp_table attribute_hidden;
-
 /* A very basic fixed size non-freeing allocator that somewhat simplifies
    early initialization allocation.  */
 

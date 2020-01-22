@@ -64,16 +64,40 @@ typedef struct
    hash table right now.  */
 #include <lock-free.h>
 
+/* Because it uses a global data structure, __zos_get_thread_pointer
+   must only be defined once. However, libc, libpthread, and rtld all
+   use it. For some reason, glibc chooses to make all of its components
+   linkable separately, even though in practice nothing will work without
+   libc.
+
+   This means that if __zos_get_thread_pointer and company are defined
+   normally in those libs, they will fail to link. We choose to solve
+   this problem by making those symbols weak in all libs except rtld for
+   dynamic programs. Since it's already the case that anything using TLS
+   will fail without the libc startup code, which generally depends on
+   the rest of libc, it shouldn't break too many things.
+
+   z/OS TODO: IMPORTANT: Reevaluate this, over and over. Could define
+   __zos_get_thread_pointer in crt1.o (and company) for minimal
+   likelyhood of breakage. Or just put it in libc and change the rtld
+   build process to allow undefined symbols. Generally it's best for
+   ld.so to be as small as possible.  */
+#if defined (SHARED) && !IS_IN (rtld)
+# define attribute_tls_maybe_weak __attribute__ ((weak))
+#else
+# define attribute_tls_maybe_weak
+#endif
+
+extern void *__zos_get_thread_pointer (void) attribute_tls_maybe_weak;
+extern void __zos_set_thread_pointer (void *addr)
+  attribute_tls_maybe_weak;
 /* z/OS TODO: Do we need an explicit clear function? We could make it so
    put 0 removes the entry.  */
+extern void __zos_clear_thread_pointer (void) attribute_tls_maybe_weak;
 
-extern void *__zos_get_thread_pointer (void);
-extern void __zos_set_thread_pointer (void *addr);
-extern void __zos_clear_thread_pointer (void);
-
-libc_hidden_proto (__zos_get_thread_pointer)
-libc_hidden_proto (__zos_set_thread_pointer)
-libc_hidden_proto (__zos_clear_thread_pointer)
+/* Something used by the thread pointer mechanism.  */
+extern lf_hash_table *__zos_tp_table;
+rtld_hidden_proto (__zos_tp_table);
 
 /* Get system call information.  */
 # include <sysdep.h>

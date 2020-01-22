@@ -231,7 +231,6 @@ __lfl_initialize (lfl_list_t *list, lfl_list_type type,
   list->start.data.val = 0;
   list->start.next.nextptr = 0;
 }
-libc_hidden_def (__lfl_initialize)
 
 
 /* TODO: if val is used to store a pointer to more data, that data must
@@ -419,7 +418,6 @@ __lfl_insert (uint64_t key, uint64_t val, lfl_list_t *list)
 
     }
 }
-libc_hidden_def (__lfl_insert)
 
 
 /* If, at some point during during a traversal of the list, it contained
@@ -443,7 +441,7 @@ __lfl_get (uint64_t key, lfl_list_t *list)
     return found_val;
   return 0;
 }
-libc_hidden_def (__lfl_get)
+
 
 /* The subroutine that actually removes a node from a list. If present,
    action and cmp_val must obey the restrictions described by the
@@ -516,8 +514,6 @@ __lfl_remove (uint64_t key, lfl_list_t *list)
 
   return do_remove (key, NULL, NULL, NULL, NULL, list);
 }
-libc_hidden_def (__lfl_remove)
-
 
 
 /* A very specialized operation to atomically remove a node with a given
@@ -577,7 +573,6 @@ __lfl_remove_and_splice (uint64_t key, lfl_action accept,
   return do_remove (key, accept, cmp_val, sublist_start,
 		    sublist_end, list);
 }
-libc_hidden_def (__lfl_remove_and_splice)
 
 
 /* Perform an action for each element in the list.
@@ -606,8 +601,6 @@ __lfl_for_each (lfl_action action, void *cmp_val, lfl_list_t *list)
   lfl_find (UINT64_MAX, &prev, &prev_body, &curr_body, &found_val, false,
 	    action, cmp_val, list);
 }
-libc_hidden_def (__lfl_for_each)
-
 
 
 
@@ -621,7 +614,6 @@ __lf_hash_table_initialize (lf_hash_table *table, size_t num_buckets,
   for (size_t bucket = 0; bucket < num_buckets; ++bucket)
     __lfl_initialize (&table->buckets[bucket], type, node_pool);
 }
-libc_hidden_def (__lf_hash_table_initialize)
 
 
 /* A fixed-size memory pool implementation
@@ -723,7 +715,6 @@ __obj_pool_initialize (object_pool *new_pool, size_t block_size,
   new_pool->initializer = initializer;
   new_pool->start = alloc_subpool (new_pool);
 }
-libc_hidden_def (__obj_pool_initialize)
 
 
 void *
@@ -790,7 +781,6 @@ __obj_pool_alloc_block (object_pool *pool)
 					  pool->block_align));
     }
 }
-libc_hidden_def (__obj_pool_alloc_block)
 
 
 bool
@@ -834,4 +824,3 @@ __obj_pool_free_block (void *block, object_pool *pool)
     }
   return false;
 }
-libc_hidden_def (__obj_pool_free_block)

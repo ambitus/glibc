@@ -35,7 +35,7 @@ inhibit-sysdep-asm += unix/sysv/linux.*
 override inhibit-unix-syscalls = yes
 
 ifeq ($(subdir),misc)
-sysdep_routines += storage mmap-anon lock-free tls-lookup zos-futex \
+sysdep_routines += storage mmap-anon zos-futex \
 		   syscall-wrapper estaex estaex-handler sir sir_entry \
 		   tagging loadhfs
 # Install bits/bpxystat.h, which is required by our stat.h
@@ -46,6 +46,12 @@ ifeq ($(subdir),io)
 # z/OS TODO: Rework this. We should determine our own set of headers
 # to install, and remove the symlink from the repo.
 sysdep_headers += linux/falloc.h
+endif
+
+ifeq ($(subdir),elf)
+# Put the thread pointer lookup functions in the static libc and
+# in ld.so for shared programs
+sysdep-dl-routines += lock-free tls-lookup
 endif
 
 endif	# in-Makerules

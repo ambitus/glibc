@@ -2,8 +2,47 @@ libc {
   # The comment lines with "#errlist-compat" are magic; see errlist-compat.awk.
   # When you get an error from errlist-compat.awk, you need to add a new
   # version here.  Don't do this blindly, since this means changing the ABI.
+
   GLIBC_2.28 {
     #errlist-compat 3449
     _sys_errlist; sys_errlist; _sys_nerr; sys_nerr;
+  }
+
+  GLIBC_PRIVATE {
+    # Lock free data structure utilities used to implement TLS
+    # and MAP_ANON
+    __lfl_initialize;
+    __lfl_insert;
+    __lfl_get;
+    __lfl_remove;
+    __lfl_remove_and_splice;
+    __lfl_for_each;
+    __lf_hash_table_initialize;
+    __obj_pool_initialize;
+    __obj_pool_alloc_block;
+    __obj_pool_free_block;
+
+    # Pointer to the data structure in which we store thread pointers
+    __zos_tp_table;
+  }
+}
+
+ld {
+  GLIBC_PRIVATE {
+    # Lock free data structure utilities used to implement TLS
+    # and MAP_ANON
+    __lfl_initialize;
+    __lfl_insert;
+    __lfl_get;
+    __lfl_remove;
+    __lfl_remove_and_splice;
+    __lfl_for_each;
+    __lf_hash_table_initialize;
+    __obj_pool_initialize;
+    __obj_pool_alloc_block;
+    __obj_pool_free_block;
+
+    # Pointer to the data structure in which we store thread pointers
+    __zos_tp_table;
   }
 }

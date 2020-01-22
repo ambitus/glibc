@@ -17,13 +17,21 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#if ((defined (SHARED) && !IS_IN (rtld))	\
+     || (!defined (SHARED) && !IS_IN (libc)))
+# error "tls-lookup used in the wrong library"
+#endif
+/* For the shared library __zos_get_thread_pointer must only be defined
+   in rtld. For the static library, it must only be defined in libc.  */
+
 #include <stddef.h>
 #include <tls.h>
 #include <lock-free.h>
 #include <zos-core.h>
 
 /* The hash table in which we store thread pointers.  */
-lf_hash_table *__zos_tp_table attribute_hidden = NULL;
+lf_hash_table *__zos_tp_table;
+rtld_hidden_data_def (__zos_tp_table)
 
 
 void *
@@ -33,7 +41,6 @@ __zos_get_thread_pointer (void)
   return (void *) (uintptr_t) __lf_hash_table_get (task_addr,
 						   __zos_tp_table);
 }
-libc_hidden_def (__zos_get_thread_pointer)
 
 
 void
@@ -42,7 +49,6 @@ __zos_set_thread_pointer (void *addr)
   unsigned int task_addr = TCB_PTR;
   __lf_hash_table_put (task_addr, (uintptr_t) addr, __zos_tp_table);
 }
-libc_hidden_def (__zos_set_thread_pointer)
 
 
 void
@@ -51,4 +57,3 @@ __zos_clear_thread_pointer (void)
   unsigned int task_addr = TCB_PTR;
   __lf_hash_table_pop (task_addr, __zos_tp_table);
 }
-libc_hidden_def (__zos_clear_thread_pointer)

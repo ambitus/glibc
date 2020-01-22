@@ -182,17 +182,6 @@ extern void __obj_pool_initialize (object_pool *new_pool,
 extern void *__obj_pool_alloc_block (object_pool *pool);
 extern bool __obj_pool_free_block (void *block, object_pool *pool);
 
-libc_hidden_proto (__lfl_initialize)
-libc_hidden_proto (__lfl_insert)
-libc_hidden_proto (__lfl_get)
-libc_hidden_proto (__lfl_remove)
-libc_hidden_proto (__lfl_remove_and_splice)
-libc_hidden_proto (__lfl_for_each)
-libc_hidden_proto (__lf_hash_table_initialize)
-libc_hidden_proto (__obj_pool_initialize)
-libc_hidden_proto (__obj_pool_alloc_block)
-libc_hidden_proto (__obj_pool_free_block)
-
 
 /* Size to allocate for a hash table.  */
 static inline size_t
