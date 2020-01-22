@@ -97,12 +97,17 @@ hidden_proto (__storage_obtain)
 hidden_proto (__storage_obtain_simple)
 hidden_proto (__storage_release)
 
+#ifndef ZOS_HIDDEN_SYSCALL
 extern void * __loadhfs (char *path);
 extern void * __load_pt_interp (void);
 
-#if IS_IN (libc) || IS_IN (rtld)
+# if IS_IN (libc) || IS_IN (rtld)
 hidden_proto (__loadhfs)
 hidden_proto (__load_pt_interp)
+# endif
+#else
+extern void * __loadhfs (char *path) attribute_hidden;
+extern void * __load_pt_interp (void) attribute_hidden;
 #endif
 
 #endif  /* !__ASSEMBLER__  */

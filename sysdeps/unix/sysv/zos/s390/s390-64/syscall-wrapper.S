@@ -33,6 +33,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#if IS_IN (libc) || IS_IN (rtld)
 #include <sysdep.h>
 
    /* This code defines a wrapper that is called as a normal function
@@ -44,6 +45,7 @@
       compiler. If we do, delete some of this.  */
 
 	.text
+	.globl __bpxk_syscall
 	.type __bpxk_syscall,@function
 	.align 8
 __bpxk_syscall:
@@ -119,4 +121,11 @@ __bpxk_syscall:
 
 	cfi_endproc
 	.size __bpxk_syscall,.-__bpxk_syscall
+# ifndef ZOS_HIDDEN_SYSCALL
+strong_alias (__bpxk_syscall, __libc_bpxk_syscall)
+.globl __libc_bpxk_syscall
 hidden_def (__bpxk_syscall)
+# else
+.hidden __bpxk_syscall
+# endif
+#endif

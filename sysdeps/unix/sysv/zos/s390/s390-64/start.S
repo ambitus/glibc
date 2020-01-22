@@ -158,8 +158,8 @@ _start:
 
 #ifdef PIC
 	/* Call a helper to load the linker (avoiding the PLT).  */
-	.hidden  __GI___load_pt_interp
-	brasl	%r14, __GI___load_pt_interp
+	.hidden  __load_pt_interp
+	brasl	%r14, __load_pt_interp
 
 	/* Call the linker. Pass in our original r1, and set the
 	   low bit.  */

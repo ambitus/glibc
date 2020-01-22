@@ -51,7 +51,25 @@ endif
 ifeq ($(subdir),elf)
 # Put the thread pointer lookup functions in the static libc and
 # in ld.so for shared programs
-sysdep-dl-routines += lock-free tls-lookup
+sysdep-dl-routines += lock-free tls-lookup loadhfs
+endif
+
+ifeq ($(subdir),csu)
+# Statically link the pt_interp loading code into startup code
+# z/OS TODO: The dependency analysis for csu-loadhfs and
+# csu-syscall-wrapper doesn't work.
+start-installed-name-rule = yes
+$(objpfx)$(start-installed-name): $(objpfx)start.o $(objpfx)abi-note.o \
+				  $(objpfx)init.o $(objpfx)static-reloc.o
+	$(link-relocatable)
+$(objpfx)r$(start-installed-name): $(objpfx)start.o $(objpfx)abi-note.o \
+				  $(objpfx)init.o
+	$(link-relocatable)
+$(objpfx)S$(start-installed-name): $(objpfx)start.os $(objpfx)abi-note.o \
+				  $(objpfx)init.o $(objpfx)csu-loadhfs.os \
+				  $(objpfx)csu-syscall-wrapper.os
+	$(link-relocatable)
+
 endif
 
 endif	# in-Makerules

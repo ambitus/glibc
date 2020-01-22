@@ -80,7 +80,7 @@ __loadhfs (char *path)
      progs.  */
   return entry;
 }
-#if IS_IN (libc) || IS_IN (rtld)
+#if !defined (ZOS_HIDDEN_SYSCALL) && (IS_IN (libc) || IS_IN (rtld))
 hidden_def (__loadhfs)
 #endif
 
@@ -106,6 +106,6 @@ __load_pt_interp (void)
 
   return __loadhfs ((char *) &__ehdr_start + offset);
 }
-#if IS_IN (libc) || IS_IN (rtld)
+#if !defined (ZOS_HIDDEN_SYSCALL) && (IS_IN (libc) || IS_IN (rtld))
 hidden_def (__load_pt_interp)
 #endif

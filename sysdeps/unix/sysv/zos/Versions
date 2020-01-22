@@ -24,6 +24,9 @@ libc {
 
     # Pointer to the data structure in which we store thread pointers
     __zos_tp_table;
+
+    # z/OS TODO: This shouldn't be publicly visible
+    __libc_bpxk_syscall;
   }
 }
 
@@ -44,5 +47,15 @@ ld {
 
     # Pointer to the data structure in which we store thread pointers
     __zos_tp_table;
+
+    # z/OS TODO: This shouldn't be publicly visible
+    __libc_bpxk_syscall;
+  }
+}
+
+pthread {
+  GLIBC_PRIVATE {
+    # z/OS TODO: This shouldn't be publicly visible
+    __libc_bpxk_syscall;
   }
 }

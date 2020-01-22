@@ -73,9 +73,18 @@ extern uintptr_t __bpx_call_table attribute_hidden;
 #include <string.h>  /* for strnlen.  */
 #include <unimplemented.h>
 
+#ifndef ZOS_HIDDEN_SYSCALL
 extern void __bpxk_syscall (void *, ...);
-#if IS_IN (libc) || IS_IN (rtld)
+extern void __libc_bpxk_syscall (void *, ...);
+# if IS_IN (libc) || IS_IN (rtld)
 hidden_proto (__bpxk_syscall)
+# else
+/* Rename to __libc_bpxk_syscall so calls will be directed to the
+   implementation in libc. Could also do this in assembly.  */
+#  define __bpxk_syscall __libc_bpxk_syscall
+# endif
+#else
+extern void __bpxk_syscall (void *, ...) attribute_hidden;
 #endif
 
 /* I miss type checking...  */
