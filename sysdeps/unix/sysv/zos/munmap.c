@@ -42,7 +42,13 @@ __munmap (void *addr, size_t len)
      that fall in the range, calling the system mmap, then returning
      -1 if either call failed.  */
 
+#if IS_IN (libc)
   anon_ret = __unmap_anon_mmap (addr, len);
+#else
+  /* z/OS TODO: We can't do anything about anon mappings in rtld.  */
+  anon_ret = 0;
+#endif
+
   sc_ret = INLINE_SYSCALL_CALL (munmap, addr, len);
 
   if (anon_ret && !sc_ret)
