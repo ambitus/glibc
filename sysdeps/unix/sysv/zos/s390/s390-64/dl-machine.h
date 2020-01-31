@@ -53,7 +53,7 @@ _dl_zos_early_init (void *arg_info, ElfW(Ehdr) * ehdr,
 .globl _dl_start_user\n\
 _start:\n\
 	tmll	%r1, 1\n\
-	jne	.Lstack_setup\n\
+	je	.Lstack_setup\n\
 .Lsetup_done:\n\
 	# Mark this as the top stack frame\n\
 	xc	128(8,%r13), 128(%r13)\n\
