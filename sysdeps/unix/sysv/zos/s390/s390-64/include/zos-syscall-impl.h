@@ -50,6 +50,7 @@
 
 #include <sys/mman.h>  /* for user-facing mmap constant values.  */
 #include <sys/utsname.h>
+#include <sys/socket.h>
 #include <signal.h>
 #include <sir.h>
 
@@ -2779,6 +2780,105 @@ __zos_sys_socket (int *errcode, int domain, int type, int protocol)
 	    socks, &retval, errcode, &reason_code);
 
   return retval ?: socks[0];
+}
+
+
+typedef void (*__bpx4bnd_t) (const int32_t *sockd,
+                             const int32_t *addrlen,
+                             const struct sockaddr *addr,
+                             int32_t *retval, int32_t *retcode,
+                             int32_t *reason_code);
+
+static inline int
+__zos_sys_bind (int *errcode, int fd, const struct sockaddr *addr, socklen_t len)
+{
+  int32_t retval, reason_code;
+  int32_t sockd = fd;
+  int32_t addrlen = len;
+
+  /* For the address family AF_INET generic structure 'sockaddr' has
+     exactly the same format as 'addr' parameter in BPX4BND callable
+     service. For all other address families common data is the same,
+     protocol specific area is different for each one. So we can
+     directly pass structure 'sockaddr' into the BPX4BND service and
+     specify its proper size according to the used address family. */
+  BPX_CALL (bind, __bpx4bnd_t, &sockd, &addrlen, addr,
+	    &retval, errcode, &reason_code);
+
+  return retval;
+}
+
+
+typedef void (*__bpx4gnm_t) (const int32_t *sockd,
+                             const int32_t *operation,
+                             int32_t *addrlen,
+                             struct sockaddr *addr,
+                             int32_t *retval, int32_t *retcode,
+                             int32_t *reason_code);
+
+static inline int
+__zos_sys_getsockname (int *errcode, int fd, struct sockaddr *addr, socklen_t *len)
+{
+  int32_t retval, reason_code;
+  int32_t sockd = fd;
+  int32_t addrlen = *len;
+  int32_t operation = 2; /* getsockname */
+
+  BPX_CALL (getpeername, __bpx4gnm_t, &sockd, &operation,
+	    &addrlen, addr, &retval, errcode, &reason_code);
+
+  /* Return the actual size of the socket address structure. */
+  *len = addrlen;
+
+  return retval;
+}
+
+
+typedef void (*__bpx4opt_t) (const int32_t *sockd,
+                             const int32_t *operation,
+                             const int32_t *level,
+                             const int32_t *name,
+                             int32_t *datalen,
+                             char *data,
+                             int32_t *retval, int32_t *retcode,
+                             int32_t *reason_code);
+
+static inline int
+__zos_sys_getsockopt (int *errcode, int fd, int level, int optname,
+		      void *optval, socklen_t *len)
+{
+  int32_t retval, reason_code;
+  int32_t sockd = fd;
+  int32_t lvl = level;
+  int32_t name = optname;
+  int32_t datalen = *len;
+  int32_t operation = 1; /* getsockopt */
+
+  BPX_CALL (getsockopt, __bpx4opt_t, &sockd, &operation, &lvl, &name,
+	    &datalen, optval, &retval, errcode, &reason_code);
+
+  /* Return the actual size of the option's value returned. */
+  *len = datalen;
+
+  return retval;
+}
+
+
+static inline int
+__zos_sys_setsockopt (int *errcode, int fd, int level, int optname,
+		      const void *optval, socklen_t len)
+{
+  int32_t retval, reason_code;
+  int32_t sockd = fd;
+  int32_t lvl = level;
+  int32_t name = optname;
+  int32_t datalen = len;
+  int32_t operation = 2; /* setsockopt */
+
+  BPX_CALL (getsockopt, __bpx4opt_t, &sockd, &operation, &lvl, &name,
+	    &datalen, optval, &retval, errcode, &reason_code);
+
+  return retval;
 }
 
 

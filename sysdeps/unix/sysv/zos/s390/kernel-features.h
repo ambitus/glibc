@@ -66,6 +66,12 @@
 /* #define __ASSUME_ACCEPT4_SYSCALL	1  */
 #define __ASSUME_RECVMMSG_SYSCALL	1
 #define __ASSUME_SENDMMSG_SYSCALL	1
+#define __ASSUME_SOCKET_SYSCALL         1
+#define __ASSUME_BIND_SYSCALL           1
+#define __ASSUME_GETSOCKNAME_SYSCALL    1
+#define __ASSUME_GETSOCKOPT_SYSCALL     1
+#define __ASSUME_SETSOCKOPT_SYSCALL     1
+
 
 /* Support for SysV IPC through wired syscalls.  All supported architectures
    either support ipc syscall and/or all the ipc correspondent syscalls.  */
