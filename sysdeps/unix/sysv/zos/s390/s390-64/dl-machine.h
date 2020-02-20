@@ -21,7 +21,9 @@
 /* We can use almost everything from z/Linux except for the
    entry point.  */
 
+#define elf_machine_load_address dummy_s390_load_address
 #include <sysdeps/s390/s390-64/dl-machine.h>
+#undef elf_machine_load_address
 
 #ifndef _ZOS_DL_MACHINE_H
 #define _ZOS_DL_MACHINE_H 1
@@ -31,6 +33,18 @@
 
 #define _ZOS_DL_MACHINE_STRING1(x) #x
 #define _ZOS_DL_MACHINE_STRING(x) _ZOS_DL_MACHINE_STRING1 (x)
+
+/* Return the run-time load address of the shared object.  */
+static inline Elf64_Addr
+elf_machine_load_address (void)
+{
+  Elf64_Addr addr;
+
+  __asm__ ("larl	%0, _begin\n\t"
+	   : "=&d" (addr));
+
+  return addr;
+}
 
 static void __attribute__ ((used, noreturn))
 _dl_zos_early_init (void *arg_info, ElfW(Ehdr) * ehdr,
