@@ -29,13 +29,13 @@
 
 typedef struct object_pool_subpool
 {
-  /* A bitmap, 0 means free slot, 1 means used.  */
-  uint32_t usage;
-
   /* Pointer to next subpool on the subpool list.  */
   struct object_pool_subpool *next;
 
   void *blocks;
+
+  /* A bitmap, 0 means free slot, 1 means used.  */
+  uint32_t usage;
 } object_subpool;
 
 
@@ -133,14 +133,14 @@ typedef struct
    Each list has a dummy head node.  */
 typedef struct
 {
-  /* What kind of data structure we are implementing.  */
-  lfl_list_type type;
+  /* list head.  */
+  lfl_node_t start;
 
   /* The object pool we are using to allocate list nodes.  */
   object_pool *mempool;
 
-  /* list head.  */
-  lfl_node_t start;
+  /* What kind of data structure we are implementing.  */
+  lfl_list_type type;
 } lfl_list_t;
 
 

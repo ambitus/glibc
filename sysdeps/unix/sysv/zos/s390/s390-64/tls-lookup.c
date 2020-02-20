@@ -29,6 +29,10 @@
 #include <lock-free.h>
 #include <zos-core.h>
 
+#define ZOS_THREAD_BUCKETS 64
+#define ZOS_THREAD_TABLE_SIZE						\
+  (sizeof (lf_hash_table) + sizeof (lfl_list_t) * ZOS_THREAD_BUCKETS)
+
 /* The hash table in which we store thread pointers.  */
 lf_hash_table *__zos_tp_table;
 rtld_hidden_data_def (__zos_tp_table)
@@ -56,4 +60,40 @@ __zos_clear_thread_pointer (void)
 {
   unsigned int task_addr = TCB_PTR;
   __lf_hash_table_pop (task_addr, __zos_tp_table);
+}
+
+/* Initializer for object pool elements.  */
+
+static void
+node_init (void *addr)
+{
+  ((lfl_node_t *) addr)->next.tag = 0;
+}
+
+/* Do initial thread pointer setup.
+   Should only be called once per process.  */
+
+void
+__zos_initialize_thread_pointer (void *addr)
+{
+  object_pool *node_pool;
+  size_t alloc_size =
+    (subpool_size (lfl_node_t) + ZOS_THREAD_TABLE_SIZE + 32);
+
+  /* Allocate storage for the lock-free list node pool and the thread
+     pointer hashtable, plus extra so we can align them both to 16
+     bytes.  */
+  node_pool = __storage_obtain_simple ((unsigned int) alloc_size);
+  node_pool = (object_pool *) (((uintptr_t) node_pool + 15) & ~15);
+  __zos_tp_table =
+    (lf_hash_table *) (((uintptr_t) node_pool
+			+ subpool_size (lfl_node_t) + 15) & ~15);
+
+  __obj_pool_initialize (node_pool, sizeof (lfl_node_t),
+			 _Alignof (lfl_node_t), false, node_init);
+
+  __lf_hash_table_initialize (__zos_tp_table, ZOS_THREAD_BUCKETS,
+			      lfl_set, node_pool);
+
+  __zos_set_thread_pointer (addr);
 }

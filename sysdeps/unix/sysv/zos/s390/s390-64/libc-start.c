@@ -46,18 +46,14 @@
    Where is the shared env init?  */
 
 #define roundup16(val) (((uintptr_t) (val) + 16 - 1) & ~(16 - 1))
-#define ZOS_THREAD_BUCKETS 64
 #define ZOS_FUTEX_BUCKETS 64
-
-#define ZOS_THREAD_TABLE_SIZE						\
-  (sizeof (lf_hash_table) + sizeof (lfl_list_t) * ZOS_THREAD_BUCKETS)
 
 #define ZOS_FUTEX_TABLE_SIZE						\
   (sizeof (lf_hash_table) + sizeof (lfl_list_t) * ZOS_FUTEX_BUCKETS)
 
 #define PERM_STORE_CONST_SIZE						\
   /* Hash table for thread pointers.  */				\
-  (roundup16 (ZOS_THREAD_TABLE_SIZE) +					\
+  (/* roundup16 (ZOS_THREAD_TABLE_SIZE) + */				\
    /* Hashed wait queue for futexes.  */				\
    roundup16 (ZOS_FUTEX_TABLE_SIZE) +					\
    /* lfl_node object pool (shared between the above) header.  */	\
@@ -138,11 +134,7 @@ global_structures_init (void)
 
   /* Initialize primary data structures.  */
 
-  /* Thread pointer hashtable.  */
-  __zos_tp_table = perm_store_alloc (&store, ZOS_THREAD_TABLE_SIZE, true);
-  __lf_hash_table_initialize (__zos_tp_table, ZOS_THREAD_BUCKETS,
-			      lfl_set, node_pool);
-
+  /* Thread pointer hashtable is initialized elsewhere.  */
   /* Futex hashtable.  */
   __zos_futex_table = perm_store_alloc (&store, ZOS_FUTEX_TABLE_SIZE, true);
   __lf_hash_table_initialize (__zos_futex_table, ZOS_FUTEX_BUCKETS,

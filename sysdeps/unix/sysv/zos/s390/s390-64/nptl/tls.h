@@ -94,6 +94,8 @@ extern void __zos_set_thread_pointer (void *addr)
 /* z/OS TODO: Do we need an explicit clear function? We could make it so
    put 0 removes the entry.  */
 extern void __zos_clear_thread_pointer (void) attribute_tls_maybe_weak;
+extern void __zos_initialize_thread_pointer (void *addr)
+  attribute_tls_maybe_weak;
 
 /* Something used by the thread pointer mechanism.  */
 extern lf_hash_table *__zos_tp_table;
@@ -148,18 +150,18 @@ rtld_hidden_proto (__zos_tp_table);
 /* Code to initially initialize the thread pointer.  This might need
    special attention since 'errno' is not yet available and if the
    operation can cause a failure 'errno' must not be touched.  */
-# define TLS_INIT_TP(thrdescr) \
-  ({ void *_thrdescr = (thrdescr);					      \
-     tcbhead_t *_head = _thrdescr;					      \
-									      \
-     _head->tcb = _thrdescr;						      \
-     /* For now the thread descriptor is at the same address.  */	      \
-     _head->self = _thrdescr;						      \
-     /* New syscall handling support.  */				      \
-     INIT_SYSINFO;							      \
-									      \
-    __zos_set_thread_pointer (_thrdescr);				      \
-    NULL;								      \
+# define TLS_INIT_TP(thrdescr)						\
+  ({ void *_thrdescr = (thrdescr);					\
+     tcbhead_t *_head = _thrdescr;					\
+									\
+     _head->tcb = _thrdescr;						\
+     /* For now the thread descriptor is at the same address.  */	\
+     _head->self = _thrdescr;						\
+     /* New syscall handling support.  */				\
+     INIT_SYSINFO;							\
+									\
+     __zos_initialize_thread_pointer (_thrdescr);			\
+     NULL;								\
   })
 
 /* Value passed to 'clone' for initialization of the thread register.  */
