@@ -18,19 +18,17 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <sysdep.h>
 
 /* Change the memory protection of the region starting at ADDR and
    extending LEN bytes to PROT.  Returns 0 if successful, -1 for errors
    (and sets errno).  */
-/* z/OS TODO: mprotect.  */
 
 int
 __mprotect (void *addr, size_t len, int prot)
 {
-  __set_errno (ENOSYS);
-  return -1;
+  /* z/OS TODO: Add handling for anonymous mappings.  */
+  return INLINE_SYSCALL_CALL (mprotect, addr, len, prot);
 }
-
 libc_hidden_def (__mprotect)
 weak_alias (__mprotect, mprotect)
-stub_warning (mprotect)
