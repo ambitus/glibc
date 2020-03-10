@@ -31,6 +31,13 @@ libc {
 }
 
 ld {
+
+  GLIBC_2.28 {
+    __zos_get_thread_pointer;
+    __zos_set_thread_pointer;
+    __zos_clear_thread_pointer;
+  }
+
   GLIBC_PRIVATE {
     # Lock free data structure utilities used to implement TLS
     # and MAP_ANON
