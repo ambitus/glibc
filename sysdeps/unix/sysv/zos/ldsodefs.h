@@ -41,10 +41,11 @@ __dl_zos_read_fully (int fd, void *buf, size_t len)
 {
   do
     {
-      ssize_t retlen = __read_nocancel (fd, (char *) buf + 8 - len, len);
+      ssize_t retlen = __read_nocancel (fd, buf, len);
       if (retlen <= 0)
 	break;
       len -= retlen;
+      buf += retlen;
     }
   while (__glibc_unlikely (len > 0));
 
@@ -61,6 +62,7 @@ _dl_find_header (int fd)
      reading an executable. If not assume it's a shared library. Shared
      libraries are assumed to have the usual ELF structure, so nothing
      else is required for them.  */
+  /* z/OS TODO: might be faster to do one 68-byte read.  */
   uint64_t eyecatcher;
   uint32_t ehdr_offset;
 
@@ -74,15 +76,15 @@ _dl_find_header (int fd)
 
   /* Jump to the part of the Program Object header that points to the
      contained code.  */
-  __lseek (fd, 0x64, SEEK_SET);
-
-  if (__dl_zos_read_fully (fd, &ehdr_offset, 4) != 0)
+  if (__lseek (fd, 0x64, SEEK_SET) < 0
+      || __dl_zos_read_fully (fd, &ehdr_offset, 4) != 0)
     return 0;
 
   ssize_t off = (ssize_t) (uint64_t) ehdr_offset;
 
   /* Reposition the file offset to point to the ehdr.  */
-  __lseek (fd, off, SEEK_SET);
+  if (__lseek (fd, off, SEEK_SET) < 0)
+    return 0;
 
   return off;
 }
