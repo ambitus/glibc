@@ -1333,7 +1333,7 @@ __zos_sys_mmap (int *errcode, void *addr, size_t length, int prot,
 	protect_opts |= ZOS_SYS_PROT_READ;
       if ((prot & PROT_WRITE) == PROT_WRITE)
 	protect_opts |= ZOS_SYS_PROT_WRITE;
-      if ((prot & PROT_WRITE) == PROT_WRITE)
+      if ((prot & PROT_EXEC) == PROT_EXEC)
 	protect_opts |= ZOS_SYS_PROT_EXEC;
       /* Linux accepts arbitrary other bits being set in the flags
 	 argument, and it's safe for us to do the same because these
@@ -1352,19 +1352,19 @@ __zos_sys_mmap (int *errcode, void *addr, size_t length, int prot,
 
      TODO: Take advantage of MAP_MEGA somehow.  */
 
-  /* Downgrade MAP_SHARED_VALIDATE to MAP_SHARED.  */
-  if ((flags & MAP_SHARED_VALIDATE) == MAP_SHARED_VALIDATE)
+  if ((flags & MAP_SHARED) == MAP_SHARED
+      || (flags & MAP_SHARED_VALIDATE) == MAP_SHARED_VALIDATE)
+    /* Downgrade MAP_SHARED_VALIDATE to MAP_SHARED.  */
     map_type |= ZOS_SYS_MAP_SHARED;
-  /* Downgrade MAP_FIXED_NOREPLACE to MAP_FIXED.  */
-  if ((flags & MAP_FIXED_NOREPLACE) == MAP_FIXED_NOREPLACE)
-    map_type |= ZOS_SYS_MAP_FIXED;
+  else if ((flags & MAP_PRIVATE) == MAP_PRIVATE)
+    map_type |= ZOS_SYS_MAP_PRIVATE;
 
-  if ((flags & MAP_SHARED) == MAP_SHARED)
-    map_type |= ZOS_SYS_MAP_SHARED;
-  if ((flags & MAP_PRIVATE) == MAP_PRIVATE)
-    map_type |= ZOS_SYS_MAP_SHARED;
-  if ((flags & MAP_FIXED) == MAP_FIXED)
-    map_type |= ZOS_SYS_MAP_SHARED;
+  /* z/OS TODO: Don't define MAP_FIXED_NOREPLACE, it's recent enough
+     that portable programs should check for its presence.  */
+  if ((flags & MAP_FIXED) == MAP_FIXED
+      || (flags & MAP_FIXED_NOREPLACE) == MAP_FIXED_NOREPLACE)
+    /* Downgrade MAP_FIXED_NOREPLACE to MAP_FIXED.  */
+    map_type |= ZOS_SYS_MAP_FIXED;
 
   /* TODO: This is very, very bad. z/OS mmap doesn't support
      MAP_ANONYMOUS.  */
@@ -1382,7 +1382,7 @@ __zos_sys_mmap (int *errcode, void *addr, size_t length, int prot,
     SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_HUGETLB support",
 				    (long)MAP_FAILED);
   /* TODO: See mlock.  */
-  if ((flags & MAP_HUGETLB) == MAP_HUGETLB)
+  if ((flags & MAP_LOCKED) == MAP_LOCKED)
     SHIM_NOT_YET_IMPLEMENTED_FATAL ("No MAP_LOCKED support",
 				    (long)MAP_FAILED);
   /* We just can't support this one.  */
@@ -1400,7 +1400,7 @@ __zos_sys_mmap (int *errcode, void *addr, size_t length, int prot,
 				    (long)MAP_FAILED);
 
 
-  if (flags & MAP_HUGE_MASK)
+  if ((flags >> MAP_HUGE_SHIFT) & MAP_HUGE_MASK)
     {
       *errcode = EINVAL;
       return (long)MAP_FAILED;
@@ -1448,7 +1448,7 @@ __zos_sys_mprotect (int *errcode, void *addr, size_t length, int prot)
 	protect_opts |= ZOS_SYS_PROT_READ;
       if ((prot & PROT_WRITE) == PROT_WRITE)
 	protect_opts |= ZOS_SYS_PROT_WRITE;
-      if ((prot & PROT_WRITE) == PROT_WRITE)
+      if ((prot & PROT_EXEC) == PROT_EXEC)
 	protect_opts |= ZOS_SYS_PROT_EXEC;
       /* TODO: Unless we can query mappings, we can't support this.  */
       if ((prot & PROT_GROWSUP) == PROT_GROWSUP)
