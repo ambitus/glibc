@@ -93,17 +93,17 @@ translate_and_copy_args (void *mem,
 			 const struct bpxk_args *arg_info,
 			 void *ehdr __attribute_used__)
 {
-  /* Reserve a word for argc.  */
-  char **args_and_envs = (void *) ((uintptr_t) mem + sizeof (long int));
+  /* Reserve two words for argc and ehdr.  */
+  char **args_and_envs = (void *) ((uintptr_t) mem + 16);
   char **envp_start = &args_and_envs[*arg_info->argv.count + 1];
 
 #ifdef SHARED
   /* Store the ehdr pointer, if we have one.  */
-  *(uintptr_t *) mem = (uintptr_t) ehdr;
+  *(uint64_t *) mem = (uint64_t) ehdr;
 #endif
 
   /* Store argc.  */
-  *((long int *) mem + 1) = *arg_info->argv.count;
+  *((int64_t *) mem + 1) = *arg_info->argv.count;
 
   /* Reserve space for the argv/p array itself.  */
   mem = (void *) ((uintptr_t) mem + ARGS_POINTERS_SIZE (arg_info));

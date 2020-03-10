@@ -86,9 +86,9 @@ _start:\n\
 	lgr	%r1, %r4\n\
 	brasl	%r14, _dl_zos_early_init\n\
 .Lvery_early_init_done:\n\
-	# %r1 should now point to a 1 arg arglist pointing to argc,\n\
-	# argv, and the envs in the standard format, and mabye an\n\
-	# ehdr, without an aux vector.\n\
+	# %r1 should now point to a 1 arg arglist pointing to the ehdr,\n\
+	# then argc, argv, and the envs in the standard format, \n\
+	# without an aux vector.\n\
 	lg	%r5, 0(%r1)\n\
 	brasl	%r14, _dl_start\n\
 _dl_start_user:\n\
@@ -108,9 +108,10 @@ _dl_start_user:\n\
 	sgr	%r6, %r3\n\
 	# Adjust the arg pointer to skip _dl_skip_args words.\n\
 	sllg	%r7, %r3, 3\n\
-	agr	%r10, %r7\n\
-	# Store back the modified argument count.\n\
-	stg	%r6, 0(%r10)\n\
+	agr	%r1, %r7\n\
+	# Store back the modified argument count and copy the ehdr.\n\
+	stg	%r6, 8(%r1)\n\
+	mvc	0(8,%r1), 0(%r5)\n\
 	# The special initializer gets called with the stack just\n\
 	# as the application's entry point will see it; it can\n\
 	# switch stacks if it moves these contents over.\n\
@@ -118,29 +119,29 @@ _dl_start_user:\n\
 	# Call the function to run the initializers.\n\
 	# Load the parameters:\n\
 	# (%r2, %r3, %r4, %r5) = (_dl_loaded, argc, argv, envp)\n\
-	lg	%r1, 136(%r13)\n\
+	lgr	%r9, %r1  # save the original arg pointer\n\
 	lghi	%r2, _rtld_local@GOT\n\
 	lg	%r2, 0(%r2,%r12)\n\
 	lg	%r2, 0(%r2)\n\
-	lg	%r3, %r6\n\
-	la	%r4, 8(%r10)\n\
+	lgr	%r3, %r6\n\
+	la	%r4, 16(%r1)\n\
 	lgr	%r5, %r3\n\
 	sllg	%r5, %r5, 3\n\
-	la	%r5, 16(%r5,%r10)\n\
+	la	%r5, 24(%r5,%r1)\n\
+	lg	%r1, 136(%r13)  # set up arguments for _dl_init\n\
 	la	%r7, 32(%r1)\n\
 	stg	%r7, 136(%r13)\n\
 	stmg	%r2, %r5, 0(%r1)\n\
+	lgr	%r10, %r1\n\
 	brasl	%r14, _dl_init@PLT\n\
+	stg	%r10, 136(%r13)  # shrink stack \n\
 	# Pass our finalizer function to the user in %r4.\n\
 	lghi	%r4, _dl_fini@GOT\n\
 	lg	%r4, 0(%r4,%r12)\n\
-	# Load the real arguments and shrink stack frame\n\
-	lg	%r2, 136(%r13)\n\
-	aghi	%r2, -32\n\
-	stg	%r2, 136(%r13)\n\
-	lgr	%r1, %r10\n\
+	# Load the real arguments\n\
+	lgr	%r1, %r9\n\
 	# Jump to the user's entry point (saved in %r8).\n\
-	br	%r15\n\
+	br	%r8\n\
 .Lstack_setup:\n\
 	stmg    %r14, %r12, 8(%r13)\n\
 	# Record that %r2 doesn't contain our ehdr since we jumped.\n\
