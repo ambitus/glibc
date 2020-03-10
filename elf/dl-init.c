@@ -69,6 +69,14 @@ call_init (struct link_map *l, int argc, char **argv, char **env)
 
       addrs = (ElfW(Addr) *) (init_array->d_un.d_ptr + l->l_addr);
       for (j = 0; j < jm; ++j)
+#ifdef __ZOS__
+	/* z/OS TODO: IMPORTANT: I have no idea why this is happening,
+	   but we keep trying to run the 0 and -1 pointers in
+	   .init_array. Even the linux build shows the same problem.
+	   Check a reference compilation of s390x glibc and figure out
+	   why this is happening.  */
+	if ((long) addrs[j] != 0 && (long) addrs[j] != -1)
+#endif
 	((init_t) addrs[j]) (argc, argv, env);
     }
 }

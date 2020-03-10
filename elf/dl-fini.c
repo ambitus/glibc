@@ -135,6 +135,14 @@ _dl_fini (void)
 			  unsigned int i = (l->l_info[DT_FINI_ARRAYSZ]->d_un.d_val
 					    / sizeof (ElfW(Addr)));
 			  while (i-- > 0)
+#ifdef __ZOS__
+			    /* z/OS TODO: IMPORTANT: I have no idea why this is happening,
+			       but we keep trying to run the 0 and -1 pointers in
+			       .fini_array. Even the linux build shows the same problem.
+			       Check a reference compilation of s390x glibc and figure out
+			       why this is happening.  */
+			    if ((long) array[i] != 0 && (long) array[i] != -1)
+#endif
 			    ((fini_t) array[i]) ();
 			}
 
