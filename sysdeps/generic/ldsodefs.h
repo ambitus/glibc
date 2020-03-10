@@ -89,7 +89,7 @@ __BEGIN_DECLS
 #ifdef EHDR_IS_NOT_FILE_START
 # define FADJ(map, off) ((map)->l_ehdr_offset + (off))
 #else
-# define FADJ(map, off) ((map), (off))
+# define FADJ(map, off) ((void) (map), (off))
 #endif
 
 /* Result of the lookup functions and how to retrieve the base address.  */
