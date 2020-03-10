@@ -72,6 +72,17 @@ __mmap64 (void *addr, size_t len, int prot, int flags, int fd,
       return ret;
     }
 
+  /* For MAP_FIXED requests, we need to be able to replace existing
+     mappings. Our mmap implementation doesn't allow that, so we need
+     to unmap first, just in case.
+     z/OS TODO: Any way to do this atomically? There's a race condition
+     between unmapping and mapping that could break any application that
+     tries to be fancy with mappings (eg. the dynamic linker). Also if
+     the request ends up failing anyway, we've still may have just
+     unmapped a region, which leaves us in a perilous situation.  */
+  if (flags & MAP_FIXED)
+    __munmap (addr, len);
+
   return (void *) INLINE_SYSCALL_CALL (mmap, addr, len, prot, flags, fd, offset);
 }
 weak_alias (__mmap64, mmap64)
