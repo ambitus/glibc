@@ -55,6 +55,11 @@ malloc (size_t n)
       alloc_end = (void *) 0 + (((alloc_ptr - (void *) 0)
 				 + GLRO(dl_pagesize) - 1)
 				& ~(GLRO(dl_pagesize) - 1));
+#ifdef __ZOS__
+      /* z/OS doesn't zero the rest of the page.
+         z/OS TODO: Can we fix this in the linker?  */
+      memset (alloc_ptr, 0, (char *) alloc_end - (char *) alloc_ptr);
+#endif
     }
 
   /* Make sure the allocation pointer is ideally aligned.  */
