@@ -35,7 +35,7 @@ typedef void (*__bpx4cld_t) (const int32_t *dirfd,
 
 /* Close the directory referred to by the open file descriptor.
    Return 0 if successful, -1 if not. */
-int
+static int
 __closedir2 (int fd)
 {
   int32_t dfd = fd;
@@ -124,3 +124,14 @@ __opendir (const char *name)
   return dirp;
 }
 weak_alias (__opendir, opendir)
+
+
+#if IS_IN (libc)
+/* z/OS TODO: Handle opendirat like the rest of the *at calls.  */
+DIR *
+__opendirat (int dfd, const char *name)
+{
+  __set_errno (ENOSYS);
+  return NULL;
+}
+#endif

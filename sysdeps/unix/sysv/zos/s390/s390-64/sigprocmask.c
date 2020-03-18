@@ -25,6 +25,9 @@
 int
 __sigprocmask (int how, const sigset_t *set, sigset_t *oset)
 {
+  /* NOTE: If we ever make changes to this function, duplicate
+     the work inside of the relevant functions in
+     internal-signals.h.  */
 
   /* Note that for the z/OS implementation, nptl does not use dedicated
      SIGCANCEL or SIGSETXID signals, so we do not need to make sure

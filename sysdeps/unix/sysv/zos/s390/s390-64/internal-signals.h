@@ -58,7 +58,9 @@ __libc_signal_block_all (sigset_t *set)
 {
   sigset_t allset;
   __sigfillset (&allset);
-  return __sigprocmask (SIG_BLOCK, &allset, set);
+  /* z/OS TODO: This causes a nontrivial amount of code to be duplicated
+     at every usage site. Avoid that, somehow.  */
+  return INLINE_SYSCALL_CALL (sigprocmask, SIG_BLOCK, &allset, set);
 }
 
 
@@ -66,9 +68,7 @@ __libc_signal_block_all (sigset_t *set)
 static inline int
 __libc_signal_block_app (sigset_t *set)
 {
-  sigset_t allset;
-  __sigfillset (&allset);
-  return __sigprocmask (SIG_BLOCK, &allset, set);
+  return __libc_signal_block_all (set);
 }
 
 
@@ -76,7 +76,9 @@ __libc_signal_block_app (sigset_t *set)
 static inline int
 __libc_signal_restore_set (const sigset_t *set)
 {
-  return __sigprocmask (SIG_SETMASK, set, NULL);
+  /* z/OS TODO: This causes a nontrivial amount of code to be duplicated
+     at every usage site. Avoid that, somehow.  */
+  return INLINE_SYSCALL_CALL (sigprocmask, SIG_SETMASK, set, NULL);
 }
 
 /* Used to communicate with signal handler.  */
