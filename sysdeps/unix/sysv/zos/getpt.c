@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+#include <termios.h>
 
 /* Prefix for master pseudo terminal nodes.  */
 #define _PATH_PTY "/dev/ptyp"
@@ -57,9 +58,25 @@ __posix_openpt (int oflag)
 		  /* Try to open the master. */
 		  fd = open (buf, oflag);
 		  if (fd != -1)
-		    /* Master is opened successfully -
-		       return its file descriptor. */
-		    return fd;
+		    {
+		      /* Master is opened successfully.
+			 Clear HUPCL terminal attribute to be
+			 able to reopen slave pseudo terminal. */
+		      struct termios term;
+		      if (tcgetattr(fd, &term) != 0)
+			{
+			  close(fd);
+			  return -1;
+			}
+		      term.c_cflag &= ~((tcflag_t)HUPCL);
+		      if (tcsetattr(fd, TCSANOW, &term) != 0)
+			{
+			  close(fd);
+			  return -1;
+			}
+
+		      return fd;
+		    }
 
 		  if (errno == ENOENT)
 		    /* Terminate the search, as all
