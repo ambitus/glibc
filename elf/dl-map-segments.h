@@ -33,8 +33,17 @@ _dl_map_segments (struct link_map *l, int fd,
                   struct link_map *loader)
 {
   const struct loadcmd *c = loadcmds;
-
+#ifndef __ZOS__
+  /* z/OS TODO: IMPORTANT: This ifndef hack causes all executubles to be
+     loaded as position-independent executables, which for us is
+     technically more correct than the regular behavior, since we will
+     never care where any of our things are loaded. In the long run, it
+     would be better to accompilish this by changing the linker to make
+     all executables ET_DYN, though its possible that that could have
+     other unintended effects. Decide if we want to do that sooner
+     rather than later.  */
   if (__glibc_likely (type == ET_DYN))
+#endif
     {
       /* This is a position-independent shared object.  We can let the
          kernel map it anywhere it likes, but we must have space for all

@@ -188,7 +188,13 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   if (estaex_set != 0)
     CRASH_NOW ();
 
-#ifndef PIC
+#ifdef SHARED
+  /* The dynamic linker already translated our args and envs for us.  */
+  cookie = arg_info;
+
+  /* Register our SIR.  */
+  set_up_signals ();
+#else
   /* Process program arguments and environ, set up signals, and register
      ourselves as an ASCII program. Args and envs are copied onto the
      stack.  */
@@ -196,12 +202,6 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Skip the unused ELF header word.  */
   cookie += sizeof (ElfW(Ehdr) *);
   _dl_psuedo_aux_init ();
-#else
-  /* The dynamic linker already translated our args and envs for us.  */
-  cookie = arg_info;
-
-  /* Register our SIR.  */
-  set_up_signals ();
 #endif
 
   argc = (int) *(long int *) cookie;

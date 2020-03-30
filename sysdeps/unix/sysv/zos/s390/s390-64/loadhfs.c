@@ -104,6 +104,9 @@ __load_pt_interp (void)
 	break;
       }
 
+  if (offset == 0)
+    return NULL;
+
   return __loadhfs ((char *) &__ehdr_start + offset);
 }
 #if !defined (ZOS_HIDDEN_SYSCALL) && (IS_IN (libc) || IS_IN (rtld))

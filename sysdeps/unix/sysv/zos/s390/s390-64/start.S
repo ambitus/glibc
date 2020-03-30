@@ -95,14 +95,12 @@ _start:
 	TODO: Do we need to do this? Do we need to restore them?  */
 	stmg    %r14, %r12, 8(%r13)
 
-#ifdef PIC
 	/* Check the above-mentioned hack.  */
 	tmll	%r1, 1
 	je	.Lskip_setup
-#else
+
 	/* Static applications get NULL for rtld_fini.  */
 	lghi	%r4, 0
-#endif
 
 	/* Prevent the value we got in %r1 from being clobbered
 	   by the storage call.  */
@@ -155,11 +153,16 @@ _start:
 	/* Initialize NAB  */
 	la	%r14, 200(%r13)
 	stg	%r14, 136(%r13)
+	mvc	144(8, %r13), 136(%r13)
 
-#ifdef PIC
-	/* Call a helper to load the linker (avoiding the PLT).  */
+	/* Here we call a helper. The helper checks if we have a
+	   PT_INTERP section, and if we do, loads the program
+	   interpreter. It returns the address of the interpreter's
+	   entry point, or zero if we don't have an interpreter.  */
 	.hidden  __load_pt_interp
 	brasl	%r14, __load_pt_interp
+	ltgr	%r15, %r15
+	jz	.Lno_interp
 
 	/* Call the linker. Pass in our original r1, and set the
 	   low bit.  */
@@ -172,6 +175,13 @@ _start:
 
 	/* We should not return, trap if we do.  */
 	.long	0
+.Lno_interp:
+#ifdef PIC
+	/* We need an interpreter, trap if we don't have one.  */
+	.long	0
+#else
+	/* Restore from NAB.  */
+	mvc	136(8, %r13), 144(%r13)
 #endif
 
 	/* Set up args for __libc_start_main. Our __libc_start_main
@@ -181,11 +191,8 @@ _start:
 	/* __libc_start_main (main, arg_info, rtld_fini, init, fini,
 			      stack_end)  */
 
-#ifdef PIC
 .Lskip_setup:
-	/* Our args and envs have been processed properly.  */
-	nill	%r1, 65534
-
+#ifdef PIC
 	larl	%r2, main@GOTENT
 	lg	%r2,0(%r2)
 #else

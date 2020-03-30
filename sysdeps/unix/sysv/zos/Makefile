@@ -58,12 +58,17 @@ ifeq ($(subdir),csu)
 # Statically link the pt_interp loading code into startup code
 # z/OS TODO: The dependency analysis for csu-loadhfs and
 # csu-syscall-wrapper doesn't work.
+# z/OS TODO: figure out a more elegant solution to linking the
+# loading functions.
 start-installed-name-rule = yes
 $(objpfx)$(start-installed-name): $(objpfx)start.o $(objpfx)abi-note.o \
-				  $(objpfx)init.o $(objpfx)static-reloc.o
+				  $(objpfx)init.o $(objpfx)static-reloc.o \
+				  $(objpfx)csu-loadhfs.os \
+				  $(objpfx)csu-syscall-wrapper.os
 	$(link-relocatable)
 $(objpfx)r$(start-installed-name): $(objpfx)start.o $(objpfx)abi-note.o \
-				  $(objpfx)init.o
+				  $(objpfx)init.o $(objpfx)csu-loadhfs.os \
+				  $(objpfx)csu-syscall-wrapper.os
 	$(link-relocatable)
 $(objpfx)S$(start-installed-name): $(objpfx)start.os $(objpfx)abi-note.o \
 				  $(objpfx)init.o $(objpfx)csu-loadhfs.os \
