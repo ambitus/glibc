@@ -254,13 +254,15 @@ __map_common_oflags_to_zos (int flags)
   shift_down (O_APPEND);
   shift_down (O_NONBLOCK);
   if ((O_SYNC & uflags) == O_SYNC) zflags |= ZOS_SYS_O_SYNC;
-  shift_down (O_LARGEFILE);
   /* We can't emulate O_DSYNC, so alias it to O_SYNC.  */
   if (O_DSYNC & uflags) zflags |= ZOS_SYS_O_SYNC;
   /* z/OS TODO: Is this appropriate?  */
   if ((O_ASYNC & uflags) == O_ASYNC) zflags |= ZOS_SYS_O_ASYNCSIG;
+  /* O_LARGEFILE flag can be used in z/OS callable services but it
+     is ignored in z/OS, O_NOLARGEFILE should be used instead.
+     Set z/OS flag O_NOLARGEFILE if linux flag O_LARGEFILE is NOT set. */
+  if ((O_LARGEFILE & uflags) == 0) zflags |= ZOS_SYS_O_NOLARGEFILE;
 
-  /* TODO: Allow O_NOLARGEFILE.  */
 #undef shift_up
 #undef shift_down
 
@@ -293,12 +295,9 @@ __map_common_oflags_from_zos (int zflgs)
     }
 
 #define shift_up(flg)							\
-  flags |= (zflags & (flg)) << validate_shift ((flg), ZOS_SYS_##flg)
+  flags |= (zflags & (ZOS_SYS_##flg)) << validate_shift ((flg), ZOS_SYS_##flg)
 #define shift_down(flg)							\
-  flags |= (zflags & (flg)) >> validate_shift (ZOS_SYS_##flg, (flg))
-
-  /* TODO: Allow O_NOLARGEFILE.  */
-  flags &= ~ZOS_SYS_O_NOLARGEFILE;
+  flags |= (zflags & (ZOS_SYS_##flg)) >> validate_shift (ZOS_SYS_##flg, (flg))
 
   shift_down (O_CREAT);
   shift_up (O_EXCL);
@@ -307,10 +306,11 @@ __map_common_oflags_from_zos (int zflgs)
   shift_up (O_APPEND);
   shift_up (O_NONBLOCK);
   if ((ZOS_SYS_O_SYNC & zflags) == ZOS_SYS_O_SYNC) flags |= O_SYNC;
-  shift_up (O_LARGEFILE);
   /* z/OS TODO: Is this appropriate?  */
   if ((ZOS_SYS_O_ASYNCSIG & zflags) == ZOS_SYS_O_ASYNCSIG)
     flags |= O_ASYNC;
+  /* Set linux flag O_LARGEFILE if z/OS flag O_NOLARGEFILE is NOT set. */
+  if ((ZOS_SYS_O_NOLARGEFILE & zflags) == 0) flags |= O_LARGEFILE;
 
 #undef validate_shift
 #undef shift_up
@@ -881,7 +881,10 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
 
     case F_DUPFD:
     case F_SETFD:
+    case F_SETFL:
       real_arg = (int32_t) (intptr_t) arg;
+      if (cmd == F_SETFL)
+        real_arg = __map_common_oflags_to_zos (real_arg);
       /* TODO: Maybe provide a define for FD_CLOFORK.  */
       break;
 
@@ -899,7 +902,6 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
       break;
 
     /* z/OS TODO: The rest of these.  */
-    case F_SETFL:
 
     /* case F_GETLK64:  */
     case F_GETLK:
