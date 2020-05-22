@@ -37,7 +37,7 @@ override inhibit-unix-syscalls = yes
 ifeq ($(subdir),misc)
 sysdep_routines += storage mmap-anon zos-futex \
 		   syscall-wrapper estaex estaex-handler sir sir_entry \
-		   tagging loadhfs
+		   tagging loadhfs prctl
 # Install bits/bpxystat.h, which is required by our stat.h
 sysdep_headers += bits/bpxystat.h
 endif
