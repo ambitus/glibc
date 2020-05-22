@@ -140,10 +140,13 @@ _dl_start_user:\n\
 	lg	%r4, 0(%r4,%r12)\n\
 	# Load the real arguments\n\
 	lgr	%r1, %r9\n\
+	# Mark the low bit of r1 to indicate that\n\
+	# the dynamic linker has already run.\n\
+	oill	%r1, 1\n\
 	# Jump to the user's entry point (saved in %r8).\n\
 	br	%r8\n\
 .Lstack_setup:\n\
-	stmg    %r14, %r12, 8(%r13)\n\
+	stmg	%r14, %r12, 8(%r13)\n\
 	# Record that %r2 doesn't contain our ehdr since we jumped.\n\
 	lghi	%r2, 0\n\
 	# Set up a stack\n\

@@ -95,16 +95,16 @@ _start:
 	TODO: Do we need to do this? Do we need to restore them?  */
 	stmg    %r14, %r12, 8(%r13)
 
+	/* Prevent the value we got in %r1 from being clobbered
+	   by the storage call later.  */
+	lgr	%r3, %r1	# arg_info
+
 	/* Check the above-mentioned hack.  */
 	tmll	%r1, 1
-	je	.Lskip_setup
+	jne	.Lskip_setup
 
 	/* Static applications get NULL for rtld_fini.  */
 	lghi	%r4, 0
-
-	/* Prevent the value we got in %r1 from being clobbered
-	   by the storage call.  */
-	lgr	%r3, %r1	# arg_info
 
 	/* Obtain storage
 
@@ -192,6 +192,7 @@ _start:
 			      stack_end)  */
 
 .Lskip_setup:
+	nill	%r3, 65534		# Clear low bit of arg_info.
 #ifdef PIC
 	larl	%r2, main@GOTENT
 	lg	%r2,0(%r2)
