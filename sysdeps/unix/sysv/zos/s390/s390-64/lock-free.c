@@ -248,7 +248,7 @@ __lfl_initialize (lfl_list_t *list, lfl_list_type type,
    This algorithm is strange, we need to give our callers a fairly
    comprehensive snapshot of the local state of the list when we finish
    traversing it, which means many return values.  */
-static uint64_t
+static bool
 lfl_find (uint64_t key,
 	  lfl_node_t **ret_prev,
 	  lfl_tagged_marked_ptr *ret_prev_body,
@@ -294,7 +294,7 @@ lfl_find (uint64_t key,
 	      ret_curr_body->tag = curr_tag;
 	      *ret_curr_val = 0;  /* This is arbitrary, shouldn't be
 				     examined.  */
-	      return 0;
+	      return false;
 	    }
 
 	  /* Get the the next node ptr, check if current node is
@@ -368,7 +368,7 @@ lfl_find (uint64_t key,
 
 		  /* Return false if the node fails our acceptance
 		     criteria.  */
-		  return accepted ? key : 0;
+		  return accepted;
 		}
 	      prev = curr;
 	    }
@@ -399,9 +399,9 @@ __lfl_insert (uint64_t key, uint64_t val, lfl_list_t *list)
       /* If we find a node with the same key:
            * If we're a set, remove and replace the entry.
 	   * If we're a wait queue, we're good.  */
-      uint64_t res = lfl_find (key, &prev, &prev_body, &curr_body,
-			       &found_val, false, NULL, NULL, list);
-      if (list->type == lfl_set && res == key)
+      bool res = lfl_find (key, &prev, &prev_body, &curr_body,
+			   &found_val, false, NULL, NULL, list);
+      if (res && list->type == lfl_set)
 	{
 	  /* We don't care about return value.  */
 	  __lfl_remove (key, list);
@@ -437,7 +437,7 @@ __lfl_get (uint64_t key, lfl_list_t *list)
     return 0;
 
   if (lfl_find (key, &prev, &prev_body, &curr_body, &found_val,
-		true, NULL, NULL, list) == key)
+		true, NULL, NULL, list))
     return found_val;
   return 0;
 }
@@ -458,12 +458,13 @@ do_remove (uint64_t key, lfl_action action, void *cmp_val,
   lfl_tagged_marked_ptr prev_body, curr_body;
   uint64_t found_val, removed_val;
   uintptr_t insert_ptr = (uintptr_t) to_insert;
+  end_node = end_node ?: to_insert;
 
   for (;;)
     {
       /* Return 0 if the key isn't in the set.  */
-      if (lfl_find (key, &prev, &prev_body, &curr_body, &found_val,
-		    true, action, cmp_val, list) != key)
+      if (!lfl_find (key, &prev, &prev_body, &curr_body, &found_val,
+		     true, action, cmp_val, list))
 	return 0;
 
       /* If we have been supplied a sublist that will be inserted into
@@ -479,7 +480,7 @@ do_remove (uint64_t key, lfl_action action, void *cmp_val,
       /* Try to mark the found node (and maybe insert one). If we
 	 can't, then start over.  */
       if (!atomic_cas_next_release (&((lfl_node_t *)
-				      curr_body.nextptr)->next,
+				      prev_body.nextptr)->next,
 				    curr_body.nextptr, curr_body.tag,
 				    insert_ptr | LFL_MARK,
 				    curr_body.tag + 1))
