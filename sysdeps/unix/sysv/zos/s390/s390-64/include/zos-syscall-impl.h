@@ -2457,7 +2457,11 @@ typedef void (*__bpx4spm_t) (const int32_t *how,
 /* Documentation is somewhat unclear and might suggest that params 2 and
    3 are actually 31-bit pointers to 8-byte areas, not 64-bit
    pointers.
-   TODO: IMPORTANT: Test this.  */
+   TODO: IMPORTANT: Test this.
+   NOTE: This syscall should not be moved out of this header,
+   because it is used extensively via the syscall macros in parts
+   of the library we would rather not touch.  */
+
 static inline int
 __zos_sys_sigprocmask (int *errcode, int how, const sigset_t *set,
 		       sigset_t *oset)
@@ -2506,6 +2510,22 @@ __zos_sys_sigprocmask (int *errcode, int how, const sigset_t *set,
     kern_to_user_sigset (oset, osigset);
 
   return retval;
+}
+
+/* Just turn this into a call to sigprocmask, since we don't have
+   rt signals. This is implemented because it is used in some files
+   we would rather not modify.
+
+   NOTE: This syscall should not be moved out of this header,
+   because it is used extensively via the syscall macros in parts
+   of the library we would rather not touch.  */
+
+static inline int
+__zos_sys_rt_sigprocmask (int *errcode, int how,
+			  const sigset_t *set, sigset_t *oset,
+			  size_t sigsetsize __attribute__ ((unused)))
+{
+  return __zos_sys_sigprocmask (errcode, how, set, oset);
 }
 
 /* The signal user data is described as being 4 bytes large but

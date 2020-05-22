@@ -25,7 +25,11 @@
 int
 __sigprocmask (int how, const sigset_t *set, sigset_t *oset)
 {
-  /* NOTE: If we ever make changes to this function, duplicate
+  /* NOTE: For now, no changes should be made to this function.
+     Instead, all changes should go into the direct syscall wrapper,
+     because it is used extensively via the syscall macros.  */
+
+  /* NOTE: If we ever DO make changes to this function, duplicate
      the work inside of the relevant functions in
      internal-signals.h.  */
 
