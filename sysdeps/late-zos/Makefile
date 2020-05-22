@@ -39,3 +39,7 @@ endif
 ifeq ($(subdir),elf)
 sysdep_routines := $(filter-out dl-vdso,$(sysdep_routines))
 endif
+
+ifeq ($(subdir),malloc)
+CFLAGS-malloc.c := $(filter-out -DMORECORE_CLEARS=2,$(CFLAGS-malloc.c))
+endif

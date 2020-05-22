@@ -77,4 +77,8 @@ $(objpfx)S$(start-installed-name): $(objpfx)start.os $(objpfx)abi-note.o \
 
 endif
 
+ifeq ($(subdir),malloc)
+CFLAGS-malloc.c += -DMORECORE_CLEARS=1
+endif
+
 endif	# in-Makerules
