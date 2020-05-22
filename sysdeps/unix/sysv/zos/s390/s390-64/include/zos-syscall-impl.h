@@ -2962,5 +2962,26 @@ __zos_sys_uname (int *errcode, struct utsname *buf)
   return retval;
 }
 
+/* z/OS TODO: Implement this properly, maybe split into its own file
+   and replace all inline syscall uses.  */
+
+static inline int
+__zos_sys_set_robust_list (int *errcode, void *head_ptr, size_t len)
+{
+  SHIM_NOT_YET_IMPLEMENTED ("set_robust_list is a dummy");
+  *errcode = ENOSYS;
+  return -1;
+}
+
+/* z/OS TODO: Implement this properly, maybe split into its own file
+   and replace all inline syscall uses.  */
+
+static inline int
+__zos_sys_futex (int *errcode, ...)
+{
+  SHIM_NOT_YET_IMPLEMENTED ("futex is a dummy");
+  *errcode = ENOSYS;
+  return -1;
+}
 
 #endif /* !_ZOS_DECL_H */
