@@ -166,6 +166,8 @@ set_up_signals (void)
   /* z/OS TODO: Check for errors here.  */
 }
 
+/* NOTE: arg_info is a pointer to the start of where the program args
+   and envs are on the stack.  */
 
 int
 __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
@@ -199,13 +201,12 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
      ourselves as an ASCII program. Args and envs are copied onto the
      stack.  */
   cookie = ESSENTIAL_PROC_INIT (alloca, arg_info, set_up_signals, NULL);
-  /* Skip the unused ELF header word.  */
-  cookie += sizeof (ElfW(Ehdr) *);
   _dl_psuedo_aux_init ();
 #endif
 
-  argc = (int) *(long int *) cookie;
-  args_and_envs = (char **) ((long int *) cookie + 1);
+  /* Skip the unused ELF header word.  */
+  argc = (int) *((long int *) cookie + 1);
+  args_and_envs = (char **) ((long int *) cookie + 2);
 
   /* Obtain storage for and initialize the major global structures.  */
   global_structures_init ();
