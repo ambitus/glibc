@@ -166,6 +166,7 @@ translate_and_copy_args (void *mem,
 #define _dl_min_init()							\
   do									\
     {									\
+      static uintptr_t randval = 0x7f7f7f7f;				\
       uid_t uid = 0;							\
       gid_t gid = 0;							\
       									\
@@ -183,7 +184,8 @@ translate_and_copy_args (void *mem,
       GLRO(dl_fpu_control) = 0;						\
       /* z/OS TODO: IMPORTANT: For security, we need 16 random bits.	\
 	 Find some.  */							\
-      _dl_random = (void *) 0x7f7f7f7f;					\
+      /* _dl_random must point to a uintptr_t-sized value.  */		\
+      _dl_random = &randval;						\
       									\
       uid ^= __getuid ();						\
       uid ^= __geteuid ();						\
