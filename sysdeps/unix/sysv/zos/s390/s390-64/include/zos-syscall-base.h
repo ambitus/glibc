@@ -84,6 +84,7 @@ hidden_proto (__bpxk_syscall)
 #  define __bpxk_syscall __libc_bpxk_syscall
 # endif
 #else
+# define __bpxk_syscall __csu_bpxk_syscall
 extern void __bpxk_syscall (void *, ...) attribute_hidden;
 #endif
 

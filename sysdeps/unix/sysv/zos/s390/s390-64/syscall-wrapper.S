@@ -36,6 +36,15 @@
 #if IS_IN (libc) || IS_IN (rtld)
 #include <sysdep.h>
 
+# ifndef ZOS_HIDDEN_SYSCALL
+strong_alias (__bpxk_syscall, __libc_bpxk_syscall)
+.globl __libc_bpxk_syscall
+hidden_def (__bpxk_syscall)
+# else
+#  define __bpxk_syscall __csu_bpxk_syscall
+.hidden __csu_bpxk_syscall
+# endif
+
    /* This code defines a wrapper that is called as a normal function
       from C, with the address of a syscall routine and all necessary
       args. The wrapper wraps the syscall, smoothing over differences
@@ -121,11 +130,4 @@ __bpxk_syscall:
 
 	cfi_endproc
 	.size __bpxk_syscall,.-__bpxk_syscall
-# ifndef ZOS_HIDDEN_SYSCALL
-strong_alias (__bpxk_syscall, __libc_bpxk_syscall)
-.globl __libc_bpxk_syscall
-hidden_def (__bpxk_syscall)
-# else
-.hidden __bpxk_syscall
-# endif
 #endif
