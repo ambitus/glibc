@@ -78,7 +78,13 @@ __loadhfs (char *path)
 
   /* z/OS TODO: some weird stuff with the return code for AMODE31
      progs.  */
-  return entry;
+
+  /* Mask off low bit because our entry points are sometimes off by
+     one for some reason.
+
+     z/OS TODO: Figure out why we sometimes get entry points that are
+     off by one.  */
+  return (void *) ((uintptr_t) entry & ~1UL);
 }
 #if !defined (ZOS_HIDDEN_SYSCALL) && (IS_IN (libc) || IS_IN (rtld))
 hidden_def (__loadhfs)
