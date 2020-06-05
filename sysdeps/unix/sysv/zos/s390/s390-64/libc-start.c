@@ -205,8 +205,8 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 #endif
 
   /* Skip the unused ELF header word.  */
-  argc = (int) *((long int *) cookie + 1);
-  args_and_envs = (char **) ((long int *) cookie + 2);
+  argc = (int) *(long int *) ((uintptr_t) cookie + 8);
+  args_and_envs = (char **) ((uintptr_t) cookie + 16);
 
   /* Obtain storage for and initialize the major global structures.  */
   global_structures_init ();
