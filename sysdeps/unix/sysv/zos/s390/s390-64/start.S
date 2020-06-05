@@ -91,10 +91,6 @@ _start:
 	cfi_startproc
 	cfi_undefined (r14)
 
-	/* Save initial registers.
-	TODO: Do we need to do this? Do we need to restore them?  */
-	stmg    %r14, %r12, 8(%r13)
-
 	/* Prevent the value we got in %r1 from being clobbered
 	   by the storage call later.  */
 	lgr	%r3, %r1	# arg_info
@@ -151,7 +147,7 @@ _start:
 	st	%r14, 4(%r13)
 
 	/* Initialize NAB  */
-	la	%r14, 200(%r13)
+	la	%r14, 152(%r13)
 	stg	%r14, 136(%r13)
 	mvc	144(8, %r13), 136(%r13)
 
@@ -161,6 +157,7 @@ _start:
 	   entry point, or zero if we don't have an interpreter.  */
 	.hidden  __load_pt_interp
 	brasl	%r14, __load_pt_interp
+	mvc	136(8, %r13), 144(%r13)	/* Restore from NAB.  */
 	ltgr	%r15, %r15
 	jz	.Lno_interp
 
@@ -179,9 +176,6 @@ _start:
 #ifdef PIC
 	/* We need an interpreter, trap if we don't have one.  */
 	.long	0
-#else
-	/* Restore from NAB.  */
-	mvc	136(8, %r13), 144(%r13)
 #endif
 
 	/* Set up args for __libc_start_main. Our __libc_start_main
@@ -193,6 +187,9 @@ _start:
 
 .Lskip_setup:
 	nill	%r3, 65534		# Clear low bit of arg_info.
+	lg	%r1, 136(%r13)		# Load arg pointer into r1.
+	la	%r15, 48(%r1)
+	stg	%r15, 136(%r13)		# Reserve stack space for args.
 #ifdef PIC
 	larl	%r2, main@GOTENT
 	lg	%r2,0(%r2)
@@ -202,9 +199,7 @@ _start:
 	larl	%r5, __libc_csu_init	# init
 	larl	%r6, __libc_csu_fini	# fini
 	lgr	%r7, %r13		# stack_end
-	stmg	%r2, %r7, 152(%r13)	# Store params to arglist.
-
-	la	%r1, 152(%r13)	/* load arg pointer into r1.  */
+	stmg	%r2, %r7, 0(%r1)	# Store params to arglist.
 
 #ifdef PIC
 	brasl	%r14, __libc_start_main@plt
