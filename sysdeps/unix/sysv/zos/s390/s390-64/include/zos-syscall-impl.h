@@ -2980,8 +2980,7 @@ static inline int
 __zos_sys_futex (int *errcode, ...)
 {
   SHIM_NOT_YET_IMPLEMENTED ("futex is a dummy");
-  *errcode = ENOSYS;
-  return -1;
+  return 0;
 }
 
 #endif /* !_ZOS_DECL_H */
