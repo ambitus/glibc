@@ -300,6 +300,7 @@ __pthread_initialize_minimal_internal (void)
 #ifdef __NR_futex
 # ifndef __ASSUME_FUTEX_CLOCK_REALTIME
     {
+#  ifndef __ZOS__  /* z/OS TODO: Get rid of this.  */
       int word = 0;
       /* NB: the syscall actually takes six parameters.  The last is the
 	 bit mask.  But since we will not actually wait at all the value
@@ -313,6 +314,7 @@ __pthread_initialize_minimal_internal (void)
       assert (INTERNAL_SYSCALL_ERROR_P (word, err));
       if (INTERNAL_SYSCALL_ERRNO (word, err) != ENOSYS)
 	__set_futex_clock_realtime ();
+#  endif
     }
 # endif
 #endif
