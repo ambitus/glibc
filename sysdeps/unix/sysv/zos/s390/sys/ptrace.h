@@ -212,6 +212,7 @@ struct __ptrace_gpr_req
 #define PT_GPR_WGPR14	0x00020000	/* Write GPR14.  */
 #define PT_GPR_WGPR15	0x00010000	/* Write GPR15.  */
 #define PT_GPR_WPSW	0x00008000	/* Write PSW right half.  */
+  __uint8_t reserved[12];
   __uint32_t gprs[16];		/* GPR low half values.  */
   __uint32_t crs[16];		/* CR values.  */
   __uint32_t psw_mask;		/* PSW first half.  */
@@ -226,9 +227,19 @@ struct __ptrace_gprh_req
   __uint32_t write_regs;	/* Reg bitmask, only used by PT_WRITE_GPRH.
 				   Uses same flags as __ptrace_gpr_req,
 				   except for the PSW bit.  */
+  __uint8_t reserved[12];
   __uint32_t gprs[16];		/* GPR high half values.  */
 };
 
+struct __ptrace_fpr_req {
+  __uint32_t write_regs;	/* Reg bitmask, only used by PT_WRITE_FPR.
+				   Uses same flags as __ptrace_gpr_req,
+				   except for the PSW bit.  */
+  #define PT_FPR_WFPC	0x00008000	/* Write FPC.  */
+  __uint8_t reserved[12];
+  double fprs[16];		/* FPR.  */
+  __uint32_t PTBR_FPR_FPC; /*Floating Point Control Register */
+};
 /* Structure used for a single ptrace request in a PT_BLOCKREQ
    request.  */
 
@@ -263,6 +274,232 @@ struct __ptrace_blockreq
   ((struct __ptrace_blockreq_elem *)					\
    ((struct __ptrace_blockreq *) (blkrq) + 1))
 #endif
+
+/* Structure for PT_Read_Block and PT_Write_Block. */
+struct __ptrace_rw_block {
+  __uint32_t address;
+  __uint32_t length;
+  __uint8_t reserved1[8];
+#if __glibc_c99_flexarr_available
+  __extension__ __uint8_t data __flexarr; /* data area.  */
+#endif
+};
+
+/* rw_block request list manipulation macros.  */
+#if __glibc_c99_flexarr_available
+# define __PTRACE_RW_BLOCK_DATA(rw_block_rq) ((rw_block_rq)->data)
+#else
+# define __PTRACE_RW_BLOCK_DATA(rw_block_rq)		\
+  ((__uint8_t *)					\
+   ((struct __ptrace_rw_block *) (rw_block_rq) + 1))
+#endif
+
+struct __ptrace_rw_block64 {
+  __uint64_t address;
+  __uint32_t length;
+  __uint8_t reserved1[4];
+#if __glibc_c99_flexarr_available
+  __extension__ __uint8_t data __flexarr; /* data area.  */
+#endif
+};
+
+/* rw_block request list manipulation macros.  */
+#if __glibc_c99_flexarr_available
+# define __PTRACE_RW_BLOCK64_DATA(rw_block64_rq) ((rw_block64_rq)->data)
+#else
+# define __PTRACE_RW_BLOCK64_DATA(rw_block64_rq)	\
+  ((__uint8_t *)					\
+   ((struct __ptrace_rw_block64 *) (rw_block64_rq) + 1))
+#endif
+
+struct __ptrace_rw32_data {
+  __uint32_t address;
+  __uint32_t data;
+};
+
+struct __ptrace_rw32_data64 {
+  __uint64_t address;
+  __uint32_t data;
+};
+
+struct __ptrace_rw32_instructions {
+  __uint32_t address;
+  __uint32_t data;
+};
+
+struct __ptrace_rw32_instructions64 {
+  __uint64_t address;
+  __uint32_t data;
+};
+
+#define PTUAREA_MINSIG  1
+#define PTUAREA_MAXSIG  1024
+#define PTUAREA_INTCODE  1025 /* Request for program interrupt code */
+#define PTUAREA_ABENDCC  1026 /* Request for abend completion code */
+#define PTUAREA_ABENDRC  1027 /* Request for abend reason code */
+#define PTUAREA_SIGCODE  1028 /* Request for signal code */
+#define PTUAREA_ILC  1029 /* Request for instruction length code */
+#define PTUAREA_PRFLAGS  1030 /* Request for process flags */
+struct __ptrace_read_user_field {
+  __uint32_t offset;
+  __uint32_t data;
+};
+
+struct __ptrace_read_user_fields {
+  __uint32_t count;
+  __uint32_t reserved1;
+  #if __glibc_c99_flexarr_available
+  __extension__ struct __ptrace_read_user_field fields __flexarr;
+#endif
+};
+
+/* read_user_fields list manipulation macros.  */
+#if __glibc_c99_flexarr_available
+# define __PTRACE_READ_USER_DATA(read_user_fields_rq) ((read_user_fields_rq)->fields)
+#else
+# define __PTRACE_READ_USER_DATA(read_user_fields_rq)	\
+  ((struct __ptrace_read_user_field *)					\
+   ((struct __ptrace_read_user_fields *) (read_user_fields_rq) + 1))
+#endif
+
+struct __ptrace_loaded_module_info {
+  __uint32_t offset_to_next;
+  __uint32_t unused1;
+  __uint32_t text_origin;
+  __uint32_t text_size;
+  __uint8_t text_subpool;
+  __uint8_t text_flags;
+#define TEXT_IS_WRITABLE 0x80
+#define TEXT_IS_FROM_MVS 0x40
+#define TEXT_HAS_MORE_THAN_ONE_EXTENT 0x20
+  __uint16_t offset_to_extension; 
+  __uint32_t unused2;
+  __uint32_t unused3;
+  __uint8_t unused4;
+  __uint8_t unused5;
+  __uint16_t reserved;
+#if __glibc_c99_flexarr_available
+  __extension__ char pathname __flexarr;
+#endif
+};
+
+#if __glibc_c99_flexarr_available
+# define __PTRACE_LOADED_MODULE_PATHNAME(lminfo_rq) ((lminfo_rq)->pathname)
+#else
+# define __PTRACE_RW_BLOCK_DATA(lminfo_rq)	\
+  ((char *)					\
+   ((struct __ptrace_read_user_fields *) (lminfo_rq) + 1))
+#endif
+
+
+struct __ptrace_loaded_module_info_text_extents {
+  __uint16_t count;
+  __uint16_t reserved1; /* reserved */
+  __uint32_t text_origin[15];
+  __uint32_t text_size[15];
+};
+
+struct __ptrace_thread_info { /* PTPT */
+  __uint32_t offset_to_next;
+  __uint8_t thread_id[8];
+  __uint8_t reserved[16];
+  uint8_t blocked_signal_mask[8];
+  __uint32_t state; /* Thread state flag byte */
+#define THREAD_IS_ACTIVE 0x80000000
+  /* The only valid information for a dead thread is: PTPTNEXT, PTPTTHID, PTPTSTATEACTIVE=0, PTPTKERNELPTHREAD, PTPTEXITSTATUS */
+#define THREAD_IS_ASYNCHRONOUS 0x40000000 
+#define THREAD_HAS_CANCEL_PENDING 0x20000000
+  __uint32_t kernel; /* Thread kernel attribute byte */
+#define THREAD_KERNEL_IS_DETACHED 0x80000000
+#define THREAD_KERNEL_IS_MEDIUMWEIGHT 0x40000000
+#define THREAD_KERNEL_IS_ASYNCHRONOUS 0x20000000
+#define THREAD_KERNEL_WAS_CREATED_BY_PTHREAD_CREATE 0x10000000
+#define THREAD_KERNEL_IS_HELD 0x00800000 
+  __uint32_t exit_status;
+  __uint8_t pending_signal_mask[8];
+  __uint32_t exit_status_high;
+  __uint32_t reserved2;
+};
+
+struct __ptrace_thread_info_extended {
+  __uint32_t offset_to_next; /* Offset to next element */
+  __uint8_t thread_id[8];
+  __uint32_t tcb;
+  __uint32_t otcb;
+  __uint8_t blocked_signal_mask[8];
+  __uint32_t state;
+  __uint32_t kernel;
+  __uint32_t exit_status;
+  __uint8_t pending_signal_mask[8];
+  __uint32_t pid;
+  __uint16_t asid;
+  __uint16_t flags;
+#define THREAD_IS_IPT 0x8000
+#define THREAD_INFO_IS_INCOMPLETE0 x4000
+  __uint32_t oapb;
+  __uint32_t exit_status_high;
+};
+
+struct __ptrace_process_and_thread_info {
+  char id[4];
+  __uint32_t offset_to_next;
+  __uint32_t offset_to_thread_info;
+  __uint32_t pid;
+  __uint8_t pending_signal_mask[8]; /* Signals pending at the process */
+  __uint8_t blocked_signal_mask[8]; /* blocked signals at process */
+  __uint32_t total_thread_count;
+  __uint32_t current_thread_count;
+  __uint32_t size_of_thread_info_extended;
+  __uint32_t reserved;
+#if __glibc_c99_flexarr_available
+  __extension__ struct __ptrace_thread_info_extended thread_info_array __flexarr;
+#endif
+};
+
+/* not sure this should be used, because maybe you are supposed to use the offsets */
+#if __glibc_c99_flexarr_available
+# define __PTRACE_THREAD_INFO_EXTENDED(process_and_thread_info) ((lminfo_rq)->thread_info_array)
+#else
+# define __PTRACE_RW_BLOCK_DATA(process_and_thread_info)	\
+  ((struct __ptrace_thread_info_extended *)					\
+   ((struct __ptrace_process_and_thread_info *) (process_and_thread_info) + 1))
+#endif
+
+struct __ptrace_explain_info { /* registers at entry to CEEEVDBG */
+  __uint32_t r1;
+  __uint32_t r12;
+  __uint32_t r13;
+  __uint32_t reserved1;
+  __uint64_t r1_64;
+  __uint64_t r12_64;
+  __uint64_t r13_64;
+};
+
+struct __ptrace_program_recovery_parameters {
+  __uint32_t address_of_registers;
+  __uint32_t address_of_psw;
+  __uint16_t program_interrupt_code;
+  __uint16_t signal_number_to_raise;
+  __uint32_t flags;
+#define PTPR_INSTRUCTION_COUNTER_HAS_BEEN_MODIFIED 0x80000000
+#define PTPR_REGISTERS_HAVE_BEEN_MODIFIED 0x40000000
+#define PTPR_RAISE_SIGNAL 0x20000000
+#define PTPR_BYPASS_SIGNAL 0x10000000
+#define PTPR_INSTRUCTION_LENGTH_CODE_EXISTS 0x08000000
+#define PTPR_HIGH_REGISTERS_EXIST 0x04000000
+#define PTPR_HIGH_REGISTERS_HAVE_BEEN_MODIFIED 0x02000000
+#define PTPI_USE_64BITS_FOR_PSW_AND_REGISTERS 0x01000000
+  __uint8_t abend_code;
+  __uint8_t abend_completion_code[3];
+  __uint32_t abend_reason_code;
+  __uint8_t instruction_length_code;
+  __uint8_t reserved[3];
+  __uint32_t address_of_high_registers;
+  __uint64_t address_of_registers64;
+  __uint64_t address_of_psw64;
+  __uint64_t address_of_high_registers64;
+  __uint8_t reserved2[8];
+};
 
 /* Perform process tracing functions.  REQUEST is one of the values
    above, and determines the action to be taken.
