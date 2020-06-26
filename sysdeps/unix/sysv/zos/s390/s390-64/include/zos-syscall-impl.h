@@ -1771,7 +1771,14 @@ __zos_sys_getcwd (int *errcode, char *buf, size_t size)
 	    &reason_code);
 
   if (retval > 0)
-    tr_a_until_len_in_place (buf, retval);
+    {
+      tr_a_until_len_in_place (buf, retval);
+
+      /* The length that the syscall gives us does not include the null
+	 byte at the end, which trips up all kinds of things. Add one to
+	 the length to provide a more normal interface.  */
+      retval += 1;
+    }
 
   return retval;
 }
