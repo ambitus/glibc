@@ -889,11 +889,8 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
       break;
 
     case F_SETTAG:
-      real_arg_ptr = &arg;
-      break;
-
     case F_CONTROL_CVT:
-      real_arg_ptr = arg;
+      real_arg_ptr = &arg;
       break;
 
     case F_SETFL:
