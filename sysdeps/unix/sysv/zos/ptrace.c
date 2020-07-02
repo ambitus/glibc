@@ -37,23 +37,40 @@ ptrace (enum __ptrace_request request, ...)
 {
   va_list ap;
   pid_t pid;
-  void *addr, *data, *buff;
-  int32_t retval, retcode = 0, reason_code, req = request;
+  void *addr, *data, *buff, *first;
+  int32_t intval, retval, retcode = 0, reason_code, req = request;
 
   va_start (ap, request);
   pid = va_arg (ap, pid_t);
-  addr = va_arg (ap, void *);
+
+  /* A few of the request types have different-sized first operands.  */
+  switch (request)
+    {
+    case PT_READ_GPR:
+    case PT_READ_GPRH:
+    case PT_WRITE_GPR:
+    case PT_WRITE_GPRH:
+    case PT_EVENTS:
+    case PT_READ_U:
+      intval = va_arg (ap, int32_t);
+      first = &intval;
+      break;
+
+    default:
+      addr = va_arg (ap, void *);
+      first = &addr;
+      break;
+    }
+
   data = va_arg (ap, void *);
   buff = va_arg (ap, void *);
   va_end (ap);
 
-  BPX_CALL (ptrace, __bpx4ptr_t, &req, &pid, &addr, &data, &buff,
+  BPX_CALL (ptrace, __bpx4ptr_t, &req, &pid, first, &data, &buff,
 	    &retval, &retcode, &reason_code);
 
   if (retcode != 0)
-    {
-      __set_errno (retcode);
-    }
+    __set_errno (retcode);
 
   return retval;
 }

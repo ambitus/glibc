@@ -190,7 +190,116 @@ enum __ptrace_request
   PT_RECOVER = 99,
 };
 
+/* Register values for use with non-blockreq
+   PT_READ/WRITE_GPR/GPRH/FPR/VR.
+   z/OS TODO: These are so many short definitions, they could
+   interfere with some innocent programs. Should we hide them
+   under __USE_MISC? Rename them?  */
+#if 0
+#define PT_GPR0		0
+#define PT_GPR1		1
+#define PT_GPR2		2
+#define PT_GPR3		3
+#define PT_GPR4		4
+#define PT_GPR5		5
+#define PT_GPR6		6
+#define PT_GPR7		7
+#define PT_GPR8		8
+#define PT_GPR9		9
+#define PT_GPR10	10
+#define PT_GPR11	11
+#define PT_GPR12	12
+#define PT_GPR13	13
+#define PT_GPR14	14
+#define PT_GPR15	15
+#define PT_FPR0		16
+#define PT_FPR1		17
+#define PT_FPR2		18
+#define PT_FPR3		19
+#define PT_FPR4		20
+#define PT_FPR5		21
+#define PT_FPR6		22
+#define PT_FPR7		23
+#define PT_FPR8		24
+#define PT_FPR9		25
+#define PT_FPR10	26
+#define PT_FPR11	27
+#define PT_FPR12	28
+#define PT_FPR13	29
+#define PT_FPR14	30
+#define PT_FPR15	31
+#define PT_FPC		32
+#define PT_PSW		40
+#define PT_PSW0		40
+#define PT_PSW1		41
+#define PT_CR0		42
+#define PT_CR1		43
+#define PT_CR2		44
+#define PT_CR3		45
+#define PT_CR4		46
+#define PT_CR5		47
+#define PT_CR6		48
+#define PT_CR7		49
+#define PT_CR8		50
+#define PT_CR9		51
+#define PT_CR10		52
+#define PT_CR11		53
+#define PT_CR12		54
+#define PT_CR13		55
+#define PT_CR14		56
+#define PT_CR15		57
+#define PT_GPRH0	58
+#define PT_GPRH1	59
+#define PT_GPRH2	60
+#define PT_GPRH3	61
+#define PT_GPRH4	62
+#define PT_GPRH5	63
+#define PT_GPRH6	64
+#define PT_GPRH7	65
+#define PT_GPRH8	66
+#define PT_GPRH9	67
+#define PT_GPRH10	68
+#define PT_GPRH11	69
+#define PT_GPRH12	70
+#define PT_GPRH13	71
+#define PT_GPRH14	72
+#define PT_GPRH15	73
+#define PT_VR0		74
+#define PT_VR1		75
+#define PT_VR2		76
+#define PT_VR3		77
+#define PT_VR4		78
+#define PT_VR5		79
+#define PT_VR6		80
+#define PT_VR7		81
+#define PT_VR8		82
+#define PT_VR9		83
+#define PT_VR10		84
+#define PT_VR11		85
+#define PT_VR12		86
+#define PT_VR13		87
+#define PT_VR14		88
+#define PT_VR15		89
+#define PT_VR16		90
+#define PT_VR17		91
+#define PT_VR18		92
+#define PT_VR19		93
+#define PT_VR20		94
+#define PT_VR21		95
+#define PT_VR22		96
+#define PT_VR23		97
+#define PT_VR24		98
+#define PT_VR25		99
+#define PT_VR26		100
+#define PT_VR27		101
+#define PT_VR28		102
+#define PT_VR29		103
+#define PT_VR30		104
+#define PT_VR31		105
+#endif
+
 /* User area offsets.  */
+
 #define PTUAREA_MINSIG	1
 #define PTUAREA_MAXSIG	1024
 #define PTUAREA_INTCODE	1025	/* Request for program interrupt code */
@@ -199,6 +308,10 @@ enum __ptrace_request
 #define PTUAREA_SIGCODE	1028	/* Request for signal code */
 #define PTUAREA_ILC	1029	/* Request for instruction length code */
 #define PTUAREA_PRFLAGS	1030	/* Request for process flags */
+
+/* Maximum length that may be required by the requests that take a buffer
+   of a given length.  */
+#define PTMAXIMUMLENGTH 64000
 
 /* Structure of a single element of the list returned by PT_LDINFO.  */
 
