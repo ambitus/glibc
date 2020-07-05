@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <signal.h>
 #include <sysdep.h>
+#include <stdio.h>
 
 typedef void (*__bpx4ptr_t) (const int32_t *request,
 			     const int32_t *pid,
@@ -37,36 +38,22 @@ ptrace (enum __ptrace_request request, ...)
 {
   va_list ap;
   pid_t pid;
-  void *addr, *data, *buff, *first;
-  int32_t intval, retval, retcode = 0, reason_code, req = request;
+  void *addr, *buff;
+  uintptr_t data;
+  int32_t retval, retcode = 0, reason_code, req = request;
 
   va_start (ap, request);
+  /* NOTE: The documentation is wrong about the parameter sizes. It
+     suggests that addr, data, and buffer should sometimes be treated
+     as 4-byte values, when in fact they should always be treated as
+     8-byte values in 64-bit mode.  */
   pid = va_arg (ap, pid_t);
-
-  /* A few of the request types have different-sized first operands.  */
-  switch (request)
-    {
-    case PT_READ_GPR:
-    case PT_READ_GPRH:
-    case PT_WRITE_GPR:
-    case PT_WRITE_GPRH:
-    case PT_EVENTS:
-    case PT_READ_U:
-      intval = va_arg (ap, int32_t);
-      first = &intval;
-      break;
-
-    default:
-      addr = va_arg (ap, void *);
-      first = &addr;
-      break;
-    }
-
-  data = va_arg (ap, void *);
+  addr = va_arg (ap, void *);
+  data = va_arg (ap, uintptr_t);
   buff = va_arg (ap, void *);
   va_end (ap);
 
-  BPX_CALL (ptrace, __bpx4ptr_t, &req, &pid, first, &data, &buff,
+  BPX_CALL (ptrace, __bpx4ptr_t, &req, &pid, &addr, &data, &buff,
 	    &retval, &retcode, &reason_code);
 
   if (retcode != 0)
