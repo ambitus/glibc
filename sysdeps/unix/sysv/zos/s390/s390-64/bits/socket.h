@@ -99,11 +99,7 @@ typedef __socklen_t socklen_t;
 /* Get the definition of the macro to define the common sockaddr members.  */
 #include <bits/sockaddr.h>
 
-/* Structure describing a generic socket address.
-   z/OS TODO: IMPORTANT!!!! this isn't the sockaddr that the kernel uses,
-   the kernel splits the family field into length (it depends of what), and
-   family, which probably messes everything up. Figure out if we should expose
-   that, or hide it with internal structure translation.  */
+/* Structure describing a generic socket address.  */
 struct sockaddr
 {
   __SOCKADDR_COMMON (sa_);	/* Common data: address family and length.  */

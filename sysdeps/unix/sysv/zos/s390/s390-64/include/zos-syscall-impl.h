@@ -2824,31 +2824,6 @@ __zos_sys_bind (int *errcode, int fd, const struct sockaddr *addr, socklen_t len
 }
 
 
-typedef void (*__bpx4gnm_t) (const int32_t *sockd,
-                             const int32_t *operation,
-                             int32_t *addrlen,
-                             struct sockaddr *addr,
-                             int32_t *retval, int32_t *retcode,
-                             int32_t *reason_code);
-
-static inline int
-__zos_sys_getsockname (int *errcode, int fd, struct sockaddr *addr, socklen_t *len)
-{
-  int32_t retval, reason_code;
-  int32_t sockd = fd;
-  int32_t addrlen = *len;
-  int32_t operation = 2; /* getsockname */
-
-  BPX_CALL (getpeername, __bpx4gnm_t, &sockd, &operation,
-	    &addrlen, addr, &retval, errcode, &reason_code);
-
-  /* Return the actual size of the socket address structure. */
-  *len = addrlen;
-
-  return retval;
-}
-
-
 typedef void (*__bpx4opt_t) (const int32_t *sockd,
                              const int32_t *operation,
                              const int32_t *level,
