@@ -210,11 +210,6 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
      throughout the life of the program.  */
   __ipt_zos_tcb = TCB_PTR;
 
-  /* Set up an ESTAEX handler for debugging. */
-  int estaex_set = __set_estaex_handler (__estaex_handler_dump, NULL);
-  if (estaex_set != 0)
-    CRASH_NOW ();
-
 #ifdef SHARED
   /* The dynamic linker already translated our args and envs for us.  */
   cookie = arg_info;
@@ -232,6 +227,18 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Skip the unused ELF header word.  */
   argc = (int) *(long int *) ((uintptr_t) cookie + 8);
   args_and_envs = (char **) ((uintptr_t) cookie + 16);
+
+  int disable_estaex = 0;
+  for (char **envs = args_and_envs + argc + 1; *envs; envs++) {
+    if (0 == strcmp(*envs, "DISABLE_ESTAEX=YES"))
+      disable_estaex = 1;
+  }
+  /* Set up an ESTAEX handler for debugging. */
+  if (!disable_estaex) {
+    int estaex_set = __set_estaex_handler (__estaex_handler_dump, NULL);
+    if (estaex_set != 0)
+      CRASH_NOW ();
+  }
 
   /* Obtain storage for and initialize the major global structures.  */
   global_structures_init ();
