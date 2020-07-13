@@ -27,6 +27,7 @@
 #undef MAIN_AUXVEC_ARG
 #include <csu/libc-start.c>
 
+#include <ldsodefs.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -144,6 +145,21 @@ global_structures_init (void)
   __lfl_initialize (&__zos_tracked_allocs, lfl_set, node_pool);
 }
 
+#ifndef SHARED
+/* Get load address, avoiding load-time relocations.  */
+
+static inline Elf64_Addr
+startup_load_address (void)
+{
+  Elf64_Addr addr;
+
+  __asm__ (".hidden	__ehdr_start\n\t"
+	   "larl	%0, __ehdr_start\n\t"
+	   : "=d" (addr));
+
+  return addr;
+}
+#endif
 
 typedef void (*__bpx4mss_t) (void (**sir_addr) (struct sigcontext *),
 			     const uint64_t *user_data,
@@ -180,6 +196,15 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   void *cookie;
   char **args_and_envs;
   int argc;
+
+#ifndef SHARED
+  /* We always need to record our load address for TLS initialization,
+     so we need to manually record it for static programs.
+     z/OS TODO: We might need other initialization stuff, should we call
+     something like _dl_relocate_static_pie here?  */
+  struct link_map *main_map = GL(dl_ns)[LM_ID_BASE]._ns_loaded;
+  main_map->l_addr = startup_load_address ();
+#endif
 
   /* Save the IPT Task Control Block address. This will be needed
      throughout the life of the program.  */
