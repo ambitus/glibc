@@ -40,8 +40,13 @@ enum __rlimit_resource
 
   /* z/OS TODO: Once we implement a real sbrk, do something for
      RLIMIT_DATA.  */
+  RLIMIT_DATA, /* No underlying syscall so doen't choose a value here */
+#define	RLIMIT_DATA RLIMIT_DATA
+
   /* z/OS TODO: If we implement an expanding stack, do something
      for RLIMIT_STACK.  */
+  RLIMIT_STACK, /* No underlying syscall so doen't choose a value here */
+#define RLIMIT_STACK RLIMIT_STACK
 
   /* Largest core file that can be created, in bytes.  */
   RLIMIT_CORE = 4,
