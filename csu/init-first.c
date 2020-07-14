@@ -71,11 +71,7 @@ _init (int argc, char **argv, char **envp)
 #ifndef SHARED
   /* First the initialization which normally would be done by the
      dynamic linker.  */
-  /* z/OS TODO: most of this initialization is dependent on having a
-     real elf header. Disable it for now, reenable when fixed.  */
-#ifndef __ZOS__
   _dl_non_dynamic_init ();
-#endif
 #endif
 
 #ifdef VDSO_SETUP
