@@ -49,50 +49,47 @@ __setrlimit64 (enum __rlimit_resource resource,
   const struct rlimit64 *rlim_ptr;
   INTERNAL_SYSCALL_DECL (retcode);
 
-  if (rlimits == NULL) 
+  if (rlimits == NULL)
     {
       __set_errno (EFAULT);
       return -1;
     }
 
-  switch (resource) {
-  case RLIMIT_DATA:
-    /* INTENTIONAL FALLTHROUGH  */
-  case RLIMIT_STACK:
-    /* here we lie about the ablity to set an rlimit
-     * currently both stack and data allocation is
-     * static
-     * TODO: correctly set rlimit, when mechanism exists 
-     */
-    retval = 0;
-    break;
-  default:
-    if (resource == RLIMIT_CORE)
-      {
-	/* Internally RLIMIT_CORE uses 4160-byte increments, we need to
-	   convert it to the normal format.  */
-	rlim.rlim_cur = (rlimits->rlim_cur == RLIM_INFINITY
-			 ? RLIM_INFINITY : rlimits->rlim_cur * 4160);
-	rlim.rlim_max = (rlimits->rlim_max == RLIM_INFINITY
-			 ? RLIM_INFINITY : rlimits->rlim_max * 4160);
-	rlim_ptr = &rlim;
-      }
-    else
-      {
-	rlim_ptr = rlimits;
-      }
+  switch (resource)
+    {
+    case RLIMIT_DATA:
+    case RLIMIT_STACK:
+      /* Here we lie about the ablity to set an rlimit currently both stack
+	 and data allocation is static.
+	 z/OS TODO: correctly set rlimit, when mechanism exists.  */
+      return 0;
 
-    BPX_CALL (setrlimit, __bpx4srl_t, &resource_no, rlim_ptr, &retval,
-	      &retcode, &reason_code);
+    default:
+      if (resource == RLIMIT_CORE)
+	{
+	  /* Internally RLIMIT_CORE uses 4160-byte increments, we need to
+	     convert it to the normal format.  */
+	  rlim.rlim_cur = (rlimits->rlim_cur == RLIM_INFINITY
+			   ? RLIM_INFINITY : rlimits->rlim_cur * 4160);
+	  rlim.rlim_max = (rlimits->rlim_max == RLIM_INFINITY
+			   ? RLIM_INFINITY : rlimits->rlim_max * 4160);
+	  rlim_ptr = &rlim;
+	}
+      else
+	{
+	  rlim_ptr = rlimits;
+	}
 
-    if (retval != 0)
-      {
-	__set_errno (INTERNAL_SYSCALL_ERRNO (retval, retcode));
-	retval = -1;
-      }
-    break;
-  }
-  return retval;
+      BPX_CALL (setrlimit, __bpx4srl_t, &resource_no, rlim_ptr, &retval,
+		&retcode, &reason_code);
+
+      if (retval != 0)
+	{
+	  __set_errno (INTERNAL_SYSCALL_ERRNO (retval, retcode));
+	  retval = -1;
+	}
+      return retval;
+    }
 }
 weak_alias (__setrlimit64, setrlimit64)
 

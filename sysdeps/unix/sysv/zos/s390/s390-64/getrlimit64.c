@@ -45,45 +45,42 @@ __getrlimit64 (enum __rlimit_resource resource, struct rlimit64 *rlimits)
   int32_t resource_no = resource;
   INTERNAL_SYSCALL_DECL (retcode);
 
-  switch (resource) {
-  case RLIMIT_DATA:
-    /* INTENTIONAL FALLTHROUGH */ 
-  case RLIMIT_STACK:
-    /* No Underlying Syscall */
-    if (rlimits != NULL) 
-      {
-	rlimits->rlim_cur = RLIM_INFINITY; // TODO: fix this lie
-	rlimits->rlim_max = RLIM_INFINITY; // TODO: fix this lie
-      }
-    else 
-      {
-	__set_errno (EFAULT);
-	retval = -1;
-      }
+  if (rlimits == NULL)
+    {
+      __set_errno (EFAULT);
+      return -1;
+    }
 
-    break;
-  default:
-    BPX_CALL (getrlimit, __bpx4grl_t, &resource_no, rlimits, &retval,
-	      &retcode, &reason_code);
+  switch (resource)
+    {
+    case RLIMIT_DATA:
+    case RLIMIT_STACK:
+      /* These cases are not supported by the underlying syscall.  */
+      rlimits->rlim_cur = RLIM_INFINITY;  /* TODO: fix this lie.  */
+      rlimits->rlim_max = RLIM_INFINITY;  /* TODO: fix this lie.  */
+      return 0;
 
-    if (INTERNAL_SYSCALL_ERROR_P (retval, retcode))
-      {
-	__set_errno (INTERNAL_SYSCALL_ERRNO (retval, retcode));
-	retval = -1;
-      }
+    default:
+      BPX_CALL (getrlimit, __bpx4grl_t, &resource_no, rlimits, &retval,
+		&retcode, &reason_code);
 
-    /* Internally RLIMIT_CORE uses 4160-byte increments, we need to convert
-       it to the normal format.  */
-    if (rlimits != NULL && resource == RLIMIT_CORE)
-      {
-	if (rlimits->rlim_cur != RLIM_INFINITY)
-	  rlimits->rlim_cur *= 4160;
-	if (rlimits->rlim_max != RLIM_INFINITY)
-	  rlimits->rlim_max *= 4160;
-      }
-    break;
-  }
-  return retval;
+      if (INTERNAL_SYSCALL_ERROR_P (retval, retcode))
+	{
+	  __set_errno (INTERNAL_SYSCALL_ERRNO (retval, retcode));
+	  retval = -1;
+	}
+
+      /* Internally RLIMIT_CORE uses 4160-byte increments, we need to convert
+	 it to the normal format.  */
+      if (resource == RLIMIT_CORE)
+	{
+	  if (rlimits->rlim_cur != RLIM_INFINITY)
+	    rlimits->rlim_cur *= 4160;
+	  if (rlimits->rlim_max != RLIM_INFINITY)
+	    rlimits->rlim_max *= 4160;
+	}
+      return retval;
+    }
 }
 libc_hidden_def (__getrlimit64)
 
