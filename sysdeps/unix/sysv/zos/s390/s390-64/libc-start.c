@@ -236,6 +236,13 @@ __libc_start_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   /* Obtain storage for and initialize the major global structures.  */
   global_structures_init ();
 
+#ifndef SHARED
+  /* Establish conversion for the standard file descriptors.
+     We only need to do this for static programs because otherwise the
+     dynamic linker should have already done it for us.  */
+  __libc_set_conv_standard_fds ();
+#endif
+
   /* Do the regular __libc_start_main stuff.  */
   generic_start_main (main, argc, args_and_envs,
 		      init, fini, rtld_fini, stack_end);

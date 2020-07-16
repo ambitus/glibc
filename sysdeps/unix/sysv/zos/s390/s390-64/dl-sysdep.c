@@ -105,6 +105,9 @@ _dl_sysdep_start (void **start_argptr,
   if (__builtin_expect (__libc_enable_secure, 0))
     __libc_check_standard_fds ();
 
+  /* Establish conversion for the standard file descriptors.  */
+  __libc_set_conv_standard_fds ();
+
   (*dl_main) (phdr, phnum, &user_entry, NULL);
   return user_entry;
 }

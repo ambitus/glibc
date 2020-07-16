@@ -44,6 +44,8 @@ struct bpxk_args
   struct bpxk_arg_list envp;
 };
 
+extern void __libc_set_conv_standard_fds (void) attribute_hidden;
+
 /* Helpers to translate program arguments and environ from the OS format
    and encoding to the internally usable format and encoding.  */
 
