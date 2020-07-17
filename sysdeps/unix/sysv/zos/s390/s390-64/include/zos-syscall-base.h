@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <features.h>
 #include <zos-utils.h>
+#include <sysdep-cancel.h>
 
 /* Ideally, at libc initialization time __bpx_call_table should be
    be set to the result of BPX_FUNCTION_TABLE_PTR to shave off a few
