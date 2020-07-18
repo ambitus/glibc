@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <features.h>
 #include <zos-utils.h>
-#include <sysdep-cancel.h>
 
 /* Ideally, at libc initialization time __bpx_call_table should be
    be set to the result of BPX_FUNCTION_TABLE_PTR to shave off a few
@@ -93,20 +92,6 @@ extern void __bpxk_syscall (void *, ...) attribute_hidden;
 #define BPX_CALL(name, ftype, args...)					\
   __bpxk_syscall							\
    ((BPX_FUNCTION_UNTYPED (_SHIM_CAT (__BPX_off_, name))), ## args)
-
-#define BPX_CALL_CANCEL(...)				\
-  do							\
-    {							\
-      if (SINGLE_THREAD_P)				\
-	BPX_CALL (__VA_ARGS__);				\
-      else						\
-	{						\
-	  int sc_cancel_oldtype = LIBC_CANCEL_ASYNC ();	\
-	  BPX_CALL (__VA_ARGS__);			\
-	  LIBC_CANCEL_RESET (sc_cancel_oldtype);	\
-	}						\
-    }							\
-  while (0)
 
 #define SHIM_RETURN_UNSUPPORTED(retval)		\
   ({						\
