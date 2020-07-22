@@ -450,10 +450,12 @@ __zos_sys_open (int *errcode, const char *pathname,
   if (retval == -1)
     return retval;
 
+  int stat_valid;
+  struct stat fd_target;
+
   if ((flags & (O_NOFOLLOW | O_DIRECTORY)) && not_creating)
     {
-      struct stat fd_target;
-
+      stat_valid = 1;
       /* While we already checked the path we were opening once, that
 	 alone is not sufficient. It's still possible someone removed
 	 the file that we checked and replaced it with something else, so
@@ -494,6 +496,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 	  return -1;
 	}
     }
+  else
+    stat_valid = 0;
 
   if (flags & O_CLOEXEC)
     {
@@ -518,16 +522,69 @@ __zos_sys_open (int *errcode, const char *pathname,
 	}
     }
 
-  /* z/OS NOTE: Unilaterally tag everything opened for writing as
-     ASCII. This should only succeed when the file is empty.  */
-  if (flags & (O_WRONLY | O_RDWR))
+  /* Only stat if we need to.  */
+  if (!stat_valid
+      && __zos_sys_fstat (&tmp_err, retval, &fd_target) < 0)
     {
-      struct zos_file_tag tag;
+      __zos_sys_close (errcode, retval);
+      *errcode = tmp_err;
+      return -1;
+    }
 
-      tag.ft_ccsid = 819;
-      tag.ft_flags = FT_PURETXT;
+  /* Handle tagging and character conversion.
+     NOTE: There is similar code in check_fds.c, keep that in line
+     with this.  */
+  int tag_ret = 0, accmode = flags & O_ACCMODE;
+  switch (accmode)
+    {
+    default:
+    case O_WRONLY:
+    case O_RDWR:
 
-      __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
+      if ((S_ISREG (fd_target.st_mode) || S_ISFIFO (fd_target.st_mode))
+	  && fd_target.st_size == 0
+	  && fd_target.st_ccsid == 0)
+	{
+	  /* z/OS NOTE: Unilaterally tag everything opened for writing as
+	     ASCII. This should only succeed when the file is empty.  */
+	  struct zos_file_tag tag;
+
+	  tag.ft_ccsid = 819;
+	  tag.ft_flags = FT_PURETXT;
+
+	  tag_ret = __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
+	}
+
+      /* Fallthrough.  */
+
+    case O_RDONLY:
+      {
+	/* Enable conversion unless the input file is explictly tagged as
+	   something other than IBM-1047, or is tagged as IBM-1047 but is
+	   non-text.  */
+	struct zos_fconvert fcvt;
+
+	fcvt.prog_ccsid = 0;  /* Obey Thliccsid.  */
+	if (tag_ret < 0
+	    && (fd_target.st_ccsid == 0
+		|| (fd_target.st_ccsid == 1047
+		    && (fd_target.st_ftflags & FT_PURETXT) != 0)))
+	  {
+	    /* Untagged, or explictly tagged as EBCDIC,
+	       assume EBCDIC text.  */
+	    fcvt.file_ccsid = 1047;
+	    fcvt.command = F_CVT_ON;
+	  }
+	else
+	  {
+	    /* Treat as binary.  */
+	    fcvt.file_ccsid = 0;
+	    fcvt.command = F_CVT_OFF;
+	  }
+
+	__zos_sys_fcntl (&tmp_err, retval, F_CONTROL_CVT, &fcvt);
+      }
+      break;
     }
 
   return retval;

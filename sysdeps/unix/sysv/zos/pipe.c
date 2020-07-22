@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <fcntl.h>
 #include <sysdep.h>
 
 typedef void (*__bpx4pip_t) (int32_t *read_fd, int32_t *write_fd,
@@ -45,6 +46,13 @@ __pipe (int __pipedes[2])
 
   if (retval < 0)
     __set_errno (retcode);
+
+  /* Set the defer tag and text flags on for all pipes we create.
+     We only need to do this for the write end, subsequent operations
+     on either end should tag both ends.  */
+  struct zos_file_tag ft = { 0, FT_DEFER | FT_PURETXT };
+
+  __fcntl (__pipedes[1], F_SETTAG, &ft);
 
   return retval;
 }
