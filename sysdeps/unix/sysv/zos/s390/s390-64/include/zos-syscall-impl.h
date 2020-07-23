@@ -534,7 +534,7 @@ __zos_sys_open (int *errcode, const char *pathname,
   /* Handle tagging and character conversion.
      NOTE: There is similar code in check_fds.c, keep that in line
      with this.  */
-  int tag_ret = 0, accmode = flags & O_ACCMODE;
+  int tag_ret = -1, accmode = flags & O_ACCMODE;
   switch (accmode)
     {
     default:
