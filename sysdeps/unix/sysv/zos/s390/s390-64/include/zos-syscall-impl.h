@@ -545,12 +545,23 @@ __zos_sys_open (int *errcode, const char *pathname,
 	  && fd_target.st_size == 0
 	  && fd_target.st_ccsid == 0)
 	{
-	  /* z/OS NOTE: Unilaterally tag everything opened for writing as
-	     ASCII. This should only succeed when the file is empty.  */
+	  /* z/OS NOTE: Unilaterally tag everything opened for writing.
+	     This should only succeed when the file is empty.  */
 	  struct zos_file_tag tag;
 
-	  tag.ft_ccsid = 819;
-	  tag.ft_flags = FT_PURETXT;
+
+	  if ((flags & O_BINARY) == O_BINARY)
+	    {
+	      /* Tag as binary.  */
+	      tag.ft_ccsid = FT_BINARY;
+	      tag.ft_flags = 0;
+	    }
+	  else
+	    {
+	      /* Tag as ASCII.  */
+	      tag.ft_ccsid = 819;
+	      tag.ft_flags = FT_PURETXT;
+	    }
 
 	  tag_ret = __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
 	}
@@ -565,7 +576,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 	struct zos_fconvert fcvt;
 
 	fcvt.prog_ccsid = 0;  /* Obey Thliccsid.  */
-	if (tag_ret < 0
+	if ((flags & O_BINARY) == 0
+	    && tag_ret < 0
 	    && (fd_target.st_ccsid == 0
 		|| (fd_target.st_ccsid == 1047
 		    && (fd_target.st_ftflags & FT_PURETXT) != 0)))

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,14 @@
 #ifndef	_FCNTL_H
 # error "Never use <bits/fcntl.h> directly; include <fcntl.h> instead."
 #endif
+
+/* O_BINARY is a fake flag not recognized by the underlying system, used
+   by this C library implementation to indicate that a file should be
+   treated as binary. Files opened with this flag will not have automatic
+   character conversion activated, and files created with O_BINARY will
+   be tagged as binary. O_TEXT has no effect.  */
+#define O_BINARY	0x20000000
+#define O_TEXT		0
 
 /* F_DUPFD, F_GETFD, F_SETFD, F_GETFL, and F_SETFL are the same for linux
    and z/OS.  */
