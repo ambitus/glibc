@@ -79,7 +79,7 @@ struct sdwarc1 {
 #define RETRY_AMODE_24 1
 #define RETRY_AMODE_31 2
 #define RETRY_AMODE_64 3
-  uint8_t reserved2;
+  uint8_t reserved4;
   uint8_t subspace_stoken[8];
   uint8_t subspace_name[8];
   uint8_t system_name[8];
@@ -101,7 +101,7 @@ struct sdwarc4 {
   uint64_t crs[16];
   uint64_t translation_exception_address;
   uint64_t breaking_event_address;
-  uint64_t psw[2];
+  uint64_t psw128[2];
 };
 
 struct sdwarc5 {
@@ -139,6 +139,7 @@ struct ec_info {
       uint8_t reserved[3];
       uint8_t exception_code;
     } data; /* for interrupt code 7 */
+  } ta;
 };
 
 struct sdwa {
@@ -160,7 +161,7 @@ struct sdwa {
   struct ec_info ec_info;
   uint32_t ec_rb_psw64[2];
   struct ec_info ec_rb_info;
-  uint32_t gprs[16];
+  uint32_t rb_gprs[16];
   uint8_t sdwa_subpool;
   uint8_t sdwa_length;
   uint8_t machine_check_data[28];
@@ -176,9 +177,9 @@ struct sdwa {
 #define EXIT_INFO1_NOT_MY_FAULT      0x40 /* read about it in IHASDWA */
   /* the other flags are also relevant, see IHASDWA */
   uint16_t asid_of_memory; /* non zero means cross memory */
-  uint8_t reserved1[2];
+  uint8_t reserved2[2];
   uint32_t retry_routine_address;
-  uint8_t reserved2[8];
+  uint8_t reserved3[8];
   /* 0xFC */
   uint8_t retry_code;
 #define RETRY_CODE_NEXT_ESTAI     0
@@ -188,6 +189,12 @@ struct sdwa {
 #define RETRY_FLAGS0_UPDATE_REGISTERS 0x08
 #define RETRY_FLAGS0_FREE_SDWA        0x04
   uint8_t lock_area[32];
+  uint8_t logrec_info[28];
+  uint8_t reserved4[0x168 - 0x13C];
+  uint16_t cpu_id;
+  uint8_t reserved5[0x170 - 0x16A];
+  uint32_t sdwaptrs;
+  uint8_t reserved6[0x298 - 0x174];
 };
 
 /* Modify with care. This struct is referenced in assembly. */

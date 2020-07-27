@@ -239,10 +239,10 @@ __zos_dump_stack (int fd, void *r13)
 void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
   ext_printf("*** ESTAEX TRIGGERED ***\n");
 
-#define SDWAPTRS(sdwa) ((struct sdwaptrs *) GET_PTR31_SAFE(&sdwa_ptr->sdwaptrs))
-#define SDWARC1(sdwa) ((struct sdwarc1 *) GET_PTR31_SAFE(&SDWAPTRS(sdwa)->sdwarc1)
-#define SDWARC4(sdwa) ((struct sdwarc1 *) GET_PTR31_SAFE(&SDWAPTRS(sdwa)->sdwarc4)
-  
+#define SDWAPTRS(sdwa) ((struct sdwaptrs *) GET_PTR31_SAFE(&sdwa->sdwaptrs))
+#define SDWARC1(sdwa) ((struct sdwarc1 *) GET_PTR31_SAFE(&SDWAPTRS(sdwa)->sdwarc1))
+#define SDWARC4(sdwa) ((struct sdwarc4 *) GET_PTR31_SAFE(&SDWAPTRS(sdwa)->sdwarc4))
+  struct sdwa* sdwa = sdwa_ptr;
   int comp_code = (sdwa->completion_code[0] << 16) + (sdwa->completion_code[1] << 8) + sdwa->completion_code[2];
   if (comp_code == 0)
     ;
@@ -251,11 +251,11 @@ void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
   else
     ext_printf("completion code = U%04d\n", comp_code);
   if (sdwa->completion_code_flags & REASON_CODE_IS_VALID)
-    ext_printf("reason code = 08X\n", SDWARC1(sdwa)->abend_reason_code);
+    ext_printf("reason code = %08X\n", SDWARC1(sdwa)->abend_reason_code);
 
-  ext_printf("interrupt code = %02X\n", sdwa->ec_info->interrupt_code);
+  ext_printf("interrupt code = %02X\n", sdwa->ec_info.interrupt_code);
 
-  uint8_t ilc = (sdwa->ec_info->ilc >> 1) &0x3;
+  uint8_t ilc = (sdwa->ec_info.ilc >> 1) &0x3;
   ext_printf("instruction length code = %d, instruction_length = %d\n", ilc, (ilc == 0) ? 2 : (ilc == 3) ? 6 : 4);
 
   uint32_t *instr = (uint32_t *)SDWARC1(sdwa)->instructions;
@@ -266,22 +266,22 @@ void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
 #define HIGH32(x) (uint32_t)(x >> 32)
 #define LOW32(x) (uint32_t)(x & 0xFFFFFFFF)
 
-  uint64_t *grs = SDWARC1(sdwa)->gprs;
+  uint64_t *grs = SDWARC4(sdwa)->gprs;
   for (int rn=0; rn<16; rn+=2) {
-    ext_printf("gr%X=%08X %08X  gr%X=%08X %08X\n",
+    ext_printf("gr%02d=%08X %08X  gr%02d=%08X %08X\n",
            rn, HIGH32(grs[rn]), LOW32(grs[rn]),
            rn+1, HIGH32(grs[rn+1]), LOW32(grs[rn+1]));
   }
 
   uint64_t tea = SDWARC4(sdwa)->translation_exception_address;
-  char *tea_type = "other";
+  const char *tea_type = "other";
   if (SDWARC1(sdwa)->extended_flags & EC_INFO_HAS_TRANSLATION_ADDRESS)
     tea_type = "address";
   else if (SDWARC1(sdwa)->extended_flags & EC_INFO_HAS_ASID)
     tea_type = "asid";
   else if (SDWARC1(sdwa)->extended_flags & EC_INFO_HAS_PC_NUMBER)
     tea_type = "pc number";
-  ext_printf("translation exception address = %08X %08X %s)\n", HIGH32(tea), LOW32(tea), tea_type);
+  ext_printf("translation exception address = %08X %08X (%s)\n", HIGH32(tea), LOW32(tea), tea_type);
   uint64_t bea = SDWARC4(sdwa)->breaking_event_address;
   ext_printf("breaking event address = %08X %08X\n", HIGH32(bea), LOW32(bea));
   uint64_t *psw = SDWARC4(sdwa)->psw128;
