@@ -6,6 +6,8 @@ libc {
   GLIBC_2.28 {
     #errlist-compat 3449
     _sys_errlist; sys_errlist; _sys_nerr; sys_nerr;
+    _fileno;
+    setmode; _setmode;
   }
 
   GLIBC_PRIVATE {

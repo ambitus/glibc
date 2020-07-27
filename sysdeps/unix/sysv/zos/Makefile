@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Free Software Foundation, Inc.
+# Copyright (C) 2019-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 # Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>, 2019.
 
@@ -37,9 +37,10 @@ override inhibit-unix-syscalls = yes
 ifeq ($(subdir),misc)
 sysdep_routines += storage mmap-anon zos-futex \
 		   syscall-wrapper estaex estaex-handler sir sir_entry \
-		   tagging loadhfs prctl
+		   tagging loadhfs prctl setmode
 # Install bits/bpxystat.h, which is required by our stat.h
-sysdep_headers += bits/bpxystat.h
+# Install io.h, which contains a declaration for setmode/_setmode.
+sysdep_headers += bits/bpxystat.h io.h
 endif
 
 ifeq ($(subdir),io)

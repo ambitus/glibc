@@ -27,6 +27,10 @@
 #define O_BINARY	0x20000000
 #define O_TEXT		0
 
+/* Aliases used or expected by some things.  */
+#define _O_BINARY	O_BINARY
+#define _O_TEXT		O_TEXT
+
 /* F_DUPFD, F_GETFD, F_SETFD, F_GETFL, and F_SETFL are the same for linux
    and z/OS.  */
 
