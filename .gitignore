@@ -44,3 +44,5 @@ core
 /linuxthreads_db
 /rtkaio
 *.pyc
+
+.DS_Store
