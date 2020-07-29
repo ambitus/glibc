@@ -21,8 +21,9 @@
 #include <sys/cdefs.h>
 
 /* Indicate that the file corresponding to FD should be treated as
-   binary if FLAGS has O_BINARY set, and nothing under any other
-   circumstance. Returns 0.  */
+   binary if FLAGS is O_BINARY, otherwise indicate that it should be
+   treated as text. Returns -1 if an error occured, O_TEXT if the stream
+   was previously being treated as text, otherwise O_BINARY.  */
 int setmode (int fd, int flags) __THROW;
 int _setmode (int fd, int flags) __THROW;
 #endif

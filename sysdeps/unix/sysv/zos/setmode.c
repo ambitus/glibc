@@ -31,22 +31,25 @@
 #include <io.h>
 
 /* Indicate that the file corresponding to FD should be treated as
-   binary if FLAGS has O_BINARY set, and nothing under any other
-   circumstance. Returns 0.  */
+   binary if FLAGS is O_BINARY, otherwise indicate that it should be
+   treated as text. Returns -1 if an error occured, O_TEXT if the stream
+   was previously being treated as text, otherwise O_BINARY.  */
 int
 __setmode (int fd, int flags)
 {
   struct stat64 st;
-  struct zos_fconvert fcvt;
-
-  if ((flags & O_BINARY) != O_BINARY)
-    return 0;
+  struct zos_fconvert fcvt = { F_CVT_QUERY, 0, 0 };
+  int ret;
 
   /* NOTE: There is similar code in check_fds.c, keep this in line
     with that.  */
 
-  if (__fstat64 (fd, &st) != 0)
-    return 0;
+  /* We don't have a good error value to return here.  */
+  if (__fstat64 (fd, &st) != 0
+      || __fcntl64_nocancel (fd, F_CONTROL_CVT, &fcvt) != 0)
+    return -1;
+
+  ret = fcvt.command == F_CVT_OFF ? O_BINARY : O_TEXT;
 
   /* If the file is an empty untagged file open for writing, try
      to tag the underlying file (in addition to enabling conversion on
@@ -60,21 +63,32 @@ __setmode (int fd, int flags)
       if (accmode == O_WRONLY || accmode == O_RDWR)
 	{
 	  struct zos_file_tag ft;
-	  ft.ft_ccsid = FT_BINARY;
-	  ft.ft_flags = 0;
+	  int save_errno = errno;
+	  if (flags == O_BINARY)
+	    {
+	      ft.ft_ccsid = FT_BINARY;
+	      ft.ft_flags = 0;
+	    }
+	  else
+	    {
+	      ft.ft_ccsid = 819;
+	      ft.ft_flags = FT_PURETXT;
+	    }
 	  /* z/OS TODO: Race condition here.  */
 	  __fcntl64_nocancel (fd, F_SETTAG, &ft);
+	  __set_errno (save_errno);
 	}
     }
 
-  /* Disable conversion.  */
+  /* Enable/disable conversion.  */
   fcvt.prog_ccsid = 0;
   fcvt.file_ccsid = 0;
-  fcvt.command = F_CVT_OFF;
+  fcvt.command = flags == O_BINARY ? F_CVT_OFF : F_CVT_ON;
 
-  __fcntl64_nocancel (fd, F_CONTROL_CVT, &fcvt);
+  if (__fcntl64_nocancel (fd, F_CONTROL_CVT, &fcvt) < 0)
+    return -1;
 
-  return 0;
+  return ret;
 }
 libc_hidden_def (__setmode)
 weak_alias (__setmode, setmode)
