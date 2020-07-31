@@ -96,6 +96,8 @@ extern void __zos_set_thread_pointer (void *addr)
 extern void __zos_clear_thread_pointer (void) attribute_tls_maybe_weak;
 extern void __zos_initialize_thread_pointer (void *addr)
   attribute_tls_maybe_weak;
+extern void __zos_cleanup_thread_pointer (void *addr)
+  attribute_tls_maybe_weak;
 
 /* Something used by the thread pointer mechanism.  */
 extern lf_hash_table *__zos_tp_table;

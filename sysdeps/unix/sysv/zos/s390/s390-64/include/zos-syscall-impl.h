@@ -53,6 +53,7 @@
 #include <sys/socket.h>
 #include <signal.h>
 #include <sir.h>
+#include <tls.h>
 
 #include <bpxk-constants.h>
 
@@ -2257,11 +2258,15 @@ __zos_sys_fork (int *errcode)
   /* For some reason, fork unsets THLIccsid. We set it back up
      manually.  */
   uint16_t parent_ccsid = get_prog_ccsid ();
+  void *parent_thread = __zos_get_thread_pointer ();
 
   BPX_CALL (fork, __bpx4frk_t, &pid, errcode, &reason_code);
 
   if (pid == 0)
-    set_prog_ccsid (parent_ccsid);
+    {
+      __zos_cleanup_thread_pointer (parent_thread);
+      set_prog_ccsid (parent_ccsid);
+    }
 
   return pid;
 }

@@ -97,3 +97,36 @@ __zos_initialize_thread_pointer (void *addr)
 
   __zos_set_thread_pointer (addr);
 }
+
+static bool
+find_a_thread (uint64_t key, uint64_t val, void *misc,
+	       uint64_t tag, volatile uint64_t *tagptr,
+	       lfl_list_t *list)
+{
+  uint64_t *data = (uint64_t *)misc;
+  data[0] = key;
+  return 1;
+}
+
+/* Clean up parent's thread pointer setup.
+   Should only be called once per process, right after fork()
+   in the child.  */
+
+void
+__zos_cleanup_thread_pointer (void *addr)
+{
+  uint64_t data[1];
+  for (int i = 0; i < __zos_tp_table->size; i++)
+    {
+      lfl_list_t *list = __zos_tp_table->buckets + i;
+      while (1)
+	{
+	  data[0] = 0;
+	  __lfl_for_each (find_a_thread, data, list);
+	  if (data[0] == 0)
+	    break;
+	  __lf_hash_table_pop (data[0], __zos_tp_table);
+	}
+    }
+  __zos_set_thread_pointer (addr);
+}
