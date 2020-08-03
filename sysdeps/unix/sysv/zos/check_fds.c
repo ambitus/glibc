@@ -58,10 +58,12 @@ tag_one_fd (int fd)
      the env var controlling whether to treat untagged files as EBCDIC
      or binary.  */
 
-  /* Enable conversion unless the input file is explictly tagged as
-     something other than IBM-1047, or is tagged as IBM-1047 but is
-     non-text.  */
-  fcvt.prog_ccsid = 0;  /* Obey Thliccsid.  */
+  /* Enable conversion, and treat untagged files as EBCDIC text.
+     NOTE: It is important that we never disable conversion, because
+     other processes may rely on the conversion state of the standard
+     streams being enabled.  */
+  fcvt.prog_ccsid = 0;
+  fcvt.command = F_CVT_ON;
   if (tag_ret < 0
       && (st.st_ccsid == 0
 	  || (st.st_ccsid == 1047
@@ -69,13 +71,13 @@ tag_one_fd (int fd)
     {
       /* Untagged, or explictly tagged as EBCDIC, assume EBCDIC text.  */
       fcvt.file_ccsid = 1047;
-      fcvt.command = F_CVT_ON;
     }
   else
     {
-      /* Treat as binary.  */
+      /* Conversion will not occur for us, but we do not explicitly
+	 disable because doing so may invalidate assumptions made by
+	 other programs.  */
       fcvt.file_ccsid = 0;
-      fcvt.command = F_CVT_OFF;
     }
 
   __fcntl64_nocancel (fd, F_CONTROL_CVT, &fcvt);

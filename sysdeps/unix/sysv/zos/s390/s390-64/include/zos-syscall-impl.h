@@ -575,7 +575,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 	   non-text.  */
 	struct zos_fconvert fcvt;
 
-	fcvt.prog_ccsid = 0;  /* Obey Thliccsid.  */
+	fcvt.prog_ccsid = 819;
+	fcvt.command = F_CVT_ON;
 	if ((flags & O_BINARY) == 0
 	    && tag_ret < 0
 	    && (fd_target.st_ccsid == 0
@@ -585,13 +586,11 @@ __zos_sys_open (int *errcode, const char *pathname,
 	    /* Untagged, or explictly tagged as EBCDIC,
 	       assume EBCDIC text.  */
 	    fcvt.file_ccsid = 1047;
-	    fcvt.command = F_CVT_ON;
 	  }
 	else
 	  {
 	    /* Treat as binary.  */
-	    fcvt.file_ccsid = 0;
-	    fcvt.command = F_CVT_OFF;
+	    fcvt.file_ccsid = FT_BINARY;
 	  }
 
 	__zos_sys_fcntl (&tmp_err, retval, F_CONTROL_CVT, &fcvt);
