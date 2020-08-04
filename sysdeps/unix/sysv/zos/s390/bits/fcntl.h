@@ -19,17 +19,12 @@
 # error "Never use <bits/fcntl.h> directly; include <fcntl.h> instead."
 #endif
 
-/* O_BINARY is a fake flag not recognized by the underlying system, used
-   by this C library implementation to indicate that a file should be
-   treated as binary. Files opened with this flag will not have automatic
-   character conversion activated, and files created with O_BINARY will
-   be tagged as binary. O_TEXT has no effect.  */
-#define O_BINARY	0x20000000
-#define O_TEXT		0
-
-/* Aliases used or expected by some things.  */
-#define _O_BINARY	O_BINARY
-#define _O_TEXT		O_TEXT
+/* O_TRUEBINARY is a fake flag not recognized by the underlying system,
+   used by this C library implementation to indicate that a file should
+   be treated as binary. Files opened with this flag will not have
+   automatic character conversion activated, and files created with
+   O_TRUEBINARY will be tagged as binary.  */
+#define O_TRUEBINARY	0x20000000
 
 /* F_DUPFD, F_GETFD, F_SETFD, F_GETFL, and F_SETFL are the same for linux
    and z/OS.  */

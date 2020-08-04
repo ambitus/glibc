@@ -551,7 +551,7 @@ __zos_sys_open (int *errcode, const char *pathname,
 	  struct zos_file_tag tag;
 
 
-	  if ((flags & O_BINARY) == O_BINARY)
+	  if ((flags & O_TRUEBINARY) == O_TRUEBINARY)
 	    {
 	      /* Tag as binary.  */
 	      tag.ft_ccsid = FT_BINARY;
@@ -578,7 +578,7 @@ __zos_sys_open (int *errcode, const char *pathname,
 
 	fcvt.prog_ccsid = 819;
 	fcvt.command = F_CVT_ON;
-	if ((flags & O_BINARY) == 0
+	if ((flags & O_TRUEBINARY) == 0
 	    && tag_ret < 0
 	    && (fd_target.st_ccsid == 0
 		|| (fd_target.st_ccsid == 1047
