@@ -40,15 +40,24 @@ __ioctl(int fd, unsigned long int request, ...)
   int32_t data_len;
   void *data;
   va_list ap;
-  if (request == TIOCGWINSZ || request == TIOCSWINSZ) {
-    data_len = 8;
-    va_start (ap, request);
-    data = va_arg (ap, void *);
-    va_end (ap);
-  } else {
-    __set_errno (ENOSYS);
-    return -1;
-  }
+
+  va_start (ap, request);
+  data = va_arg (ap, void *);
+  va_end (ap);
+
+  switch (request)
+    {
+    /* We know that these work as expected.  */
+    case TIOCGWINSZ:
+    case TIOCSWINSZ:
+
+    /* We don't know if any other requests work.  */
+    default:
+      data_len = (uint32_t) ((request >> 16) & 0x3fff);
+      break;
+
+    /* Requests with special handling for data_len should go here.  */
+    }
 
   BPX_CALL (w_ioctl, __bpx4ioc_t, &fileds, &cmd, &data_len, data,
 	    &retval, &retcode, &reason_code);
@@ -61,6 +70,9 @@ __ioctl(int fd, unsigned long int request, ...)
 
   return retval;
 }
+link_warning (ioctl, "z/OS ioctl does not behave as it does on other \
+systems, check that the ioctl requests used by your application are \
+supported for the device type you operate on")
 
 libc_hidden_def (__ioctl)
 weak_alias (__ioctl, ioctl)
