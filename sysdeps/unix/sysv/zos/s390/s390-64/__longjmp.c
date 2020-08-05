@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -39,7 +39,7 @@ __longjmp (__jmp_buf env, int val)
 #ifdef PTR_DEMANGLE
   register uintptr_t r3 __asm__ ("%r3") = guard;
 #endif
-  register long int r2 __asm__ ("%r2") = val == 0 ? 1 : val;
+  register long int r15 __asm__ ("%r15") = val == 0 ? 1 : val;
   register void *r4 __asm__ ("%r4") = (void *) env;
 
   /* Restore registers and jump back.  */
@@ -81,9 +81,9 @@ __longjmp (__jmp_buf env, int val)
 
 			LIBC_PROBE_ASM (longjmp_target, 8@%1 -4@%0 8@%%r14)
 			/* restore gregs and return to jmp_buf target  */
-			"lmg	%%r1, %%r12, 0(%1) \n\t"
+			"lmg    %%r1, %%r12, 0(%1) \n\t"
 			"br	%%r14"
-			: : "r" (r2), "r" (r4)
+			: : "r" (r15), "r" (r4)
 #ifdef PTR_DEMANGLE
 			, "r" (r3)
 #endif
