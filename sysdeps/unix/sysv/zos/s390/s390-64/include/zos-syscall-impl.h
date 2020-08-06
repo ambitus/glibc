@@ -588,6 +588,13 @@ __zos_sys_open (int *errcode, const char *pathname,
 	       assume EBCDIC text.  */
 	    fcvt.file_ccsid = 1047;
 	  }
+	else if ((flags & O_TRUEBINARY) == 0
+		 && fd_target.st_ccsid == 819
+		 && (fd_target.st_ftflags & FT_PURETXT) != 0)
+	  {
+	    /* Pure ASCII text should be marked at ASCII for the benefit of 819 programs */
+	    fcvt.file_ccsid = 819;
+	  }
 	else
 	  {
 	    /* Treat as binary.  */
