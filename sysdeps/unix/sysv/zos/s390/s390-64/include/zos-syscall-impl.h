@@ -592,7 +592,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 		 && fd_target.st_ccsid == 819
 		 && (fd_target.st_ftflags & FT_PURETXT) != 0)
 	  {
-	    /* Pure ASCII text should be marked at ASCII for the benefit of 819 programs */
+	    /* Pure ASCII text should be marked at ASCII for the benefit
+	       of 1047 programs */
 	    fcvt.file_ccsid = 819;
 	  }
 	else
