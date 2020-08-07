@@ -36,6 +36,7 @@ ld {
     __zos_get_thread_pointer;
     __zos_set_thread_pointer;
     __zos_clear_thread_pointer;
+    __zos_cleanup_thread_pointer;
   }
 
   GLIBC_PRIVATE {
