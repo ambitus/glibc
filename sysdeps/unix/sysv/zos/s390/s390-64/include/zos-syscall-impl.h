@@ -2669,8 +2669,39 @@ static inline int
 __zos_sys_tcgetattr (int *errcode, int fd, struct termios *termios_p)
 {
   int32_t retval, reason_code;
-  BPX_CALL (tcgetattr, __bpx4tga_t, &fd, termios_p, &retval, errcode,
+  struct termios termios_e;
+  BPX_CALL (tcgetattr, __bpx4tga_t, &fd, &termios_e, &retval, errcode,
 	    &reason_code);
+
+  memset(termios_p, 0, sizeof(struct termios));
+  termios_p->c_cflag = termios_e.c_cflag;
+  termios_p->c_iflag = termios_e.c_iflag;
+  termios_p->c_lflag = termios_e.clcflag;
+  termios_p->c_oflag = termios_e.c_oflag;
+  if (termios_p->c_lflag & ICANON)
+    {
+      termios_p->c_cc[VEOF] = e_to_a[termios_e.c_cc[VEOF]];
+      termios_p->c_cc[VEOL] = e_to_a[termios_e.c_cc[VEOL]];
+      termios_p->c_cc[VERASE] = e_to_a[termios_e.c_cc[VERASE]];
+      termios_p->c_cc[VKILL] = e_to_a[termios_e.c_cc[VKILL]];
+    }
+  else
+    {
+      termios_p->c_cc[VMIN] = termios_e.c_cc[VMIN];
+      termios_p->c_cc[VTIME] = termios_e.c_cc[VTIME];
+    }
+  if (termios_p->c_lflag & ISIG)
+    {
+      termios_p->c_cc[VINTR] = e_to_a[termios_e.c_cc[VINTR]];
+      termios_p->c_cc[VQUIT] = e_to_a[termios_e.c_cc[VQUIT]];
+      termios_p->c_cc[VSUSP] = e_to_a[termios_e.c_cc[VSUSP]];
+    }
+  if (termios_p->c_lflag & IXON)
+    {
+      termios_p->c_cc[VSTART] = e_to_a[termios_e.c_cc[VSTART]];
+      termios_p->c_cc[VSTOP] = e_to_a[termios_e.c_cc[VSTOP]];
+    }
+
   return retval;
 }
 
@@ -2685,24 +2716,46 @@ __zos_sys_tcsetattr (int *errcode, int fd, int acts,
 		     const struct termios *termios_p)
 {
   int32_t retval, reason_code;
-  struct termios real_tios;
-  const struct termios *real_tios_ptr;
+  struct termios termios_e;
   speed_t ispeed = termios_p->c_cflag & 0x00ff0000;
 
+  memset(termios_e, 0, sizeof(struct termios);
+  termios_e.c_cflag = termios_p->c_cflag;
+  termios_e.c_iflag = termios_p->c_iflag;
+  termios_e.c_lflag = termios_p->clcflag;
+  termios_e.c_oflag = termios_p->c_oflag;
   /* Handle ispeed == 0 special case where ispeed should be set to
      ospeed.
      z/OS TODO: this approach seems wasteful.  */
   if (ispeed == 0)
     {
-      memcpy (&real_tios, termios_p, sizeof (real_tios));
-      real_tios.c_cflag &= ~0x00ff0000;
-      real_tios.c_cflag |= (real_tios.c_cflag & CBAUD) >> 8;
-      real_tios_ptr = &real_tios;
+      termios_e.c_cflag &= ~0x00ff0000;
+      termios_e.c_cflag |= (termios_e.c_cflag & CBAUD) >> 8;
+    }
+  if (termios_e.c_lflag & ICANON)
+    {
+      termios_e.c_cc[VEOF] = a_to_1047[termios_p->c_cc[VEOF]];
+      termios_e.c_cc[VEOL] = a_to_1047[termios_p->c_cc[VEOL]];
+      termios_e.c_cc[VERASE] = a_to_1047[termios_p->c_cc[VERASE]];
+      termios_e.c_cc[VKILL] = a_to_1047[termios_p->c_cc[VKILL]];
     }
   else
-    real_tios_ptr = termios_p;
-
-  BPX_CALL (tcsetattr, __bpx4tsa_t, &fd, &acts, real_tios_ptr, &retval,
+    {
+      termios_e.c_cc[VMIN] = termios_p->c_cc[VMIN];
+      termios_e.c_cc[VTIME] = termios_p->c_cc[VTIME];
+    }
+  if (termios_e.c_lflag & ISIG)
+    {
+      termios_e.c_cc[VINTR] = a_to_1047[termios_p->c_cc[VINTR]];
+      termios_e.c_cc[VQUIT] = a_to_1047[termios_p->c_cc[VQUIT]];
+      termios_e.c_cc[VSUSP] = a_to_1047[termios_p->c_cc[VSUSP]];
+    }
+  if (termios_e.c_lflag & IXON)
+    {
+      termios_e.c_cc[VSTART] = a_to_1047[termios_p->c_cc[VSTART]];
+      termios_e.c_cc[VSTOP] = a_to_1047[termios_p->c_cc[VSTOP]];
+    }
+  BPX_CALL (tcsetattr, __bpx4tsa_t, &fd, &acts, &termios_e, &retval,
 	    errcode, &reason_code);
   return retval;
 }
