@@ -550,7 +550,6 @@ __zos_sys_open (int *errcode, const char *pathname,
 	     This should only succeed when the file is empty.  */
 	  struct zos_file_tag tag;
 
-
 	  if ((flags & O_TRUEBINARY) == O_TRUEBINARY)
 	    {
 	      /* Tag as binary.  */
@@ -578,27 +577,33 @@ __zos_sys_open (int *errcode, const char *pathname,
 
 	fcvt.prog_ccsid = 0;
 	fcvt.command = F_CVT_ON;
-	if ((flags & O_TRUEBINARY) == 0
-	    && tag_ret < 0
-	    && (fd_target.st_ccsid == 0
-		|| (fd_target.st_ccsid == 1047
-		    && (fd_target.st_ftflags & FT_PURETXT) != 0)))
+	if ((flags & O_TRUEBINARY) != 0)
 	  {
-	    /* Untagged, or explictly tagged as EBCDIC,
-	       assume EBCDIC text.  */
-	    fcvt.file_ccsid = 1047;
+	    /* Treat as binary.  */
+	    fcvt.file_ccsid = FT_BINARY;
 	  }
-	else if ((flags & O_TRUEBINARY) == 0
-		 && fd_target.st_ccsid == 819
-		 && (fd_target.st_ftflags & FT_PURETXT) != 0)
+	else if (tag_ret >= 0
+		 || (fd_target.st_ccsid == 819
+		     && (fd_target.st_ftflags & FT_PURETXT) != 0))
 	  {
-	    /* Pure ASCII text should be marked at ASCII for the benefit
-	       of 1047 programs */
-	    fcvt.file_ccsid = 819;
+	    /* O_TRUEBINARY is off and we have a new file, or
+	       O_TRUEBINARY is off and we hava a file explictly
+	       tagged ASCII.  */
+	      fcvt.file_ccsid = 819;
+	  }
+	else if (fd_target.st_ccsid == 0
+		 || (fd_target.st_ccsid == 1047
+		     && (fd_target.st_ftflags & FT_PURETXT) != 0))
+	  {
+	    /* O_TRUEBINARY is off, we have an old file, and it is
+	       untagged or tagged 1047.  */
+	    fcvt.file_ccsid = 1047;
 	  }
 	else
 	  {
-	    /* Treat as binary.  */
+	    /* O_TRUEBINARY is off, we have an old file, and it is
+	       tagged in some unknown way. If we end up here, we are
+	       way off the beaten path.  */
 	    fcvt.file_ccsid = FT_BINARY;
 	  }
 
