@@ -33,12 +33,16 @@ zos_backtrace (enum __libc_message_action action, bool written, int fd)
 {
   if (action > do_message && written)
     {
+      void *psw_addr;
       void *r13;
+
 #define strnsize(str) str, strlen (str)
 #define writestr(str) __write_nocancel (fd, str)
       writestr (strnsize ("======= Backtrace: =========\n"));
-      __asm__ ("lgr	%0, %%r13" : "=r" (r13));
-      __zos_dump_stack (fd, r13);
+      __asm__ ("lgr	%0, %%r13\n\t"
+               "basr    %1,0"
+               : "=r" (r13), "=r" (psw_addr));
+      __zos_dump_stack (fd, psw_addr, r13);
 
       /* z/OS TODO: Can we give something like the memory maps they
 	 do on linux?  */

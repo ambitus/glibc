@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <sysdep.h>
+#include <execinfo.h>
 #include <zos-core.h>
 #include <zos-estaex.h>
 
@@ -201,7 +202,25 @@ void dump_buffer(const char *buffer, int length)
 }
 
 void
-__zos_dump_stack (int fd, void *r13)
+__zos_print_backtrace (int fd, void *psw_addr, void *r13, int limit)
+{
+  int frames = 0;
+  char eyecat_true[] = { 0xc6, 0xf4, 0xe2, 0xc1 };
+  void **frame_ptr = (void **)r13;
+  void *return_addr = psw_addr;
+
+  __backtrace_symbols_fd(&return_addr, 1, fd);
+  for (;
+       0 == memcmp ((char *)frame_ptr + 4, eyecat_true, 4) && frames < limit;
+       frame_ptr = ((void **)frame_ptr)[16])
+    {
+      return_addr = frame_ptr[1];
+      __backtrace_symbols_fd(&return_addr, 1, fd);
+    }
+}
+
+void
+__zos_dump_stack (int fd, void *psw_addr, void *r13)
 {
   void *first_ptr, *ptr, *last_valid_ptr;
   int frames = 0;
@@ -234,6 +253,8 @@ __zos_dump_stack (int fd, void *r13)
   ext_fprintf (fd, "\nStack dump (at 0x%016x):\n", last_valid_ptr);
   dump_buffer (last_valid_ptr,
               ((char*) first_ptr - (char*) last_valid_ptr) + 256);
+
+  __zos_print_backtrace (fd, psw_addr, r13, 50);
 }
 
 void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
@@ -286,6 +307,9 @@ void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
   ext_printf("breaking event address = %08X %08X\n", HIGH32(bea), LOW32(bea));
   uint64_t *psw = SDWARC4(sdwa)->psw128;
   ext_printf("psw = %08X %08X  %08X %08X\n", HIGH32(psw[0]), LOW32(psw[0]), HIGH32(psw[1]), LOW32(psw[1]));
+  void *psw_addr = (void *)psw[1];
+  if (psw_addr < (void *)0x4000)
+    psw_addr = (void *)bea;
 
   ext_printf("\n");
   ext_printf("SDWA:\n");
@@ -343,7 +367,7 @@ void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
 
   ext_printf("\n");
 
-  __zos_dump_stack (1, (void *) (uintptr_t) sdwarc4->gprs[13]);
+  __zos_dump_stack (1, psw_addr, (void *) (uintptr_t) sdwarc4->gprs[13]);
 
   ext_printf("\n");
   ext_printf("*** END ESTAEX DUMP ***");
