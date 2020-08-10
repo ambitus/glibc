@@ -544,7 +544,9 @@ __zos_sys_open (int *errcode, const char *pathname,
 
       if ((S_ISREG (fd_target.st_mode) || S_ISFIFO (fd_target.st_mode))
 	  && fd_target.st_size == 0
-	  && fd_target.st_ccsid == 0)
+	  && ((fd_target.st_ccsid == 0)
+	      || (fd_target.st_ftflags & FT_PURETXT
+		  && fd_target.st_ftflags & FT_DEFER)))
 	{
 	  /* z/OS NOTE: Unilaterally tag everything opened for writing.
 	     This should only succeed when the file is empty.  */
@@ -564,6 +566,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 	    }
 
 	  tag_ret = __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
+	  fd_target.st_ccsid = tag.ft_ccsid;
+	  fd_target.st_ftflags = tag.ft_flags;
 	}
 
       /* Fallthrough.  */
@@ -577,27 +581,18 @@ __zos_sys_open (int *errcode, const char *pathname,
 
 	fcvt.prog_ccsid = 0;
 	fcvt.command = F_CVT_ON;
-	if ((flags & O_TRUEBINARY) != 0)
+	if (flags & O_TRUEBINARY)
 	  {
-	    /* Treat as binary.  */
 	    fcvt.file_ccsid = FT_BINARY;
 	  }
-	else if (tag_ret >= 0
-		 || (fd_target.st_ccsid == 819
-		     && (fd_target.st_ftflags & FT_PURETXT) != 0))
+	else if (fd_target.st_ccsid == 0)
 	  {
-	    /* O_TRUEBINARY is off and we have a new file, or
-	       O_TRUEBINARY is off and we hava a file explictly
-	       tagged ASCII.  */
-	      fcvt.file_ccsid = 819;
-	  }
-	else if (fd_target.st_ccsid == 0
-		 || (fd_target.st_ccsid == 1047
-		     && (fd_target.st_ftflags & FT_PURETXT) != 0))
-	  {
-	    /* O_TRUEBINARY is off, we have an old file, and it is
-	       untagged or tagged 1047.  */
 	    fcvt.file_ccsid = 1047;
+	  }
+	else if ((fd_target.st_ccsid == 1047 || fd_target.st_ccsid == 819)
+		 && (fd_target.st_ftflags & FT_PURETXT) != 0)
+	  {
+	    fcvt.file_ccsid = fd_target.st_ccsid;
 	  }
 	else
 	  {

@@ -36,7 +36,9 @@ tag_one_fd (int fd)
   int tag_ret;
   if ((S_ISREG (st.st_mode) || S_ISFIFO (st.st_mode))
       && st.st_size == 0
-      && st.st_ccsid == 0
+      && ((st.st_ccsid == 0)
+	  || (st.st_ftflags & FT_PURETXT
+	      && st.st_ftflags & FT_DEFER))
       && fd != STDIN_FILENO)
     {
       int accmode = (O_ACCMODE & __fcntl64_nocancel (fd, F_GETFL));
@@ -47,6 +49,8 @@ tag_one_fd (int fd)
 	  ft.ft_flags = FT_PURETXT;
 	  /* z/OS TODO: Race condition here.  */
 	  tag_ret = __fcntl64_nocancel (fd, F_SETTAG, &ft);
+	  st.st_ccsid = ft.ft_ccsid;
+	  st.st_ftflags = ft.ft_flags;
 	}
       else
 	tag_ret = -1;
@@ -64,20 +68,17 @@ tag_one_fd (int fd)
      streams being enabled.  */
   fcvt.prog_ccsid = 0;
   fcvt.command = F_CVT_ON;
-  if (tag_ret < 0
-      && (st.st_ccsid == 0
-	  || (st.st_ccsid == 1047
-	      && (st.st_ftflags & FT_PURETXT) != 0)))
-    {
-      /* Untagged, or explictly tagged as EBCDIC, assume EBCDIC text.  */
-      fcvt.file_ccsid = 1047;
-    }
+  if (st.st_ccsid == 0)
+    fcvt.file_ccsid = 1047;
+  else if ((st.st_ccsid == 1047 || st.st_ccsid == 819)
+	   && (st.st_ftflags & FT_PURETXT) != 0)
+    fcvt.file_ccsid = st.st_ccsid;
   else
     {
       /* Conversion will not occur for us, but we do not explicitly
 	 disable because doing so may invalidate assumptions made by
 	 other programs.  */
-      fcvt.file_ccsid = 0;
+      fcvt.file_ccsid = FT_BINARY;
     }
 
   __fcntl64_nocancel (fd, F_CONTROL_CVT, &fcvt);
