@@ -535,7 +535,7 @@ __zos_sys_open (int *errcode, const char *pathname,
   /* Handle tagging and character conversion.
      NOTE: There is similar code in check_fds.c, keep that in line
      with this.  */
-  int tag_ret = -1, accmode = flags & O_ACCMODE;
+  int accmode = flags & O_ACCMODE;
   switch (accmode)
     {
     default:
@@ -565,7 +565,7 @@ __zos_sys_open (int *errcode, const char *pathname,
 	      tag.ft_flags = FT_PURETXT;
 	    }
 
-	  tag_ret = __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
+	  __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
 	  fd_target.st_ccsid = tag.ft_ccsid;
 	  fd_target.st_ftflags = tag.ft_flags;
 	}
@@ -2671,7 +2671,7 @@ __zos_sys_tcgetattr (int *errcode, int fd, struct termios *termios_p)
   memset(termios_p, 0, sizeof(struct termios));
   termios_p->c_cflag = termios_e.c_cflag;
   termios_p->c_iflag = termios_e.c_iflag;
-  termios_p->c_lflag = termios_e.clcflag;
+  termios_p->c_lflag = termios_e.c_lflag;
   termios_p->c_oflag = termios_e.c_oflag;
   if (termios_p->c_lflag & ICANON)
     {
@@ -2714,10 +2714,10 @@ __zos_sys_tcsetattr (int *errcode, int fd, int acts,
   struct termios termios_e;
   speed_t ispeed = termios_p->c_cflag & 0x00ff0000;
 
-  memset(termios_e, 0, sizeof(struct termios);
+  memset(&termios_e, 0, sizeof(struct termios));
   termios_e.c_cflag = termios_p->c_cflag;
   termios_e.c_iflag = termios_p->c_iflag;
-  termios_e.c_lflag = termios_p->clcflag;
+  termios_e.c_lflag = termios_p->c_lflag;
   termios_e.c_oflag = termios_p->c_oflag;
   /* Handle ispeed == 0 special case where ispeed should be set to
      ospeed.

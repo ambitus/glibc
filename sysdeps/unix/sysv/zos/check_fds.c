@@ -33,7 +33,6 @@ tag_one_fd (int fd)
      the file descriptor). Never modify stdin, even if it is writeable.
      z/OS TODO: This should obey the environment variable controlling
      new file tags.  */
-  int tag_ret;
   if ((S_ISREG (st.st_mode) || S_ISFIFO (st.st_mode))
       && st.st_size == 0
       && ((st.st_ccsid == 0)
@@ -48,15 +47,11 @@ tag_one_fd (int fd)
 	  ft.ft_ccsid = 819;
 	  ft.ft_flags = FT_PURETXT;
 	  /* z/OS TODO: Race condition here.  */
-	  tag_ret = __fcntl64_nocancel (fd, F_SETTAG, &ft);
+	  __fcntl64_nocancel (fd, F_SETTAG, &ft);
 	  st.st_ccsid = ft.ft_ccsid;
 	  st.st_ftflags = ft.ft_flags;
 	}
-      else
-	tag_ret = -1;
     }
-  else
-    tag_ret = -1;
 
   /* z/OS TODO: This needs to obey first the override env vars, then
      the env var controlling whether to treat untagged files as EBCDIC
