@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -21,40 +21,7 @@
 #include <sysdep.h>
 #include <not-cancel.h>
 #include <zos-core.h>
-
-struct zos_file_attrs
-  {
-    char		eyecatcher[4];
-    unsigned short	version;
-#define CHATTR_CURR_VER 3
-    unsigned short	__res;
-    unsigned int	set_flags;	/* Which fields to set.  */
-#define CHATTR_SETTAG 0x00004000
-    unsigned int	mode;
-    unsigned int	uid;
-    unsigned int	gid;
-    unsigned char	__res2[3];
-    unsigned char	flags2;
-    unsigned char	__res3[3];
-    unsigned char	flags3;
-    unsigned long int	size;
-    unsigned int	_bpx_atime32;
-    unsigned int	_bpx_mtime32;
-    unsigned int	auditoraudit;
-    unsigned int	useraudit;
-    unsigned int	_bpx_ctime32;
-    unsigned int	_bpx_reftime32;
-    unsigned char	format;
-    unsigned char	__res4[3];
-    struct zos_file_tag tag;
-    unsigned char	__res5[8];
-    __time_t		_bpx_atime64;
-    __time_t		_bpx_mtime64;
-    __time_t		_bpx_ctime64;
-    __time_t		reftime;
-    unsigned char	seclabel[8];
-    unsigned char	__res6[8];
-  };
+#include <zos-file-attrs.h>
 
 typedef void (*__bpx4fcr_t) (const int32_t *fd,
 			     const int32_t *attrs_len,

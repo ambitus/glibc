@@ -32,6 +32,8 @@
 # include <zos-syscall-base.h>
 #endif
 
+#include <zos-file-attrs.h>
+
 #include <features.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
@@ -1918,6 +1920,29 @@ __zos_sys_rename (int *errcode, const char *oldname, const char *newname)
   return retval;
 }
 
+typedef void (*__bpx4cha_t) (int32_t *pathname_length,
+			     const char *pathname,
+			     int32_t *attrs_length,
+			     struct zos_file_attrs *attrs,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+/* While this is a z/OS syscall it does not appear to be a POSIX, or
+   even Linux syscall.  */
+static int
+__zos_sys_chattr (const char *pathname, const struct zos_file_attrs *attrs)
+{
+  int32_t retval, retcode, reason_code;
+  int attrs_length = sizeof (*attrs);
+  char translated_path[__BPXK_PATH_MAX];
+  uint32_t pathname_len = translate_and_check_size (pathname,
+						    translated_path);
+
+  BPX_CALL (chattr, __bpx4fcr_t, &pathname_len, translated_path,
+	    &attrs_length, attrs, &retval, &retcode, &reason_code);
+
+  return retval;
+}
 
 typedef void (*__bpx4mkn_t) (const uint32_t *pathname_len,
 			     const char *pathname,
@@ -1945,6 +1970,19 @@ __zos_sys_mknod (int *errcode, const char *pathname, mode_t mode,
   BPX_CALL (mknod, __bpx4mkn_t, &path_len, translated_path,
 	    &mod, &devid, &retval, errcode, &reason_code);
 
+  if (retval == 0)
+    {
+      struct zos_file_tag tag;
+      tag.ft_ccsid = 819;
+      tag.ft_flags = FT_PURETXT;
+      struct zos_file_attrs attrs = {
+				     .eyecatcher = { 0xC1, 0xE3, 0xE3, 0x40 },
+				     .version = CHATTR_CURR_VER,
+				     .set_flags = CHATTR_SETTAG,
+				     .tag = tag
+      };
+      __zos_sys_chattr (pathname, &attrs);
+    }
   return retval;
 }
 
