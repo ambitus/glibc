@@ -195,6 +195,9 @@ translate_and_check_size (const char *str, char ebcstr[__BPXK_PATH_MAX])
 					   __BPXK_PATH_MAX);
 }
 
+static inline int
+__zos_sys_stat (int *errcode, const char *pathname,
+		struct stat *statbuf);
 
 /***************************************************
  * Syscall wrappers
@@ -320,6 +323,30 @@ __map_common_oflags_from_zos (int zflgs)
   return (int32_t) flags;
 }
 
+typedef void (*__bpx4cha_t) (int32_t *pathname_length,
+			     const char *pathname,
+			     int32_t *attrs_length,
+			     struct zos_file_attrs *attrs,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+/* While this is a z/OS syscall it does not appear to be a POSIX, or
+   even Linux syscall.  */
+static int
+__zos_sys_chattr (const char *pathname, const struct zos_file_attrs *attrs)
+{
+  int32_t retval, retcode, reason_code;
+  int attrs_length = sizeof (*attrs);
+  char translated_path[__BPXK_PATH_MAX];
+  uint32_t pathname_len = translate_and_check_size (pathname,
+						    translated_path);
+
+  BPX_CALL (chattr, __bpx4fcr_t, &pathname_len, translated_path,
+	    &attrs_length, attrs, &retval, &retcode, &reason_code);
+
+  return retval;
+}
+
 typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
 			     const char *pathname,
 			     const int32_t *options,
@@ -440,6 +467,61 @@ __zos_sys_open (int *errcode, const char *pathname,
 	}
       else
 	not_creating = false;
+    }
+
+  /* In the case of a FIFO the z/OS open sys call blocks until both
+     the read and the write side are ready at which time both sides
+     wake up. This means that tagging the FIFO after the syscall is
+     too late, the open on the read side may have already occurred,
+     invalidating the read side's assumption that, since the file is
+     un-tagged it must be EBCDIC.
+
+     The process interacting with the FIFO should tag the file prior
+     to the open z/OS syscall so that when both sides wake up we have
+     a consistant view of the file tag and both ends of the FIFO can
+     make a consistent choice about the text encoding.
+
+     If we are on either side of the FIFO we should opportunistically
+     tag the file. Since no other existing software appears to tag
+     FIFOs, we aren't fighting anyone for the tag, but should they
+     start we also don't want to override their choice. We also push
+     the responsibility to handle tagged files properly off to a
+     correct configuration of auto conversion. This also pushes our
+     ASCII agenda. :)
+
+     z/OS TODO: is it important to check the size of the file?  I
+                don't think it is because FIFOs should never have a
+                non-zero size, but I could find and z/OS specific
+                documentation about that.
+
+     z/OS TODO: What happens in a more complex scenario with more than
+                2 threads? Surly that is undefined behavior anyway
+                right? Right? -- We should wait till we see a program
+                use a single FIFO for more than 2 threads.  */
+  if (__zos_sys_stat (&tmp_err, pathname, &path_target) == 0
+      && S_ISFIFO(path_target.st_mode)
+      && path_target.st_ccsid == 0)
+    {
+      struct zos_file_tag tag;
+      if ((flags & O_TRUEBINARY) == O_TRUEBINARY)
+	{
+	  /* Tag as binary.  */
+	  tag.ft_ccsid = FT_BINARY;
+	  tag.ft_flags = 0;
+	}
+      else
+	{
+	  /* Tag as ASCII.  */
+	  tag.ft_ccsid = 819;
+	  tag.ft_flags = FT_PURETXT;
+	}
+      struct zos_file_attrs attrs = {
+				     .eyecatcher = { 0xC1, 0xE3, 0xE3, 0x40 },
+				     .version = CHATTR_CURR_VER,
+				     .set_flags = CHATTR_SETTAG,
+				     .tag = tag
+      };
+      __zos_sys_chattr (pathname, &attrs);
     }
 
   int32_t zflags = __map_common_oflags_to_zos (flags);
@@ -1495,7 +1577,6 @@ typedef void (*__bpx4fcm_t) (const int32_t *fd,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-
 static inline int
 __zos_sys_chmod (int *errcode, const char *pathname, mode_t mode)
 {
@@ -1916,30 +1997,6 @@ __zos_sys_rename (int *errcode, const char *oldname, const char *newname)
   BPX_CALL (rename, __bpx4ren_t, &oldname_len, translated_oldname,
 	    &newname_len, translated_newname, &retval, errcode,
 	    &reason_code);
-
-  return retval;
-}
-
-typedef void (*__bpx4cha_t) (int32_t *pathname_length,
-			     const char *pathname,
-			     int32_t *attrs_length,
-			     struct zos_file_attrs *attrs,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
-
-/* While this is a z/OS syscall it does not appear to be a POSIX, or
-   even Linux syscall.  */
-static int
-__zos_sys_chattr (const char *pathname, const struct zos_file_attrs *attrs)
-{
-  int32_t retval, retcode, reason_code;
-  int attrs_length = sizeof (*attrs);
-  char translated_path[__BPXK_PATH_MAX];
-  uint32_t pathname_len = translate_and_check_size (pathname,
-						    translated_path);
-
-  BPX_CALL (chattr, __bpx4fcr_t, &pathname_len, translated_path,
-	    &attrs_length, attrs, &retval, &retcode, &reason_code);
 
   return retval;
 }
