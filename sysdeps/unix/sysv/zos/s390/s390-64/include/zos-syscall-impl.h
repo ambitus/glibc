@@ -52,6 +52,7 @@
 
 #include <sys/mman.h>  /* for user-facing mmap constant values.  */
 #include <sys/utsname.h>
+#include <sys/sysmacros.h>
 #include <sys/socket.h>
 #include <signal.h>
 #include <sir.h>
@@ -616,81 +617,88 @@ __zos_sys_open (int *errcode, const char *pathname,
       return -1;
     }
 
-  /* Handle tagging and character conversion.
+  /* Handle tagging and character conversion if the file isn't part
+     of /dev/fd. Those files are special character files with their
+     major block number 5.
      NOTE: There is similar code in check_fds.c, keep that in line
      with this.  */
-  int accmode = flags & O_ACCMODE;
-  switch (accmode)
+  if (!(S_ISCHR (fd_target.st_mode) && major (fd_target.st_dev) == 5))
     {
-    default:
-    case O_WRONLY:
-    case O_RDWR:
-
-      if ((S_ISREG (fd_target.st_mode) || S_ISFIFO (fd_target.st_mode))
-	  && fd_target.st_size == 0
-	  && ((fd_target.st_ccsid == 0)
-	      || (fd_target.st_ftflags & FT_PURETXT
-		  && fd_target.st_ftflags & FT_DEFER)))
+      int accmode = flags & O_ACCMODE;
+      switch (accmode)
 	{
-	  /* z/OS NOTE: Unilaterally tag everything opened for writing.
-	     This should only succeed when the file is empty.  */
-	  struct zos_file_tag tag;
+	default:
+	case O_WRONLY:
+	case O_RDWR:
 
-	  if ((flags & O_TRUEBINARY) == O_TRUEBINARY)
+	  if ((S_ISREG (fd_target.st_mode)
+	       || S_ISFIFO (fd_target.st_mode))
+	      && fd_target.st_size == 0
+	      && ((fd_target.st_ccsid == 0)
+		  || (fd_target.st_ftflags & FT_PURETXT
+		      && fd_target.st_ftflags & FT_DEFER)))
 	    {
-	      /* Tag as binary.  */
-	      tag.ft_ccsid = FT_BINARY;
-	      tag.ft_flags = 0;
-	    }
-	  else
-	    {
-	      /* Tag as ASCII.  */
-	      tag.ft_ccsid = 819;
-	      tag.ft_flags = FT_PURETXT;
+	      /* z/OS NOTE: Unilaterally tag everything opened for
+		 writing. This should only succeed when the file is
+		 empty.  */
+	      struct zos_file_tag tag;
+
+	      if ((flags & O_TRUEBINARY) == O_TRUEBINARY)
+		{
+		  /* Tag as binary.  */
+		  tag.ft_ccsid = FT_BINARY;
+		  tag.ft_flags = 0;
+		}
+	      else
+		{
+		  /* Tag as ASCII.  */
+		  tag.ft_ccsid = 819;
+		  tag.ft_flags = FT_PURETXT;
+		}
+
+	      __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
+	      fd_target.st_ccsid = tag.ft_ccsid;
+	      fd_target.st_ftflags = tag.ft_flags;
 	    }
 
-	  __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
-	  fd_target.st_ccsid = tag.ft_ccsid;
-	  fd_target.st_ftflags = tag.ft_flags;
+	  /* Fallthrough.  */
+
+	case O_RDONLY:
+	  {
+	    /* Enable conversion unless the input file is explictly
+	       tagged as something other than IBM-1047, or is tagged as
+	       IBM-1047 but is non-text.  */
+	    struct zos_fconvert fcvt;
+
+	    fcvt.prog_ccsid = 0;
+	    fcvt.command = F_CVT_ON;
+	    if (flags & O_TRUEBINARY)
+	      {
+		fcvt.file_ccsid = FT_BINARY;
+	      }
+	    else if (fd_target.st_ccsid == 0)
+	      {
+		fcvt.file_ccsid = 1047;
+	      }
+	    else if ((fd_target.st_ccsid == 1047
+		      || fd_target.st_ccsid == 819)
+		     && (fd_target.st_ftflags & FT_PURETXT) != 0)
+	      {
+		fcvt.file_ccsid = fd_target.st_ccsid;
+	      }
+	    else
+	      {
+		/* O_TRUEBINARY is off, we have an old file, and it is
+		   tagged in some unknown way. If we end up here, we are
+		   way off the beaten path.  */
+		fcvt.file_ccsid = FT_BINARY;
+	      }
+
+	    __zos_sys_fcntl (&tmp_err, retval, F_CONTROL_CVT, &fcvt);
+	  }
+	  break;
 	}
-
-      /* Fallthrough.  */
-
-    case O_RDONLY:
-      {
-	/* Enable conversion unless the input file is explictly tagged as
-	   something other than IBM-1047, or is tagged as IBM-1047 but is
-	   non-text.  */
-	struct zos_fconvert fcvt;
-
-	fcvt.prog_ccsid = 0;
-	fcvt.command = F_CVT_ON;
-	if (flags & O_TRUEBINARY)
-	  {
-	    fcvt.file_ccsid = FT_BINARY;
-	  }
-	else if (fd_target.st_ccsid == 0)
-	  {
-	    fcvt.file_ccsid = 1047;
-	  }
-	else if ((fd_target.st_ccsid == 1047 || fd_target.st_ccsid == 819)
-		 && (fd_target.st_ftflags & FT_PURETXT) != 0)
-	  {
-	    fcvt.file_ccsid = fd_target.st_ccsid;
-	  }
-	else
-	  {
-	    /* O_TRUEBINARY is off, we have an old file, and it is
-	       tagged in some unknown way. If we end up here, we are
-	       way off the beaten path.  */
-	    fcvt.file_ccsid = FT_BINARY;
-	  }
-
-	__zos_sys_fcntl (&tmp_err, retval, F_CONTROL_CVT, &fcvt);
-      }
-      break;
     }
-
   return retval;
 }
 
