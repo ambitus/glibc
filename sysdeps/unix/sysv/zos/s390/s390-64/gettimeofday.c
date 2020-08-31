@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdint.h>
+#include <zos-utils.h>
 
 /* The TOD value corresponding to the start of the unix epoch.  */
 #define TOD_UNIX_EPOCH_START	0x007D91048BCA0000UL
@@ -26,6 +27,7 @@
 /* The TOD increments corresponding to one second and one microsecond.  */
 #define TOD_PER_SEC		0xF42400UL
 #define TOD_PER_USEC		0x10UL
+#define LEAPSEC_UNIT_PER_TOD    0x100UL
 
 /* Get the current time of day and timezone information,
    putting it into *TV and *TZ.  If TZ is NULL, *TZ is not filled.
@@ -43,14 +45,13 @@ __gettimeofday (struct timeval *tv, struct timezone *tz)
      and most correct conversion method is.  */
 
   uint64_t stcke_val[2];
-  uint64_t epoch_tod, leap_second_adj, local_adj;
+  uint64_t epoch_tod, leap_second_adj;
   uintptr_t CVTXTNT2_addr;
 
   if (tv != NULL)
     {
-      /* Get leap second and local timezone corrections from the CVT.  */
+      /* Get leap second correction from the CVT.  */
       CVTXTNT2_addr = (0x00ffffff & *(uint32_t *) (CVT_PTR + 0x148));
-      local_adj = *(uint64_t *) (CVTXTNT2_addr + 0x38);
       leap_second_adj = *(uint64_t *) (CVTXTNT2_addr + 0x50);
 
       /* GET the TOD clock value. We only care about the high-order 64
@@ -59,17 +60,18 @@ __gettimeofday (struct timeval *tv, struct timezone *tz)
       __asm__ __volatile__ ("stcke %0" : "=Q" (stcke_val));
 
       /* Correct TOD to the unix epoch.  */
-      epoch_tod = ((stcke_val[0] - leap_second_adj + local_adj)
-		   - TOD_UNIX_EPOCH_START);
+      epoch_tod =
+	stcke_val[0]
+	- (leap_second_adj / LEAPSEC_UNIT_PER_TOD)
+	- TOD_UNIX_EPOCH_START;
 
       tv->tv_sec = (time_t) (epoch_tod / TOD_PER_SEC);
-      tv->tv_usec =
-	(suseconds_t) ((epoch_tod % TOD_PER_SEC) / TOD_PER_USEC);
+      tv->tv_usec = (suseconds_t) ((epoch_tod % TOD_PER_SEC) / TOD_PER_USEC);
     }
 
   if (tz != NULL)
     {
-      const time_t timer = tv->tv_sec;
+      const time_t timer = tv != NULL ? tv->tv_sec : 0;
       struct tm tm;
       const struct tm *tmp;
 
