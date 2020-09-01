@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <libc-lock.h>
+#include <pwd.h>
 #include <zos-utils.h>
 
 /* We use the unix convention of returning "*" in pw_passwd when
