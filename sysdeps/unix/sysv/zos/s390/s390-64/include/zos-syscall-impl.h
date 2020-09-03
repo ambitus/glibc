@@ -500,7 +500,7 @@ __zos_sys_open (int *errcode, const char *pathname,
                 right? Right? -- We should wait till we see a program
                 use a single FIFO for more than 2 threads.  */
   if (__zos_sys_stat (&tmp_err, pathname, &path_target) == 0
-      && S_ISFIFO(path_target.st_mode)
+      && S_ISFIFO (path_target.st_mode)
       && path_target.st_ccsid == 0)
     {
       struct zos_file_tag tag;
@@ -622,7 +622,7 @@ __zos_sys_open (int *errcode, const char *pathname,
      major block number 5.
      NOTE: There is similar code in check_fds.c, keep that in line
      with this.  */
-  if (!(S_ISCHR (fd_target.st_mode) && major (fd_target.st_dev) == 5))
+  if (!(S_ISCHR (path_target.st_mode) && major (path_target.st_dev) == 5))
     {
       int accmode = flags & O_ACCMODE;
       switch (accmode)

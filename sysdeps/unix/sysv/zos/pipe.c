@@ -47,10 +47,8 @@ __pipe (int __pipedes[2])
   if (retval < 0)
     __set_errno (retcode);
 
-  /* Set the defer tag and text flags on for all pipes we create.
-     We only need to do this for the write end, subsequent operations
-     on either end should tag both ends.  */
-  struct zos_file_tag ft = { 0, FT_DEFER | FT_PURETXT };
+  /* Set text flags on for all pipes we create.  */
+  struct zos_file_tag ft = { 819, FT_PURETXT };
 
   __fcntl (__pipedes[1], F_SETTAG, &ft);
 
