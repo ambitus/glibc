@@ -28,12 +28,16 @@ tag_one_fd (int fd)
   if (__fstat64 (fd, &st) != 0)
     return;
 
-  /* If the file is an empty untagged file open for writing, try
-     to tag the underlying file (in addition to enabling conversion on
-     the file descriptor). Never modify stdin, even if it is writeable.
-     z/OS TODO: This should obey the environment variable controlling
-     new file tags.  */
-  if ((S_ISREG (st.st_mode) || S_ISFIFO (st.st_mode))
+  /* If the file is an empty untagged file open for writing, try to
+     tag the underlying file (in addition to enabling conversion on
+     the file descriptor). We don't tag underling pipes because it is
+     unclear if we are permitted to. GLIBC programs don't create
+     untagged pipes, so any untagged pipes where created by another
+     program and attemting to tag them my cause issues. Thus don't
+     attempt to retag FIFOs. Never modify stdin, even if it is
+     writeable.  z/OS TODO: This should obey the environment variable
+     controlling new file tags.  */
+  if (S_ISREG (st.st_mode)
       && st.st_size == 0
       && ((st.st_ccsid == 0)
 	  || (st.st_ftflags & FT_PURETXT
@@ -52,7 +56,6 @@ tag_one_fd (int fd)
 	  st.st_ftflags = ft.ft_flags;
 	}
     }
-
   /* z/OS TODO: This needs to obey first the override env vars, then
      the env var controlling whether to treat untagged files as EBCDIC
      or binary.  */
@@ -64,10 +67,14 @@ tag_one_fd (int fd)
   fcvt.prog_ccsid = 0;
   fcvt.command = F_CVT_ON;
   if (st.st_ccsid == 0)
-    fcvt.file_ccsid = 1047;
+    {
+      fcvt.file_ccsid = 1047;
+    }
   else if ((st.st_ccsid == 1047 || st.st_ccsid == 819)
 	   && (st.st_ftflags & FT_PURETXT) != 0)
-    fcvt.file_ccsid = st.st_ccsid;
+    {
+      fcvt.file_ccsid = st.st_ccsid;
+    }
   else
     {
       /* Conversion will not occur for us, but we do not explicitly
