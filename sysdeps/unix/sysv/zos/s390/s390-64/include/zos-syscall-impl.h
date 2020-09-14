@@ -93,9 +93,6 @@ static inline int
 __zos_sys_fstat (int *errcode, int fd, struct stat *statbuf);
 
 static inline int
-__zos_sys_fsync (int *errcode, int fd);
-
-static inline int
 __zos_sys_close (int *errcode, int fd);
 
 extern int
@@ -936,20 +933,6 @@ __zos_sys_lstat (int *errcode, const char *pathname,
 /* For z/OS, stat64 is exactly equivalent to stat, so wrappers for any
    of the *stat64 calls shouldn't be necessary.	 */
 
-
-typedef void (*__bpx4fsy_t) (const int32_t *fd,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
-
-static inline int
-__zos_sys_fsync (int *errcode, int fd)
-{
-  int32_t retval, reason_code;
-  BPX_CALL (fsync, __bpx4fsy_t, &fd, &retval,
-	    errcode, &reason_code);
-  /* TODO: confirm retvals are in line with what linux gives.  */
-  return retval;
-}
 
 typedef void (*__bpx4clo_t) (const int32_t *fd,
 			     int32_t *retval, int32_t *retcode,
