@@ -54,6 +54,8 @@
 
 #include <bpxk-constants.h>
 
+#include <string.h>
+
 /* some things use these aliases  */
 #define __zos_sys_fcntl64      __zos_sys_fcntl
 #define __zos_sys_fadvise64_64 __zos_sys_fadvise64
@@ -645,9 +647,28 @@ __zos_sys_open (int *errcode, const char *pathname,
 		}
 	      else
 		{
-		  /* Tag as ASCII.  */
-		  tag.ft_ccsid = 819;
-		  tag.ft_flags = FT_PURETXT;
+		  char *encode_new_regular_file = getenv("_ENCODE_FILE_NEW");
+		  if (encode_new_regular_file != NULL &&
+		      strncmp(encode_new_regular_file, "IBM-1047",
+			      sizeof("IBM-1047") - 1) == 0)
+		    {
+		      /* Tag as EBCDIC.  */
+		      tag.ft_ccsid = 1047;
+		      tag.ft_flags = FT_PURETXT;
+		    }
+		  else if (encode_new_regular_file != NULL &&
+		      strncmp(encode_new_regular_file, "BINARY",
+			      sizeof("BINARY") - 1) == 0)
+		    {
+		      /* Tag as Binary.  */
+		      tag.ft_ccsid = 0;
+		      tag.ft_flags = FT_BINARY;
+		    }
+		  else {
+		    /* Tag as ASCII.  */
+		    tag.ft_ccsid = 819;
+		    tag.ft_flags = FT_PURETXT;
+		  }
 		}
 
 	      __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
@@ -672,7 +693,23 @@ __zos_sys_open (int *errcode, const char *pathname,
 	      }
 	    else if (fd_target.st_ccsid == 0)
 	      {
-		fcvt.file_ccsid = 1047;
+		char *untagged_existing_file = getenv("_ENCODE_FILE_EXISTING");
+		if (untagged_existing_file != NULL &&
+			 strncmp(untagged_existing_file, "ISO8859-1",
+				 sizeof("ISO8859-1") - 1) == 0)
+		  {
+		    fcvt.file_ccsid = 819;
+		  }
+		else if (untagged_existing_file != NULL &&
+		    strncmp(untagged_existing_file, "BINARY",
+			    sizeof("BINARY") - 1) == 0)
+		  {
+		    fcvt.file_ccsid = 0;
+		  }
+		else
+		  {
+		    fcvt.file_ccsid = 1047;
+		  }
 	      }
 	    else if ((fd_target.st_ccsid == 1047
 		      || fd_target.st_ccsid == 819)
