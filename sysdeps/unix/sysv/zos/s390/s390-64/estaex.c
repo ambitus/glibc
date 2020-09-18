@@ -1,5 +1,5 @@
 /* ESTAEX registration routines and wrappers.
-   Copyright (C) 2019 Free Software Foundation, Inc.
+   Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Michael Colavita <mcolavita@rocketsoftware.com>.
 
@@ -24,6 +24,7 @@
 #include <execinfo.h>
 #include <zos-core.h>
 #include <zos-estaex.h>
+#include <bpxk-constants.h>
 
 /* z/OS TODO: Allow all estaex processing (including registration) to
    work with an unrelocated PLT so we can set it up in the dynamic
@@ -257,14 +258,40 @@ __zos_dump_stack (int fd, void *psw_addr, void *r13)
   __zos_print_backtrace (fd, psw_addr, r13, 50);
 }
 
-void __estaex_handler_dump(struct sdwa* sdwa_ptr, void *user_data) {
-  ext_printf("*** ESTAEX TRIGGERED ***\n");
-
+void
+__estaex_handler_dump (struct sdwa* sdwa_ptr, void *user_data)
+{
 #define SDWAPTRS(sdwa) ((struct sdwaptrs *) GET_PTR31_SAFE(&sdwa->sdwaptrs))
 #define SDWARC1(sdwa) ((struct sdwarc1 *) GET_PTR31_SAFE(&SDWAPTRS(sdwa)->sdwarc1))
 #define SDWARC4(sdwa) ((struct sdwarc4 *) GET_PTR31_SAFE(&SDWAPTRS(sdwa)->sdwarc4))
   struct sdwa* sdwa = sdwa_ptr;
   int comp_code = (sdwa->completion_code[0] << 16) + (sdwa->completion_code[1] << 8) + sdwa->completion_code[2];
+
+  /* The ESTAEX handler gets run if the process is exiting with a status
+     that looks like it indicates termination by signal. Note that this
+     does not require any such signal to have ever been delivered. In
+     any event, we only want to dump for a few signals.  */
+  if (comp_code >> 12 == 0xEC6
+      && (SDWARC1 (sdwa)->abend_reason_code & 0xffffff00) == 0x0000ff00)
+    {
+      /* Termination because of a signal, without explicit dump
+	 request.  */
+      int signum = SDWARC1 (sdwa)->abend_reason_code & 0xff;
+      if (signum != ZOS_SYS_SIGABRT
+	  && signum != ZOS_SYS_SIGQUIT
+	  && signum != ZOS_SYS_SIGSYS
+	  && signum != ZOS_SYS_SIGXCPU
+	  && signum != ZOS_SYS_SIGXFSZ
+	  && signum != ZOS_SYS_SIGTRAP
+	  && signum != ZOS_SYS_SIGBUS
+	  && signum != ZOS_SYS_SIGILL
+	  && signum != ZOS_SYS_SIGFPE
+	  && signum != ZOS_SYS_SIGSEGV)
+	return;
+    }
+
+  ext_printf("*** ESTAEX TRIGGERED ***\n");
+
   if (comp_code == 0)
     ;
   else if (comp_code >= 0x1000) 
