@@ -78,24 +78,21 @@
 /* The address of the Initial Pthread-creating Task's Task Control
    Block.  */
 extern unsigned int __ipt_zos_tcb attribute_hidden;
-hidden_proto (__ipt_zos_tcb)
 
-void *__storage_obtain (unsigned int length, unsigned int tcbaddr,
-			bool noexec,
-			bool on_page_boundary) attribute_hidden
+extern void *__storage_obtain (unsigned int length, unsigned int tcbaddr,
+			       bool noexec,
+			       bool on_page_boundary) attribute_hidden
   __attribute_malloc__ __attribute_alloc_size__ ((1));
 
 /* TODO: remove this when the regular one works.  */
-void *__storage_obtain_simple (unsigned int length)
-  __attribute_malloc__ __attribute_alloc_size__ ((1));
+extern void *__storage_obtain_simple (unsigned int length)
+  __attribute_malloc__ __attribute_alloc_size__ ((1))
+  attribute_hidden;
 
-int __storage_release (unsigned int storage_addr, unsigned int length,
-		       unsigned int tcbaddr,
-		       bool noexec) attribute_hidden;
-
-hidden_proto (__storage_obtain)
-hidden_proto (__storage_obtain_simple)
-hidden_proto (__storage_release)
+extern int __storage_release (unsigned int storage_addr,
+			      unsigned int length,
+			      unsigned int tcbaddr,
+			      bool noexec) attribute_hidden;
 
 #ifndef ZOS_HIDDEN_SYSCALL
 extern void * __loadhfs (char *path);

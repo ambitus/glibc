@@ -25,7 +25,6 @@
 
 
 unsigned int __ipt_zos_tcb __attribute__ ((nocommon));
-hidden_data_def (__ipt_zos_tcb)
 
 /* Our memory model for z/OS:
    z/OS TODO: Implement this.
@@ -212,7 +211,6 @@ __storage_obtain (unsigned int length, unsigned int tcbaddr,
 
   return retptr;
 }
-hidden_def (__storage_obtain)
 
 
 /* TODO: remove this once the generic version above is working.  */
@@ -244,7 +242,6 @@ __storage_obtain_simple (unsigned int length)
   /* Return code is 0 for a successful request.	 */
   return return_code == 0 ? (void *) (uintptr_t) ret_addr : NULL;
 }
-hidden_def (__storage_obtain_simple)
 
 
 /* C interface to a subset of STORAGE RELEASE's functionality.
@@ -276,7 +273,6 @@ __storage_release (unsigned int storage_addr, unsigned int length,
   res = storage_request (length, tcbaddr, storage_addr, flags, flags2);
   return res ? -1 : 0;
 }
-hidden_def (__storage_release)
 
 /* IARV64
    IARV64 is a storage management facility similar to STORAGE
