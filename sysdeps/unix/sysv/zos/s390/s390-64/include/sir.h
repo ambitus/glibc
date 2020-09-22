@@ -102,7 +102,10 @@ libc_hidden_proto (__sig_tdata)
 /* The user-facing signal numbers and the ones the kernel uses are
    slightly out of sync. We swap them around so that they more
    closely match the expected ones. 3 and 6 are the important ones,
-   they should be QUIT and ABRT, respectively.  */
+   they should be QUIT and ABRT, respectively. Remapping those
+   requires us to remap SIGURG and also the currently unused
+   signal number 41 (to map 24 to and avoid duplicate signal
+   number for SIGQUIT).  */
 
 static inline int
 user_to_kern_signo (int signo)
@@ -115,6 +118,8 @@ user_to_kern_signo (int signo)
       return ZOS_SYS_SIGABRT;
     case SIGURG:
       return ZOS_SYS_SIGURG;
+    case 24:
+      return 41;
     default:
       return signo;
     }
@@ -132,6 +137,8 @@ kern_to_user_signo (int signo)
       return SIGABRT;
     case ZOS_SYS_SIGURG:
       return SIGURG;
+    case 41:
+      return 24;
     default:
       return signo;
     }
@@ -162,6 +169,7 @@ user_to_kern_sigset (const sigset_t *set)
   __mapflg (kernel_set, SIGQUIT, ZOS_SYS_SIGQUIT);
   __mapflg (kernel_set, SIGABRT, ZOS_SYS_SIGABRT);
   __mapflg (kernel_set, SIGURG, ZOS_SYS_SIGURG);
+  __mapflg (kernel_set, 24, 41);
 
   /* z/OS TODO: avoid this by having sigaddset et al. understand
      the proper sigset format.  */
@@ -183,6 +191,7 @@ kern_to_user_sigset (sigset_t *oset, uint64_t kset)
   __mapflg (oset->__val[0], ZOS_SYS_SIGURG, SIGURG);
   __mapflg (oset->__val[0], ZOS_SYS_SIGABRT, SIGABRT);
   __mapflg (oset->__val[0], ZOS_SYS_SIGQUIT, SIGQUIT);
+  __mapflg (kernel_set, 41, 24);
 }
 #undef __mapflg
 

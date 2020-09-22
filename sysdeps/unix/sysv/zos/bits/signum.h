@@ -67,8 +67,11 @@
 #undef SIGURG
 #define SIGURG		40
 
+/* We remap 24 (kernel SIGQUIT) to 41 to avoid giving SIGQUIT
+   multiple numbers.  */
+
 #undef __SIGRTMIN
-#define __SIGRTMIN	41
+#define __SIGRTMIN	42
 #undef __SIGRTMAX
 #define __SIGRTMAX	__SIGRTMIN
 
