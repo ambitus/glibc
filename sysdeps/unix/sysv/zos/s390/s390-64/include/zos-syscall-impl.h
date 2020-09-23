@@ -19,18 +19,12 @@
 
    z/OS TODO: The static inline stuff is really a crutch. We're bleeding
    way too many headers. This library-in-a-header stuff is bad practice,
-   but without it linking gets really complicated.
-
-   z/OS TODO: merge this with zos-syscall-base.h.  */
+   but without it linking gets really complicated.  */
 
 #ifndef _ZOS_DECL_H
 #define _ZOS_DECL_H 1
 
-/* we are only included from zos-syscall-base.h right now, and we rely
-   on things it defines.  */
-#ifndef _ZOS_SYSCALL_COMMON_H
-# include <zos-syscall-base.h>
-#endif
+#include <zos-syscall-base.h>
 
 #include <zos-file-attrs.h>
 

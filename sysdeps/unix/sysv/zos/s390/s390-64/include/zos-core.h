@@ -94,6 +94,8 @@ extern int __storage_release (unsigned int storage_addr,
 			      unsigned int tcbaddr,
 			      bool noexec) attribute_hidden;
 
+extern int __mvsprocclp (int status) attribute_hidden;
+
 #ifndef ZOS_HIDDEN_SYSCALL
 extern void * __loadhfs (char *path);
 extern void * __load_pt_interp (void);

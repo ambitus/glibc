@@ -34,7 +34,6 @@
 #include <alloca.h>
 #include <zos-utils.h>
 #include <zos-core.h>
-#include <zos-syscall-base.h>
 #include <zos-estaex.h>
 #include <zos-futex.h>
 #include <zos-init.h>
@@ -160,27 +159,6 @@ startup_load_address (void)
   return addr;
 }
 #endif
-
-typedef void (*__bpx4mss_t) (void (**sir_addr) (struct sigcontext *),
-			     const uint64_t *user_data,
-			     const uint64_t *override_sigset,
-			     const uint64_t *terminate_sigset,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
-
-static inline void
-set_up_signals (void)
-{
-  int32_t retval, retcode, reason_code;
-  const uint64_t nothing = 0;
-  void *sir = __sir_entry;
-
-  /* z/OS TODO: What should we put for override_sigset and
-     terminate_sigset?  */
-  BPX_CALL (mvssigsetup, __bpx4mss, &sir, &nothing, &nothing,
-	    &nothing, &retval, &retcode, &reason_code);
-  /* z/OS TODO: Check for errors here.  */
-}
 
 /* NOTE: arg_info is a pointer to the start of where the program args
    and envs are on the stack.  */

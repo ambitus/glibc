@@ -69,7 +69,6 @@ extern uintptr_t __bpx_call_table attribute_hidden;
  * macros and inline functions useful for implementing shims
  **************************************************************/
 #include <sys/cdefs.h>	/* for __glibc_likely/unlikely */
-#include <errno.h>
 #include <string.h>  /* for strnlen.  */
 #include <unimplemented.h>
 
@@ -160,9 +159,6 @@ extern void __bpxk_syscall (void *, ...) attribute_hidden;
   })
 
 #define IS_UINT32(val) IS_UINT (32, val)
-
-/* all the syscall implementations. */
-#include <zos-syscall-impl.h>
 
 #endif /* !__ASSEMBLER__ */
 #endif /* !_ZOS_SYSCALL_COMMON_H */

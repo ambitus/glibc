@@ -45,6 +45,7 @@
 # include <errno.h>
 # include <assert.h>
 # include <zos-syscall-base.h>
+# include <zos-syscall-impl.h>
 # include <unimplemented.h>
 /* base syscall implementation */
 # undef INTERNAL_SYSCALL

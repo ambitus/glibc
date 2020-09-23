@@ -28,6 +28,24 @@
 #include <string.h>
 #include <zos-core.h>
 #include <bpxk-constants.h>
+#include <zos-syscall-base.h>
+
+#define __sigflag(signo) ((uint64_t) 1 << (64 - (signo)))
+
+/* Mask of signals with default action terminate.  */
+#define TERMINATE_SIGS							\
+  (__sigflag (ZOS_SYS_SIGHUP) | __sigflag (ZOS_SYS_SIGINT)		\
+   | __sigflag (ZOS_SYS_SIGABRT) | __sigflag (ZOS_SYS_SIGILL)		\
+   | __sigflag (ZOS_SYS_SIGPOLL) | __sigflag (ZOS_SYS_SIGFPE)		\
+   | __sigflag (ZOS_SYS_SIGKILL) | __sigflag (ZOS_SYS_SIGBUS)		\
+   | __sigflag (ZOS_SYS_SIGSEGV) | __sigflag (ZOS_SYS_SIGSYS)		\
+   | __sigflag (ZOS_SYS_SIGPIPE) | __sigflag (ZOS_SYS_SIGALRM)		\
+   | __sigflag (ZOS_SYS_SIGTERM) | __sigflag (ZOS_SYS_SIGUSR1)		\
+   | __sigflag (ZOS_SYS_SIGUSR2) | __sigflag (ZOS_SYS_SIGABND)		\
+   | __sigflag (ZOS_SYS_SIGQUIT) | __sigflag (ZOS_SYS_SIGTRAP)		\
+   | __sigflag (ZOS_SYS_SIGXCPU) | __sigflag (ZOS_SYS_SIGXFSZ)		\
+   | __sigflag (ZOS_SYS_SIGVTALRM) | __sigflag (ZOS_SYS_SIGPROF)	\
+   | __sigflag (ZOS_SYS_SIGDANGER))
 
 typedef void (*real_sighandler_t)(int signum, struct sigcontext *sc);
 
@@ -82,7 +100,7 @@ extern volatile struct sir_data __sir_data;
 extern __thread struct sig_tdata __sig_tdata attribute_tls_model_ie;
 
 libc_hidden_proto (__sir_data)
-libc_hidden_proto (__sig_tdata)
+libc_hidden_tls_proto (__sig_tdata)
 
 
 /* This should not be a function, since it deallocates its own stack.  */
@@ -194,5 +212,36 @@ kern_to_user_sigset (sigset_t *oset, uint64_t kset)
   __mapflg (oset->__val[0], 41, 24);
 }
 #undef __mapflg
+
+typedef void (*__bpx4mss_t) (void (**sir_addr) (struct sigcontext *),
+			     const uint64_t *user_data,
+			     const uint64_t *override_sigset,
+			     const uint64_t *terminate_sigset,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+/* This is the function we use to register the SIR during early
+   initialization.  */
+
+static inline void
+set_up_signals (void)
+{
+  int32_t retval, retcode, reason_code;
+  const uint64_t nothing = 0;
+  void *sir = __sir_entry;
+
+  /* Cause the SIR to recieve control when the default action is to be
+     done for the following signals.  At the moment, we only run the
+     SIR for the terminating signals, mostly just because unless we
+     manually take care of process termination, the system sends
+     messages to the joblog which can cause problems depending on how
+     the environment is set up.  */
+  uint64_t termsigs = TERMINATE_SIGS;
+
+  /* Register the SIR.  */
+  BPX_CALL (mvssigsetup, __bpx4mss, &sir, &nothing, &termsigs,
+	    &termsigs, &retval, &retcode, &reason_code);
+  /* z/OS TODO: Check for errors here.  */
+}
 
 #endif /* !_ZOS_SIR_H  */

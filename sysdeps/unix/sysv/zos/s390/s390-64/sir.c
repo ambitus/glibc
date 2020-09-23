@@ -400,6 +400,8 @@ mask_from_array (char in[8])
 	  | (uint64_t) in[7]);
 }
 
+typedef void (*sig_bpx4exi_t) (const int32_t *status);
+
 /* Do everything we need to do in order to handle a regular old
    signal.  */
 /* z/OS z/OS TODO: override pthread_sigmask to just use sigprocmask.  */
@@ -417,41 +419,74 @@ handle_signals (struct sigcontext *ppsd, int flags, ucontext_t *ucont)
   sir_assert (signum < 64 && signum > 0);
   signum = kern_to_user_signo (signum);
 
-  sigset_t handler_sigmask;
-  uint64_t kmask =
-    ret_sigmask | mask_from_array (ppsd->sigaction_sigmask);
-  kern_to_user_sigset (&handler_sigmask, kmask);
-  if (!(flags & NODEFER))
-    __sigaddset (&handler_sigmask, signum);
-
-  /* Check if this is a regular 1 (actually 2) argument signal handler,
-     or a 3-argument SA_SIGINFO signal handler.  */
-  if (flags & SIGINF)
+  /* If the signal handler is NULL, we are doing the default action.
+     Otherwise, we always just run the signal handler.  */
+  if (sighandler != NULL)
     {
-      /* 3-arg SA_SIGINFO handler.  */
-      siginfo_t info;
-      populate_siginfo_for_sig (&info, ppsd);
-      populate_ucontext_for_sig (ucont, ppsd);
+      sigset_t handler_sigmask;
+      uint64_t kmask =
+	ret_sigmask | mask_from_array (ppsd->sigaction_sigmask);
+      kern_to_user_sigset (&handler_sigmask, kmask);
 
-      /* Set appropriate signal mask for the handler.  */
-      __sigprocmask (SIG_SETMASK, &handler_sigmask, NULL);
+      if (!(flags & NODEFER))
+	__sigaddset (&handler_sigmask, signum);
 
-      /* Call the signal handler.  */
-      ((void (*)(int, siginfo_t *, void *)) sighandler) (signum, &info,
-							 ucont);
+      /* Check if this is a regular 1 (actually 2) argument signal
+	 handler, or a 3-argument SA_SIGINFO signal handler.  */
+      if (flags & SIGINF)
+	{
+	  /* 3-arg SA_SIGINFO handler.  */
+	  siginfo_t info;
+	  populate_siginfo_for_sig (&info, ppsd);
+	  populate_ucontext_for_sig (ucont, ppsd);
+
+	  /* Set appropriate signal mask for the handler.  */
+	  __sigprocmask (SIG_SETMASK, &handler_sigmask, NULL);
+
+	  /* Call the signal handler.  */
+	  ((void (*)(int, siginfo_t *, void *)) sighandler) (signum,
+							     &info,
+							     ucont);
+	}
+      else
+	{
+	  /* Regular 1-arg handler (with second less-standard
+	     sigcontext arg).  */
+	  /* Set appropriate signal mask for the handler.  */
+	  __sigprocmask (SIG_SETMASK, &handler_sigmask, NULL);
+
+	  /* Call the signal handler.  */
+	  ((void (*)(int, struct sigcontext *)) sighandler) (signum,
+							     ppsd);
+	}
+      /* Don't touch the ppsd we gave to the user after this point, the user
+	 might have modified it.  */
     }
-  else
+  else if ((__sigflag (signum) & TERMINATE_SIGS) != 0)
     {
-      /* Regular 1-arg handler (with second secret sigcontext arg).  */
-      /* Set appropriate signal mask for the handler.  */
-      __sigprocmask (SIG_SETMASK, &handler_sigmask, NULL);
+      /* The default action for this signal is terminate, so do that.
+         We could just call _exit here, however if we pass it the
+         correct status for signal termination it causes the system
+         to emit messages, which are undesirable. The same thing
+	 happens if we let the system take care of termination.  */
 
-      /* Call the signal handler.  */
-      ((void (*)(int, struct sigcontext *)) sighandler) (signum, ppsd);
+      /* z/OS TODO: IMPORTANT: THREADING: Run pthread_quiesce here to
+	 end all other threads first.  */
+
+      /* This syscall is similar to _exit, but doesn't generate messages.
+	 However, it won't end the process if other threads are still
+	 running.  */
+      if (__mvsprocclp (signum) == 1)
+	{
+	  /* z/OS TODO: It's unclear what to do in this case.  */
+	}
+
+      /* If that failed to end the process, try this.  */
+      BPX_CALL (_exit, sig_bpx4exi_t, &signum);
+
+      /* Crash hard if all of the above failed.  */
+      ABORT_INSTRUCTION;
     }
-
-  /* Don't touch the ppsd we gave to the user after this point, the user
-     might have modified it.  */
 
   /* Restore the signal mask.  */
   sigset_t ret_set;
@@ -459,7 +494,7 @@ handle_signals (struct sigcontext *ppsd, int flags, ucontext_t *ucont)
   __sigprocmask (SIG_SETMASK, &ret_set, NULL);
 }
 
-/* Handle asyncronous thread cancellation interrupts, which are similar
+/* Handle asynchronous thread cancellation interrupts, which are similar
    to but distinct from regular signals.  */
 
 static void

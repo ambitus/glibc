@@ -430,6 +430,7 @@ struct zos_sys_directed_load_ret_parms {
 #define ZOS_SYS_SIGCHLD 20
 #define ZOS_SYS_SIGIO 23
 #define ZOS_SYS_SIGIOER 27
+#define ZOS_SYS_SIGIOERR ZOS_SYS_SIGIOER
 #define ZOS_SYS_SIGWINCH 28
 #define ZOS_SYS_SIGTRACE 37
 #define ZOS_SYS_SIGDUMP 39
