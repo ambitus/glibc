@@ -191,7 +191,7 @@ kern_to_user_sigset (sigset_t *oset, uint64_t kset)
   __mapflg (oset->__val[0], ZOS_SYS_SIGURG, SIGURG);
   __mapflg (oset->__val[0], ZOS_SYS_SIGABRT, SIGABRT);
   __mapflg (oset->__val[0], ZOS_SYS_SIGQUIT, SIGQUIT);
-  __mapflg (kernel_set, 41, 24);
+  __mapflg (oset->__val[0], 41, 24);
 }
 #undef __mapflg
 
