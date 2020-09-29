@@ -721,7 +721,7 @@ __obj_pool_initialize (object_pool *new_pool, size_t block_size,
 void *
 __obj_pool_alloc_block (object_pool *pool)
 {
-  object_subpool *curr, *prev, *new_subpool;
+  object_subpool *curr, *head, *new_subpool;
 
   if (!pool)
     return NULL;
@@ -729,8 +729,8 @@ __obj_pool_alloc_block (object_pool *pool)
   for (;;)
     {
       /* Always start searching from the head. Assume pool is valid.  */
-      for (prev = curr = pool->start; curr != NULL;
-	   prev = curr, curr = curr->next)
+      for (head = curr = atomic_load_acquire (&pool->start);
+	   curr != NULL; curr = curr->next)
 	{
 	  for (;;)
 	    {
@@ -766,14 +766,16 @@ __obj_pool_alloc_block (object_pool *pool)
 	 one. We need to make sure that the allocator we use is MT-Safe,
 	 AS-Safe, and AC-Safe.  */
       new_subpool = alloc_subpool (pool);
-      new_subpool->usage |= 1;
+      new_subpool->usage = 1;
 
-      /* Add our new subpool to the list. If some other user has already
-	 added one, start the search over from the beginning. We don't need
-	 to worry about whether or not prev is still valid since we never
-	 deallocate subpools once they've been added to the list.  */
-      if (!atomic_compare_and_exchange_bool_acq (&prev->next,
-						 new_subpool, NULL))
+      /* Add our new subpool to the head of the list to speed up future
+	 allocations. If some other usage of this function has already
+	 added one, start the search over from the beginning. We don't
+	 need to worry about whether or not prev is still valid since we
+	 never deallocate subpools once they've been added to the
+	 list.  */
+      if (!atomic_compare_and_exchange_bool_acq (&pool->start,
+						 new_subpool, head))
 	return new_subpool->blocks;
 
       /* Free the subpool we just allocated and start over.  */
