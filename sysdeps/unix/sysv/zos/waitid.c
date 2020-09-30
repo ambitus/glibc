@@ -63,6 +63,9 @@ __waitid (idtype_t idtype, id_t id, siginfo_t *infop, int options)
 
   if (retval != -1)
     {
+      if (infop == NULL)
+	return k_info.k_si_pid;
+
       infop->si_signo = k_info.k_si_signo;
       infop->si_errno = k_info.k_si_errno;
       infop->si_code = k_info.k_si_code;
