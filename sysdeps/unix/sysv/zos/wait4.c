@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Rocket Software
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -26,4 +26,5 @@ __wait4 (__pid_t pid, int *stat_loc, int options, struct rusage *usage)
   return SYSCALL_CANCEL (wait4, pid, stat_loc, options, usage);
 }
 
+link_warning (wait4, "z/OS wait4 fails when rusage is nonnull")
 weak_alias (__wait4, wait4)
