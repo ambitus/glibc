@@ -1,4 +1,5 @@
-/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
+/* z/OS waitpid syscall implementation -- non-cancellable.
+   Copyright (C) 2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,7 +19,8 @@
 #include <stdint.h>
 #include <errno.h>
 #include <sys/wait.h>
-#include <sysdep-cancel.h>
+#include <not-cancel.h>
+#include <sysdep.h>
 
 typedef void (*__bpx4wat_t) (const int32_t *pid,
 			     const int32_t *options,
@@ -26,12 +28,11 @@ typedef void (*__bpx4wat_t) (const int32_t *pid,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
-/* Wait until a child PID has changed state */
 __pid_t
-__waitpid (__pid_t pid, int *stat_loc, int options)
+__waitpid_nocancel (__pid_t pid, int *stat_loc, int options)
 {
   /* z/OS NOTE: keep the contents of this in line with
-     __waitpid_nocancel.  */
+     __waitpid.  */
   int32_t retval, return_code, reason_code;
   int32_t prid = pid;
 
@@ -44,13 +45,12 @@ __waitpid (__pid_t pid, int *stat_loc, int options)
       options &= ~WSTOPPED;
     }
 
-  BPX_CALL_CANCEL (wait, __bpx4wat_t, &prid, &options, &stat_loc,
-		   &retval, &return_code, &reason_code);
+  BPX_CALL (wait, __bpx4wat_t, &prid, &options, &stat_loc,
+	    &retval, &return_code, &reason_code);
 
   if (retval == -1)
     __set_errno (return_code);
 
   return retval;
 }
-libc_hidden_def (__waitpid)
-weak_alias (__waitpid, waitpid)
+libc_hidden_def (__waitpid_nocancel)
