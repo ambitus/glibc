@@ -26,8 +26,6 @@
 
 #include <zos-syscall-base.h>
 
-#include <zos-file-attrs.h>
-
 #include <features.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
@@ -512,8 +510,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 	}
       struct zos_file_attrs attrs = {
 				     .eyecatcher = { 0xC1, 0xE3, 0xE3, 0x40 },
-				     .version = CHATTR_CURR_VER,
-				     .set_flags = CHATTR_SETTAG,
+				     .version = _CHATTR_CURR_VER,
+				     .set_flags = _CHATTR_SETTAG,
 				     .tag = tag
       };
       __zos_sys_chattr (pathname, &attrs);
@@ -2073,8 +2071,8 @@ __zos_sys_mknod (int *errcode, const char *pathname, mode_t mode,
       tag.ft_flags = FT_PURETXT;
       struct zos_file_attrs attrs = {
 				     .eyecatcher = { 0xC1, 0xE3, 0xE3, 0x40 },
-				     .version = CHATTR_CURR_VER,
-				     .set_flags = CHATTR_SETTAG,
+				     .version = _CHATTR_CURR_VER,
+				     .set_flags = _CHATTR_SETTAG,
 				     .tag = tag
       };
       __zos_sys_chattr (pathname, &attrs);

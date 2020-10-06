@@ -6,6 +6,7 @@ libc {
   GLIBC_2.28 {
     #errlist-compat 3449
     _sys_errlist; sys_errlist; _sys_nerr; sys_nerr;
+    zos_chattr; zos_fchattr; zos_lchattr;
   }
 
   GLIBC_PRIVATE {

@@ -42,6 +42,18 @@
 
 #include <bits/types.h>
 
+/* Structure used to represent the encoding of a file.  */
+struct zos_file_tag
+{
+  unsigned short int ft_ccsid;
+#define FT_UNTAGGED	0
+#define FT_BINARY	0xffff
+
+  unsigned short int ft_flags;
+#define FT_PURETXT	0x8000
+#define FT_DEFER	0x4000
+};
+
 /* Get struct stat and struct stat64, which are the same for us.  */
 struct stat
 {
@@ -143,6 +155,51 @@ struct stat64
 
 /* TODO: S_* macros for z/OS-specific filetypes?
    S_ISVMEXTL, etc.  */
+
+#ifdef __USE_GNU
+/* Interface to the z/OS-specific chattr functions.  */
+
+struct zos_file_attrs
+{
+  char eyecatcher[4];
+  unsigned short version;
+#define _CHATTR_CURR_VER 3
+  unsigned short __res;
+  unsigned int set_flags;	/* Which fields to set.  */
+#define _CHATTR_SETTAG 0x00004000
+  __mode_t mode;
+  __uid_t uid;
+  __gid_t gid;
+  unsigned char __res2[3];
+  unsigned char flags2;
+  unsigned char __res3[3];
+  unsigned char flags3;
+  __uint64_t size;
+  unsigned int _bpx_atime32;
+  unsigned int _bpx_mtime32;
+  unsigned int auditor_audit;
+  unsigned int user_audit;
+  unsigned int _bpx_ctime32;
+  unsigned int _bpx_reftime32;
+  unsigned char format;
+  unsigned char __res4[3];
+  struct zos_file_tag tag;
+  unsigned char	__res5[8];
+  __time_t atime;
+  __time_t mtime;
+  __time_t ctime;
+  __time_t reftime;
+  unsigned char seclabel[8];
+  unsigned char __res6[8];
+};
+
+extern int zos_fchattr (int fd, struct zos_file_attrs *attrs,
+			unsigned long attrs_size);
+extern int zos_chattr (const char *path, struct zos_file_attrs *attrs,
+		       unsigned long attrs_size);
+extern int zos_lchattr (const char *path, struct zos_file_attrs *attrs,
+			unsigned long attrs_size);
+#endif
 
 /*
   TODO: The following:

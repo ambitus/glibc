@@ -21,26 +21,7 @@
 #include <sysdep.h>
 #include <not-cancel.h>
 #include <zos-core.h>
-#include <zos-file-attrs.h>
-
-typedef void (*__bpx4fcr_t) (const int32_t *fd,
-			     const int32_t *attrs_len,
-			     const struct zos_file_attrs *attrs,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
-
-static int
-fchattr (int fd, const struct zos_file_attrs *attrs)
-{
-  int32_t retval, retcode, reason_code;
-  int size = sizeof (*attrs);
-
-  BPX_CALL (fchattr, __bpx4fcr_t, &fd, &size, attrs, &retval, &retcode,
-	    &reason_code);
-
-  return retval;
-}
-
+#include <zos-chattr.h>
 
 int
 __set_file_tag_if_empty_unsafe (int fd, const struct zos_file_tag *tag)
@@ -50,16 +31,17 @@ __set_file_tag_if_empty_unsafe (int fd, const struct zos_file_tag *tag)
   struct stat st;
   struct zos_file_attrs attrs = {
       .eyecatcher = { 0xC1, 0xE3, 0xE3, 0x40 },
-      .version = CHATTR_CURR_VER,
-      .set_flags = CHATTR_SETTAG,
+      .version = _CHATTR_CURR_VER,
+      .set_flags = _CHATTR_SETTAG,
       .tag = *tag
     };
 
   /* z/OS TODO: IMPORTANT: We can't atomically change a file's tag
      if and only if the file is empty when the tag is changed, if that
      file is already tagged.  */
-  if (fstat (fd, &st) < 0)
+  if (__fstat (fd, &st) < 0)
     return -1;
 
-  return st.st_size == 0 ? fchattr (fd, &attrs) : 0;
+  return (st.st_size == 0 ?
+	  __zos_fchattr (fd, &attrs, sizeof (attrs)) : 0);
 }

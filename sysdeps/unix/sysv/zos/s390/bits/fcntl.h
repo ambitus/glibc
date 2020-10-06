@@ -66,17 +66,6 @@ struct flock64
 
 /* z/OS TODO: Decide on a name for the F_CVT structure, file tag
    structure, and constants.  */
-struct zos_file_tag
-{
-  unsigned short int ft_ccsid;
-#define FT_UNTAGGED	0
-#define FT_BINARY	0xffff
-
-  unsigned short int ft_flags;
-#define FT_PURETXT	0x8000
-#define FT_DEFER	0x4000
-};
-
 struct zos_fconvert
 {
   int command;
