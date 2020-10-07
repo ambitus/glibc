@@ -1089,7 +1089,7 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
   if (set_cloexec_after && retval != -1)
     {
       int tmp_err;
-      if (__glibc_unlikely (__zos_sys_fcntl (&tmp_err, fd, F_SETFD,
+      if (__glibc_unlikely (__zos_sys_fcntl (&tmp_err, retval, F_SETFD,
 					     (void *) FD_CLOEXEC) == -1))
 	{
 	  /* TODO: should we report this error to the user, or silently
