@@ -1009,12 +1009,14 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
       set_cloexec_after = true;
       /* Fallthrough.  */
 
+    case F_SETOWN:
     case F_DUPFD:
     case F_SETFD:
       real_arg = (int32_t) (intptr_t) arg;
       /* TODO: Maybe provide a define for FD_CLOFORK.  */
       break;
 
+    case F_GETOWN:
     case F_GETFD:
     case F_GETFL:
       real_arg = 0;
@@ -1037,9 +1039,6 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
     case F_SETLK:
     /* case F_SETLKW64:  */
     case F_SETLKW:
-
-    case F_GETOWN:
-    case F_SETOWN:
 
     case F_GETOWN_EX:
     case F_SETOWN_EX:
