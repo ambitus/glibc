@@ -1214,6 +1214,14 @@ __zos_sys_select (int *errcode, int nfds, fd_set *readfds, fd_set *writefds,
   fdset_dbl_len += ((nfds % 64) == 0) ? 0 : 1;
   int fdset_len = fdset_dbl_len * 8;
 
+  /* z/OS doesn't handle nfds the same as Linux,
+     a negative nfds should result in EINVAL. */
+  if (nfds < 0)
+    {
+      *errcode = EINVAL;
+      return -1;
+    }
+
   for (k=0; k<3; k++)
     {
       fds_len[k] = 0;
