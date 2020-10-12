@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Free Software Foundation, Inc.
+/* Copyright (C) 2019-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Giancarlo Frix <gfrix@rocketsoftware.com>.
 
@@ -17,12 +17,17 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/cdefs.h>
 #include <lowlevellock.h>
 #include <sysdep.h>
 #include <zos-core.h>
+
+/* The size of the fixed area we allocate, in megabytes.  */
+#define BRK_AREA_SIZE  (4 * 1024)
+#define MEG_FLOOR(addr)  ((uintptr_t) (addr) & ~(1024UL * 1024UL - 1))
 
 /* This must be initialized data because commons can't have aliases.  */
 void *__curbrk = 0;
@@ -33,29 +38,73 @@ void *__curbrk = 0;
 weak_alias (__curbrk, ___brk_addr)
 
 
-#define BRK_AREA_SIZE 30 * (1024 * 1024)
-
 extern unsigned int __ipt_zos_tcb attribute_hidden;
-static void *brk_min;
+static void *brk_min, *brk_max;
+static bool using_iarv64 = true;
 static int brk_lock = LLL_LOCK_INITIALIZER;
 
+static inline void *
+try_iarv64 (uint64_t megabytes)
+{
+  /* Start with one non-guard segment, as an optimization.  */
+  void *addr = __iarv64_getstorage (megabytes,
+				    megabytes,
+				    GUARDLOC_HIGH, NULL, NULL);
+  if (addr != NULL)
+    brk_max = (char *) addr + megabytes * 1024 * 1024;
 
-/* We don't actually have a brk syscall, however we can fake one.
-   TODO: use IARV64 with guard areas as a backend for brk instead of
-   STORAGE OBTAIN, which can't overcommit memory.  */
+  return addr;
+}
+
+static inline void *
+try_storage (unsigned int bytes)
+{
+  /* addr = __storage_obtain (1 * 1024 * 1024,
+     __ipt_zos_tcb, true, true); */
+  /* z/OS TODO: revert this when regular storage obtain works.  */
+  void *addr = __storage_obtain_simple (bytes);
+
+  if (addr != NULL)
+    brk_max = (char *) addr + bytes;
+
+  return addr;
+}
+
+
+/* We don't actually have a brk syscall, however we can fake one.  */
 int
 __brk (void *addr)
 {
   /* Get a lock.  */
   lll_lock (brk_lock, LLL_PRIVATE);
 
-  /* A one-time large allocation associated with the IPT.  */
+  /* A one-time large allocation associated with the IPT.
+     z/OS TODO: THREADING: Associate this storage with either the
+     initial task or the jobstep task.  */
   if (__glibc_unlikely (!__curbrk))
     {
-      /* void *brk_start = __storage_obtain (BRK_AREA_SIZE,
-	 __ipt_zos_tcb, true, true); */
-      /* z/OS TODO: revert this when regular storage obtain works.  */
-      void *brk_start = __storage_obtain_simple (BRK_AREA_SIZE);
+      void *brk_start;
+
+      /* Try the default value for the total size of the brk area. If
+	 that fails, here might be a strict limit on the number of pages
+	 we can use, so try a much smaller area.  */
+      if (!(brk_start = try_iarv64 (BRK_AREA_SIZE))
+	  && !(brk_start = try_iarv64 (32)))
+	{
+	  /* This process may not be allowed to use 64-bit storage,
+	     fall back to using a (smaller amount of) 32-bit storage.
+	     NOTE: We can't deallocate when using STORAGE OBTAIN.  */
+	  using_iarv64 = false;
+	  if (!(brk_start = try_storage (1 * 1024 * 1024)))
+	    {
+	      /* Try (roughly) the minimum size that is likely to permit
+		 startup to succeed (permitting up to about 10KB of TLS
+		 data).
+	         z/OS TODO: Permit arbitrary sizes of TLS data here.  */
+	      brk_start = try_storage (16384);
+	    }
+	}
+
       /* Don't set errno here, we're early in libc startup.
          Errno might not exist yet.  */
       if (!brk_start)
@@ -66,19 +115,62 @@ __brk (void *addr)
   if (__glibc_unlikely (!addr))
     goto win;
 
-  if ((uintptr_t) addr > (uintptr_t) brk_min + BRK_AREA_SIZE)
-    {
-      __curbrk = brk_min + BRK_AREA_SIZE;
-      __set_errno (ENOMEM);
-      goto lose;
-    }
-
   if ((uintptr_t) addr < (uintptr_t) brk_min)
     {
       /* This is actually more correct than all other brk glibc
 	 implementations.  */
       __set_errno (EINVAL);
       goto lose;
+    }
+
+  if ((uintptr_t) addr > (uintptr_t) brk_max)
+    {
+      __set_errno (ENOMEM);
+      goto lose;
+    }
+
+
+  if (using_iarv64)
+    {
+      /* Check if we need to grow or shrink the guard area if we are
+	 using IARV64-allocated memory.
+
+	 We grow/shrink the guard area to the nearest megabyte
+	 boundary at or above the requested limit. Note that zero is not
+	 a valid brk value.
+	 z/OS TODO: This allocation approach may not be ideal.
+	 It may be best to ask the OS for more storage than we
+	 immediately need under certain circumstances.  */
+      uintptr_t new_floor = MEG_FLOOR (addr - 1);
+      uintptr_t old_floor = MEG_FLOOR (__curbrk - 1);
+      if (new_floor > old_floor)
+	{
+	  /* We need to grow the resident memory area.  */
+	  uint64_t delta = (new_floor - old_floor) / (1024 * 1024);
+
+	  uint32_t ret;
+	  __iarv64_shrink_guard (brk_min, delta, &ret, NULL);
+	  if (ret > 4)
+	    {
+	      __set_errno (ENOMEM);
+	      goto lose;
+	    }
+	}
+      else if (new_floor < old_floor)
+	{
+	  /* We should shrink the resident memory area.  */
+	  uint64_t delta = (old_floor - new_floor) / (1024 * 1024);
+
+	  uint32_t ret;
+	  __iarv64_grow_guard (brk_min, delta, &ret, NULL);
+	  if (ret > 4)
+	    {
+	      /* We're not out of memory, but something has gone
+		 wrong.  */
+	      __set_errno (EINVAL);
+	      goto lose;
+	    }
+	}
     }
 
   __curbrk = addr;

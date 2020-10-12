@@ -75,6 +75,15 @@
 # include <sys/cdefs.h>
 # include <zos-utils.h>
 
+/* The position of guard areas for IARV64 allocation requests. If LOW,
+   guard areas start from low addresses (the start of the allocation),
+   if HIGH, guard areas start from high addresses.  */
+enum guardloc
+{
+  GUARDLOC_LOW,
+  GUARDLOC_HIGH
+};
+
 /* The address of the Initial Pthread-creating Task's Task Control
    Block.  */
 extern unsigned int __ipt_zos_tcb attribute_hidden;
@@ -93,6 +102,48 @@ extern int __storage_release (unsigned int storage_addr,
 			      unsigned int length,
 			      unsigned int tcbaddr,
 			      bool noexec) attribute_hidden;
+extern void * __iarv64_getstorage (uint64_t segments,
+				   uint64_t guardsize,
+				   enum guardloc loc,
+				   uint32_t *rc_ptr,
+				   uint32_t *reason_ptr)
+  __attribute_malloc__ attribute_hidden;
+extern void __iarv64_detach (void *memobjstart,
+			     uint32_t *rc_ptr,
+			     uint32_t *reason_ptr) attribute_hidden;
+extern void __iarv64_grow_guard (void *origin,
+				 uint64_t convertsize,
+				 uint32_t *rc_ptr,
+				 uint32_t *reason_ptr) attribute_hidden;
+extern void __iarv64_set_guard (void *convertstart,
+				uint64_t convertsize,
+				uint32_t *rc_ptr,
+				uint32_t *reason_ptr) attribute_hidden;
+extern void __iarv64_shrink_guard (void *origin,
+				   uint64_t convertsize,
+				   uint32_t *rc_ptr,
+				   uint32_t *reason_ptr)
+  attribute_hidden;
+extern void __iarv64_set_nonguard (void *convertstart,
+				   uint64_t convertsize,
+				   uint32_t *rc_ptr,
+				   uint32_t *reason_ptr)
+  attribute_hidden;
+
+struct iarv64_range
+{
+  void *address;
+  uint64_t pages;
+};
+
+extern void __iarv64_protect (uint32_t range_count,
+			      struct iarv64_range *range_list,
+			      uint32_t *rc_ptr,
+			      uint32_t *reason_ptr) attribute_hidden;
+extern void __iarv64_unprotect (uint32_t range_count,
+				struct iarv64_range *range_list,
+				uint32_t *rc_ptr,
+				uint32_t *reason_ptr) attribute_hidden;
 
 extern int __mvsprocclp (int status) attribute_hidden;
 
