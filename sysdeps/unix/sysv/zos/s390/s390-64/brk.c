@@ -48,7 +48,7 @@ try_iarv64 (uint64_t megabytes)
 {
   /* Start with one non-guard segment, as an optimization.  */
   void *addr = __iarv64_getstorage (megabytes,
-				    megabytes,
+				    megabytes - 1,
 				    GUARDLOC_HIGH, NULL, NULL);
   if (addr != NULL)
     brk_max = (char *) addr + megabytes * 1024 * 1024;
@@ -128,7 +128,6 @@ __brk (void *addr)
       __set_errno (ENOMEM);
       goto lose;
     }
-
 
   if (using_iarv64)
     {
