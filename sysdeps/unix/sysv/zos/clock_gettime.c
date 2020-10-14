@@ -21,6 +21,7 @@
 #include <time.h>
 
 #define clks_per_second 4096000000ull
+#define clks_to_nanoseconds(x) ((x * 1000ull) / 4096ull)
 #define seconds_from_1900_to_1970 2208988800ull
 
 #define SYSDEP_GETTIME							\
@@ -31,7 +32,8 @@
     __asm__ __volatile__ ("stckf %0" : "=m"(clk));			\
     clk -= seconds_from_1900_to_1970 * clks_per_second;			\
     tp->tv_sec = (time_t) (clk / clks_per_second);			\
-    tp->tv_nsec = (long) (clk - tp->tv_sec * clks_per_second);		\
+    clk -= tp->tv_sec * clks_per_second;				\
+    tp->tv_nsec = (long) clks_to_nanoseconds(clk);			\
     retval = 0;								\
   }									\
   break;								\
@@ -43,7 +45,8 @@
 			  "stg	%%r15,%0"				\
 			  : "=m"(clk) : : "r15");			\
     tp->tv_sec = (time_t) (clk / clks_per_second);			\
-    tp->tv_nsec = (long) (clk - tp->tv_sec * clks_per_second);		\
+    clk -= tp->tv_sec * clks_per_second;				\
+    tp->tv_nsec = (long) clks_to_nanoseconds(clk);			\
     retval = 0;								\
   }									\
   break;								\
@@ -58,7 +61,8 @@
 			  "stg	%%r0,%0"				\
 			 : "=m"(clk) : : "r0","r1","r14","r15");	\
     tp->tv_sec = (time_t) (clk / clks_per_second);			\
-    tp->tv_nsec = (long) (clk - tp->tv_sec * clks_per_second);		\
+    clk -= tp->tv_sec * clks_per_second;				\
+    tp->tv_nsec = (long) clks_to_nanoseconds(clk);			\
     retval = 0;								\
   }									\
   break
