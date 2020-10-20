@@ -669,3 +669,22 @@ __iarv64_unprotect (uint32_t range_count,
   iarv64_args.range_list = range_list;
   call_iarv64 (&iarv64_args, rc_ptr, reason_ptr);
 }
+
+/* Discard the data from areas of a memory object.
+   The ranges to operate on are specified in the RANGE_LIST array, which
+   contains RANGE_COUNT entries. RANGE_COUNT must be less than or equal
+   to 16.  */
+void
+__iarv64_discard_data (uint32_t range_count,
+		  struct iarv64_range *range_list,
+		  uint32_t *rc_ptr, uint32_t *reason_ptr)
+{
+  struct iarv64 iarv64_args;
+  memset (&iarv64_args, 0, sizeof (iarv64_args));
+  iarv64_args.version = 2;
+  iarv64_args.request = IARV64_REQUEST_DISCARDDATA;
+  iarv64_args.flags4 |= IARV64_KEEPREAL_NO;
+  iarv64_args.range_count = range_count;
+  iarv64_args.range_list = range_list;
+  call_iarv64 (&iarv64_args, rc_ptr, reason_ptr);
+}
