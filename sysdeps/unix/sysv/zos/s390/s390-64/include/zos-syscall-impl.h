@@ -564,8 +564,8 @@ __zos_sys_open (int *errcode, const char *pathname,
 	 TODO: Can we do better? Also, ask IBM to add these flags.
 	 TODO: Should we fail here, or should we retry?  */
       if ((flags & O_NOFOLLOW)
-	  || fd_target.st_ino != path_target.st_ino
-	  || fd_target.st_dev != path_target.st_dev)
+	  && (fd_target.st_ino != path_target.st_ino
+	      || fd_target.st_dev != path_target.st_dev))
 	{
 	  /* TODO: This errno is not quite correct, but I can't think of
 	     anything better right now.  */
