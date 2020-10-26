@@ -210,6 +210,11 @@ __getdents64 (int fd, char *buf, size_t nbytes)
 
   /* Use BPX4RDD z/OS callable service to read multiple name entries from
      the directory. */
+  /* z/OS TODO: In order to implement seekdir we need to use readdir2
+     in indexed mode here. But then we'd also need access to the index
+     to read from, and the ablity to increment that index, in short
+     we'd need access to dirp->offset, presuming readdir2 works as
+     expected. */
   BPX_CALL (readdir, __bpx4rdd_t, &dirfd, &pbuf, &alet, &buflen,
 	    &retval, &retcode, &reason_code);
 

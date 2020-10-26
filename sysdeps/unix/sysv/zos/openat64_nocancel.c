@@ -15,19 +15,28 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <assert.h>
-#include <errno.h>
 #include <fcntl.h>
-#include <sysdep.h>
+#include <stdarg.h>
 
+#include <sysdep-cancel.h>
+#include <not-cancel.h>
 #include "openat64.h"
 
-/* z/OS TODO: remove the need for this file.  */
-
 int
-openat64 (int dfd, const char *file, int oflag, ...)
+__openat64_nocancel (int fd, const char *file, int oflag, ...)
 {
-  assert (!__OPEN_NEEDS_MODE (oflag));
+  mode_t mode = 0;
+  if (__OPEN_NEEDS_MODE (oflag))
+    {
+      va_list arg;
+      va_start (arg, oflag);
+      mode = va_arg (arg, mode_t);
+      va_end (arg);
+    }
 
-  return DO_OPENAT64 (dfd, file, oflag | O_LARGEFILE, 0);
+  return DO_OPENAT64_NOCANCEL (fd, file, oflag, mode);
 }
+hidden_def (__openat64_nocancel)
+
+strong_alias (__openat64_nocancel, __openat_nocancel)
+hidden_def (__openat_nocancel)

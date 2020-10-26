@@ -15,19 +15,4 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sysdep.h>
-
-#include "openat64.h"
-
-/* z/OS TODO: remove the need for this file.  */
-
-int
-openat64 (int dfd, const char *file, int oflag, ...)
-{
-  assert (!__OPEN_NEEDS_MODE (oflag));
-
-  return DO_OPENAT64 (dfd, file, oflag | O_LARGEFILE, 0);
-}
+/* openat defined in openat64.c */

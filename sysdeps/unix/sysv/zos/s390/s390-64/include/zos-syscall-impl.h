@@ -735,16 +735,6 @@ __zos_sys_open (int *errcode, const char *pathname,
 
 
 static inline int
-__zos_sys_openat (int *errcode, int dirfd, const char *pathname,
-		  int flags, mode_t mode)
-{
-  if (dirfd == AT_FDCWD || *pathname == '/')
-    return __zos_sys_open (errcode, pathname, flags, mode);
-  SHIM_NOT_YET_IMPLEMENTED_FATAL ("openat not implemnted", -1);
-}
-
-
-static inline int
 __zos_sys_creat (int *errcode, const char *pathname, mode_t mode)
 {
   return __zos_sys_open (errcode, pathname, O_WRONLY | O_CREAT | O_TRUNC, mode);

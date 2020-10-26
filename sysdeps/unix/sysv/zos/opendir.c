@@ -17,121 +17,74 @@
 
 #include <dirent.h>
 #include <errno.h>
-#include <stdio.h>	/* For BUFSIZ.  */
+#include <stdio.h>		/* For BUFSIZ.  */
 #include <sysdep.h>
 
 #include <not-cancel.h>
 
+#include "opendirwithfd.h"
 
-typedef void (*__bpx4opd_t) (const uint32_t *pathname_len,
-			     const char *pathname,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
-
-typedef void (*__bpx4cld_t) (const int32_t *dirfd,
-			     int32_t *retval, int32_t *retcode,
-			     int32_t *reason_code);
-
-
-/* Close the directory referred to by the open file descriptor.
-   Return 0 if successful, -1 if not. */
-static int
-__closedir2 (int fd)
-{
-  int32_t dfd = fd;
-  int32_t retval, reason_code;
-  INTERNAL_SYSCALL_DECL (retcode);
-
-  /* Close directory with BPX4CLD z/OS callable service. */
-  BPX_CALL (closedir, __bpx4cld_t, &dfd,
-	    &retval, &retcode, &reason_code);
-
-  if (INTERNAL_SYSCALL_ERROR_P (retval, retcode))
-    __set_errno (INTERNAL_SYSCALL_ERRNO (retval, retcode));
-
-  return retval;
-}
-
-
-/* Open a directory stream on NAME.  */
 DIR *
 __opendir (const char *name)
 {
-  int32_t retval, reason_code;
-  INTERNAL_SYSCALL_DECL (retcode);
-  char translated_path[__BPXK_PATH_MAX];
+  return __opendir_with_fd (name, -1);
+}
+weak_alias (__opendir, opendir)
 
-  /* Check for empty name. */
-  if (__glibc_unlikely (name[0] == '\0'))
+#if IS_IN (libc)
+DIR *
+__opendirat (int fd, const char *name)
+{
+  if (name == NULL)
+    {
+      __set_errno (EINVAL);
+      return NULL;
+    }
+
+  if (name[0] == '\0')
     {
       __set_errno (ENOENT);
       return NULL;
     }
 
-  /* Translate directory name from ASCII to EBCDIC. */
-  uint32_t path_len = translate_and_check_size (name,
-						translated_path);
+  if (fd == AT_FDCWD || *name == '/')
+    return __opendir_with_fd (name, -1);
 
-  /* Open directory with BPX4OPD z/OS callable service. */
-  BPX_CALL (opendir, __bpx4opd_t, &path_len, translated_path,
-	    &retval, &retcode, &reason_code);
+  uint32_t file_len = strnlen (name, __BPXK_PATH_MAX);
 
-  if (INTERNAL_SYSCALL_ERROR_P (retval, retcode))
+  int i;
+  int32_t retval, reason_code;
+  int errcode;
+  const int32_t cmd = 17;	/* IOCC#GETPATHNAME */
+  uint32_t buf_len = __BPXK_PATH_MAX;
+  char buf[__BPXK_PATH_MAX + file_len + 2];
+
+  for (i = 0; i < __BPXK_PATH_MAX + file_len + 2; i++)
+    buf[i] = '\0';
+
+  BPX_CALL (w_ioctl, __bpx4ioc_t, &fd, &cmd, &buf_len, buf,
+	    &retval, &errcode, &reason_code);
+
+  if (retval != 0)
     {
-      __set_errno (INTERNAL_SYSCALL_ERRNO (retval, retcode));
+      __set_errno (errcode);
       return NULL;
     }
 
-  /* Save directory file descriptor that describes the specified directory. */
-  int fd = retval;
+  uint32_t path_len =
+    tr_a_until_chr_or_len_in_place (buf, '\0', __BPXK_PATH_MAX);
 
-  if (fd < 0)
-    return NULL;
-
-  /* Now we need to allocate necessary storage size for the DIR structure and
-     for the buffer that is used to store directory entries. */
-
-  /* Get the storage size for the buffer with directory entries.
-     Use the same method as in 'sysdeps/posix/opendir.c' */
-  size_t allocation = (4 * BUFSIZ < sizeof (struct dirent64)
-		       ? sizeof (struct dirent64) : 4 * BUFSIZ);
-
-  /* Get total storage size for DIR structure and for the internal buffer. */
-  size_t storage_size = (sizeof (DIR) + allocation + 7UL) & ~7UL;
-  /* Allocate storage. */
-  DIR *dirp = (DIR *) __storage_obtain (storage_size, false, false);
-  if (dirp == NULL)
+  if (file_len + 1 + path_len > __BPXK_PATH_MAX)
     {
-      /* To close directory in case of error local __closedir2() function
-       is used instead of __closedir() system call as we don't have DIR
-       structure at the moment. */
-      __closedir2(fd);
-      __set_errno (ENOMEM);
+      __set_errno (ENAMETOOLONG);
       return NULL;
     }
 
-  /* Init 'dirp' structure. */
-  dirp->fd = fd;
-#if IS_IN (libc)
-  __libc_lock_init (dirp->lock);
-#endif
-  dirp->allocation = allocation;
-  dirp->size = 0;
-  dirp->offset = 0;
-  dirp->filepos = 0;
-  dirp->errcode = 0;
+  buf[path_len] = '/';
 
-  return dirp;
-}
-weak_alias (__opendir, opendir)
+  for (i = 0; name[i] != '\0'; i++)
+    buf[path_len + i + 1] = name[i];
 
-
-#if IS_IN (libc)
-/* z/OS TODO: Handle opendirat like the rest of the *at calls.  */
-DIR *
-__opendirat (int dfd, const char *name)
-{
-  __set_errno (ENOSYS);
-  return NULL;
+  return __opendir_with_fd (buf, -1);
 }
 #endif

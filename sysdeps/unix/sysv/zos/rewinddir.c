@@ -42,7 +42,7 @@ __rewinddir (DIR *dirp)
     }
 
   /* Save directory file descriptor. */
-  fd = dirp->fd;
+  fd = dirp->dfd;
 
 #if IS_IN (libc)
   __libc_lock_lock (dirp->lock);

@@ -24,12 +24,17 @@ typedef void (*__bpx4cld_t) (const int32_t *dirfd,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
+typedef void (*__bpx4clo_t) (const int32_t *fd,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+
 /* Close the directory stream DIRP.
    Return 0 if successful, -1 if not.  */
 int
 __closedir (DIR *dirp)
 {
-  int32_t fd;
+  int32_t fd, dfd;
   int32_t retval, reason_code;
   INTERNAL_SYSCALL_DECL (retcode);
 
@@ -41,6 +46,7 @@ __closedir (DIR *dirp)
 
   /* Save directory file descriptor. */
   fd = dirp->fd;
+  dfd = dirp->dfd;
 
 #if IS_IN (libc)
   __libc_lock_fini (dirp->lock);
@@ -57,11 +63,15 @@ __closedir (DIR *dirp)
     }
 
   /* Close directory with BPX4CLD z/OS callable service. */
-  BPX_CALL (closedir, __bpx4cld_t, &fd,
+  BPX_CALL (closedir, __bpx4cld_t, &dfd,
 	    &retval, &retcode, &reason_code);
 
   if (INTERNAL_SYSCALL_ERROR_P (retval, retcode))
     __set_errno (INTERNAL_SYSCALL_ERRNO (retval, retcode));
+
+  int32_t close_retval, close_reason_code;
+  INTERNAL_SYSCALL_DECL (close_retcode);
+  BPX_CALL (close, __bpx4clo_t, &fd, &close_retval, close_retcode, &close_reason_code);
 
   return retval;
 }

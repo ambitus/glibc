@@ -1,5 +1,5 @@
 /* Copyright (C) 2020 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
+   Contributed by Harrison Kaiser
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -15,19 +15,32 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sysdep.h>
+#include <stdarg.h>
 
 #include "openat64.h"
 
-/* z/OS TODO: remove the need for this file.  */
-
+/* Open FILE with access OFLAG.  Interpret relative paths relative to
+   the directory associated with FD.  If OFLAG includes O_CREAT or
+   O_TMPFILE, a fourth argument is the file protection.  */
 int
-openat64 (int dfd, const char *file, int oflag, ...)
+__libc_openat64 (int fd, const char *file, int oflag, ...)
 {
-  assert (!__OPEN_NEEDS_MODE (oflag));
+  mode_t mode = 0;
+  if (__OPEN_NEEDS_MODE (oflag))
+    {
+      va_list arg;
+      va_start (arg, oflag);
+      mode = va_arg (arg, mode_t);
+      va_end (arg);
+    }
 
-  return DO_OPENAT64 (dfd, file, oflag | O_LARGEFILE, 0);
+  return DO_OPENAT64 (fd, file, oflag, mode);
 }
+
+strong_alias (__libc_openat64, __openat64)
+libc_hidden_weak (__openat64)
+weak_alias (__libc_openat64, openat64)
+
+strong_alias (__libc_openat64, __openat)
+libc_hidden_weak (__openat)
+weak_alias (__libc_openat64, openat)

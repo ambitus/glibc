@@ -15,21 +15,36 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <errno.h>
+#include <stddef.h>
+#include <dirent.h>
+#include <stdio.h>		/* For BUFSIZ.  */
 
-/* fdopendir() unimplemented at the moment, default stub is used.
+#include "opendirwithfd.h"
+#include "get-path-at-fd.h"
 
-   In Linux it is possible to open directory entry with open() call, pass
-   returned file descriptor to fdopendir() call and then use such directory
-   calls as readdir(), rewinddir() and closedir() with that file descriptor.
-   z/OS doesn't allow that. It is possible to use 'open' callable service
-   in z/OS to get directory file descriptor but such descriptor cannot be
-   used with specific directory callable services - "Bad file descriptor"
-   error is occured. File descriptors for the same directory that are
-   returned by callable services 'open' and 'opendir' are different
-   descriptors even if they have the same value.
+typedef void (*__bpx4ioc_t) (const uint32_t * fd,
+			     const uint32_t * cmd,
+			     const uint32_t * arg_len,
+			     char *arg,
+			     int32_t * retval, int32_t * retcode,
+			     int32_t * reason_code);
 
-   To implement fdopendir() system call in z/OS we maybe have to refuse
-   using z/OS directory callable services and to implement our own 
-   directory system calls using raw directory file descriptor. */
+/* Open a directory stream on FD.  */
+DIR *
+__fdopendir (int fd)
+{
+  uint32_t buf_len = __BPXK_PATH_MAX + 1;
+  char buf[buf_len];
 
-#include <dirent/fdopendir.c>
+  int retval = GET_PATH_AT_FD (fd, buf, buf_len);
+
+  if (retval != 0)
+    {
+      return NULL;
+    }
+
+  return __opendir_with_fd (buf, fd);
+}
+
+weak_alias (__fdopendir, fdopendir)
