@@ -2401,12 +2401,16 @@ __zos_sys_fork (int *errcode)
      manually.  */
   uint16_t parent_ccsid = get_prog_ccsid ();
   void *parent_thread = __zos_get_thread_pointer ();
+  /* resolve this function now, because it will not work to attempt to resolve it in the child */
+  __zos_cleanup_thread_pointer(NULL); 
 
   BPX_CALL (fork, __bpx4frk_t, &pid, errcode, &reason_code);
 
   if (pid == 0)
     {
+      /* once this function completes, function resolution will be possible again */
       __zos_cleanup_thread_pointer (parent_thread);
+      __ipt_zos_tcb = TCB_PTR;
       set_prog_ccsid (parent_ccsid);
     }
 

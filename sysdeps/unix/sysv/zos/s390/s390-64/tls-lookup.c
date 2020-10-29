@@ -116,6 +116,10 @@ void
 __zos_cleanup_thread_pointer (void *addr)
 {
   uint64_t data[1];
+
+  if (addr == NULL) /* this call is just to resolve this function */
+    return;
+
   for (int i = 0; i < __zos_tp_table->size; i++)
     {
       lfl_list_t *list = __zos_tp_table->buckets + i;
