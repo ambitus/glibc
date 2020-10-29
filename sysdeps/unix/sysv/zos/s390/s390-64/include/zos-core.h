@@ -144,6 +144,11 @@ extern void __iarv64_unprotect (uint32_t range_count,
 				struct iarv64_range *range_list,
 				uint32_t *rc_ptr,
 				uint32_t *reason_ptr) attribute_hidden;
+extern void __iarv64_discard_data (uint32_t range_count,
+				   struct iarv64_range *range_list,
+				   uint32_t *rc_ptr,
+				   uint32_t *reason_ptr)
+  attribute_hidden;
 
 extern int __mvsprocclp (int status) attribute_hidden;
 
