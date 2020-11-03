@@ -143,10 +143,16 @@ typedef struct
   lfl_list_type type;
 } lfl_list_t;
 
+typedef enum
+{
+  CONTINUE,
+  FAIL,
+  RESTART
+} lfl_status;
 
-typedef bool (*lfl_action)(uint64_t key, uint64_t val, void *misc,
-			   uint64_t tag, volatile uint64_t *tagptr,
-			   lfl_list_t *list);
+typedef lfl_status (*lfl_action)(uint64_t key, uint64_t val,
+				 uint64_t tag, volatile uint64_t *tagptr,
+				 void *callback_args, lfl_list_t *list);
 
 
 /* Hashtable/hashed wait queue.  */
@@ -168,7 +174,7 @@ extern uint64_t __lfl_remove_and_splice (uint64_t key, lfl_action action,
 					 lfl_list_t *sublist,
 					 lfl_list_t *list);
 extern void __lfl_for_each (lfl_action action, void *cmp_val,
-			    lfl_list_t *list);
+			    uint64_t end, lfl_list_t *list);
 
 extern void __lf_hash_table_initialize (lf_hash_table *table,
 					size_t num_buckets,

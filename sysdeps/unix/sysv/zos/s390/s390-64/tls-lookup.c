@@ -98,14 +98,14 @@ __zos_initialize_thread_pointer (void *addr)
   __zos_set_thread_pointer (addr);
 }
 
-static bool
-find_a_thread (uint64_t key, uint64_t val, void *misc,
+static lfl_status
+find_a_thread (uint64_t key, uint64_t val,
 	       uint64_t tag, volatile uint64_t *tagptr,
-	       lfl_list_t *list)
+	       void *callback_args, lfl_list_t *list)
 {
-  uint64_t *data = (uint64_t *)misc;
+  uint64_t *data = (uint64_t *) callback_args;
   data[0] = key;
-  return 1;
+  return CONTINUE;
 }
 
 /* Clean up parent's thread pointer setup.
@@ -122,7 +122,7 @@ __zos_cleanup_thread_pointer (void *addr)
       while (1)
 	{
 	  data[0] = 0;
-	  __lfl_for_each (find_a_thread, data, list);
+	  __lfl_for_each (find_a_thread, data, UINT64_MAX, list);
 	  if (data[0] == 0)
 	    break;
 	  __lf_hash_table_pop (data[0], __zos_tp_table);

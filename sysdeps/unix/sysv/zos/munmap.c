@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <sysdep.h>
 #include <zos-mmap.h>
+#include <zos-core.h>
 
 /* Deallocate any mapping for the region starting at ADDR and extending LEN
    bytes.  Returns 0 if successful, -1 for errors (and sets errno).  */
@@ -39,9 +40,7 @@ __munmap (void *addr, size_t len)
   /* This is a bit strange, since we are responsible for managing anon
      mappings, while the system is responsible for managing regular
      ones. We try to balance this by unmapping any parts of anon maps
-     that fall in the range, calling the system mmap, then returning
-     -1 if either call failed.  */
-
+     that fall in the range then calling the system mmap.  */
 #if IS_IN (libc)
   anon_ret = __unmap_anon_mmap (addr, len);
 #else
@@ -49,7 +48,18 @@ __munmap (void *addr, size_t len)
   anon_ret = 0;
 #endif
 
-  sc_ret = INLINE_SYSCALL_CALL (munmap, addr, len);
+  /* Don't run the actual munmap if the address is above the bar, because
+     the real munmap doesn't use those addresses.  */
+  if ((uintptr_t) addr <= PTR31_BAR)
+    {
+      /* If the unmap range would go over the bar, don't run the real
+	 munmap on that part.  */
+      if ((uintptr_t) addr + len > PTR31_BAR)
+	len = PTR31_BAR - (uintptr_t) addr;
+      sc_ret = INLINE_SYSCALL_CALL (munmap, addr, len);
+    }
+  else
+    sc_ret = 0;
 
   if (anon_ret && !sc_ret)
     {

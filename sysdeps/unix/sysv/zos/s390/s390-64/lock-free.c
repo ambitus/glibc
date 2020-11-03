@@ -92,6 +92,7 @@
    Furthermore, parts of this code will get called during very early
    initialization, so some things may not be set up properly.  */
 
+#include <sys/cdefs.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -112,7 +113,6 @@
    written for, CAS is also a full barrier in their own right, so
    we did not need to add explicit fences many places.  */
 #define fence() __asm__ __volatile__ ("bcr 14, 0" ::: "memory")
-
 
 /* A destructuring atomic load that loads a 16 byte tagged marked ptr
    into its constituent fields. Very useful for avoiding the ABA
@@ -233,6 +233,21 @@ __lfl_initialize (lfl_list_t *list, lfl_list_type type,
 }
 
 
+/* Fine-tune the search algorithm.  */
+enum iter_type
+{
+  /* Return the first node encountered with a key equal to the
+     searched-for key.  */
+  FORCE_RETURN_FIRST,
+  /* If the list is a set, same as FORCE_RETURN_FIRST. If it is a queue,
+     return the last node with a key equal to the searched-for key.  */
+  DEFAULT_FOR_TYPE,
+  /* Do the given action for each node less than or equal to the
+     searched-for key. Otherwise same as DEFAULT_FOR_TYPE.  */
+  DO_ACTION_FOR_EACH
+};
+
+
 /* TODO: if val is used to store a pointer to more data, that data must
    be loaded before the validity check is performed, otherwise it cannot
    be assumed to be valid. Unless the nodes are examined and and
@@ -247,22 +262,27 @@ __lfl_initialize (lfl_list_t *list, lfl_list_type type,
 
    This algorithm is strange, we need to give our callers a fairly
    comprehensive snapshot of the local state of the list when we finish
-   traversing it, which means many return values.  */
+   traversing it, which means many return values.
+
+   z/OS TODO: We may want to make this always_inline. DCE could
+   remove some hot branches using itype and action. Check if those
+   optimizations tend to win over cache effects in practice.  */
 static bool
 lfl_find (uint64_t key,
 	  lfl_node_t **ret_prev,
 	  lfl_tagged_marked_ptr *ret_prev_body,
 	  lfl_tagged_marked_ptr *ret_curr_body,
 	  uint64_t *ret_curr_val,
-	  bool first_match,
-	  lfl_action examine,
+	  enum iter_type itype,
+	  lfl_action action,
 	  void *cmp_val,
 	  lfl_list_t *list)
 {
   int curr_was_marked;
   lfl_node_t *curr, *prev, *next;
   uint64_t curr_tag, prev_tag;
-  bool stop_after_first = first_match || list->type == lfl_set;
+  bool stop_after_first
+    = itype == FORCE_RETURN_FIRST || list->type == lfl_set;
 
   /* Begin the search.  */
   for (;;)
@@ -340,35 +360,50 @@ lfl_find (uint64_t key,
 		 elements. If we are a list based set (hashtable bucket),
 		 or we are looking to delete from the list, then return
 		 after we find the first such element.  */
-	      if (__glibc_unlikely (curr_key > key
+	      if (__glibc_unlikely (itype == DO_ACTION_FOR_EACH
+				    || curr_key > key
 				    || (curr_key == key
 					&& stop_after_first)))
 		{
-		  bool accepted;
+		  lfl_status accepted;
 		  uint64_t curr_val =
 		    atomic_load_acquire (&curr->data.val);
 
 		  if (atomic_load_acquire (&curr->next.tag) != curr_tag)
 		    break;
 
-		  /* Check acceptance criteria, if we have any.  */
-		  if (examine)
-		    accepted = examine (curr_key, curr_val, cmp_val,
-					curr_tag, &curr->next.tag,
-					list);
+		  /* Do action, if we have one.  */
+		  if (action
+		      && (itype == DO_ACTION_FOR_EACH
+			  ? curr_key <= key : curr_key >= key))
+		    {
+		      accepted = action (curr_key, curr_val,
+					 curr_tag, &curr->next.tag,
+					 cmp_val, list);
+		      if (accepted == RESTART)
+			break;
+		    }
 		  else
-		    accepted = true;
+		    accepted = CONTINUE;
 
-		  *ret_prev = prev;
-		  ret_prev_body->nextptr = (uintptr_t) curr;
-		  ret_prev_body->tag = prev_tag;
-		  ret_curr_body->nextptr = (uintptr_t) next;
-		  ret_curr_body->tag = curr_tag;
-		  *ret_curr_val = curr_val;
+		  /* Return the current node if we're not a for-each loop
+		     or if the foreach action determined we should stop
+		     early.  */
+		  if (itype != DO_ACTION_FOR_EACH
+		      || curr_key > key
+		      || accepted != CONTINUE)
+		    {
+		      *ret_prev = prev;
+		      ret_prev_body->nextptr = (uintptr_t) curr;
+		      ret_prev_body->tag = prev_tag;
+		      ret_curr_body->nextptr = (uintptr_t) next;
+		      ret_curr_body->tag = curr_tag;
+		      *ret_curr_val = curr_val;
 
-		  /* Return false if the node fails our acceptance
-		     criteria.  */
-		  return accepted;
+		      if (accepted == FAIL)
+			return false;
+		      return true;
+		    }
 		}
 	      prev = curr;
 	    }
@@ -400,7 +435,8 @@ __lfl_insert (uint64_t key, uint64_t val, lfl_list_t *list)
            * If we're a set, remove and replace the entry.
 	   * If we're a wait queue, we're good.  */
       bool res = lfl_find (key, &prev, &prev_body, &curr_body,
-			   &found_val, false, NULL, NULL, list);
+			   &found_val, DEFAULT_FOR_TYPE, NULL, NULL,
+			   list);
       if (res && list->type == lfl_set)
 	{
 	  /* We don't care about return value.  */
@@ -437,7 +473,7 @@ __lfl_get (uint64_t key, lfl_list_t *list)
     return 0;
 
   if (lfl_find (key, &prev, &prev_body, &curr_body, &found_val,
-		true, NULL, NULL, list))
+		FORCE_RETURN_FIRST, NULL, NULL, list))
     return found_val;
   return 0;
 }
@@ -464,7 +500,7 @@ do_remove (uint64_t key, lfl_action action, void *cmp_val,
     {
       /* Return 0 if the key isn't in the set.  */
       if (!lfl_find (key, &prev, &prev_body, &curr_body, &found_val,
-		     true, action, cmp_val, list))
+		     FORCE_RETURN_FIRST, action, cmp_val, list))
 	return 0;
 
       /* If we have been supplied a sublist that will be inserted into
@@ -499,7 +535,7 @@ do_remove (uint64_t key, lfl_action action, void *cmp_val,
 	/* If the deletion failed, do another find which should prune
 	   the node if it was not deleted by another thread.  */
 	lfl_find (key, &prev, &prev_body, &curr_body, &found_val,
-		  true, NULL, NULL, list);
+		  FORCE_RETURN_FIRST, NULL, NULL, list);
       return removed_val;
     }
 }
@@ -554,16 +590,15 @@ __lfl_remove_and_splice (uint64_t key, lfl_action accept,
   if (key == 0 || list->type != lfl_set)
     return 0;
 
-  sublist_start = (lfl_node_t *) sublist->start.next.nextptr;
-
-  /* If sublist is empty, just do a remove.  */
-  if (!sublist_start)
-    return __lfl_remove (key, list);
+  if (sublist)
+    sublist_start = (lfl_node_t *) sublist->start.next.nextptr;
+  else
+    sublist_start = NULL;
 
   sublist_end = (lfl_node_t *) sublist_start;
 
   /* Find the end of the sublist.  */
-  for (uintptr_t n = sublist_end->next.nextptr; n;
+  for (uintptr_t n = (uintptr_t) sublist_end; n;
        sublist_end = (lfl_node_t *) n, n = sublist_end->next.nextptr);
 
   /* The trick here is to do an insert right after the node we are
@@ -576,7 +611,8 @@ __lfl_remove_and_splice (uint64_t key, lfl_action accept,
 }
 
 
-/* Perform an action for each element in the list.
+/* Perform an action for each element in the list with key less than
+   or equal to END.
 
    Iteration stops when action returns true.
 
@@ -593,14 +629,15 @@ __lfl_remove_and_splice (uint64_t key, lfl_action accept,
      the provided value, action should not consider the contents of the
      referenced memory to be valid.  */
 void
-__lfl_for_each (lfl_action action, void *cmp_val, lfl_list_t *list)
+__lfl_for_each (lfl_action action, void *cmp_val, uint64_t end,
+		lfl_list_t *list)
 {
   lfl_node_t *prev;
   lfl_tagged_marked_ptr prev_body, curr_body;
   uint64_t found_val;
 
-  lfl_find (UINT64_MAX, &prev, &prev_body, &curr_body, &found_val, false,
-	    action, cmp_val, list);
+  lfl_find (end, &prev, &prev_body, &curr_body, &found_val,
+	    DO_ACTION_FOR_EACH, action, cmp_val, list);
 }
 
 

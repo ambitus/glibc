@@ -150,6 +150,30 @@ extern void __iarv64_discard_data (uint32_t range_count,
 				   uint32_t *reason_ptr)
   attribute_hidden;
 
+static inline void
+__iarv64_protect_one (void *address, uint64_t pages,
+		      uint32_t *rc_ptr, uint32_t *reason_ptr)
+{
+  struct iarv64_range range = { address, pages };
+  __iarv64_protect (1, &range, rc_ptr, reason_ptr);
+}
+
+static inline void
+__iarv64_unprotect_one (void *address, uint64_t pages,
+			uint32_t *rc_ptr, uint32_t *reason_ptr)
+{
+  struct iarv64_range range = { address, pages };
+  __iarv64_unprotect (1, &range, rc_ptr, reason_ptr);
+}
+
+static inline void
+__iarv64_discard_data_one (void *address, uint64_t pages,
+			   uint32_t *rc_ptr, uint32_t *reason_ptr)
+{
+  struct iarv64_range range = { address, pages };
+  __iarv64_discard_data (1, &range, rc_ptr, reason_ptr);
+}
+
 extern int __mvsprocclp (int status) attribute_hidden;
 
 #ifndef ZOS_HIDDEN_SYSCALL
