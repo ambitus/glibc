@@ -2401,17 +2401,23 @@ __zos_sys_fork (int *errcode)
      manually.  */
   uint16_t parent_ccsid = get_prog_ccsid ();
   void *parent_thread = __zos_get_thread_pointer ();
-  /* resolve this function now, because it will not work to attempt to resolve it in the child */
-  __zos_cleanup_thread_pointer(NULL); 
+  /* This call is a noop. It's just here to cause this function to be
+     resolved in the parent for dynamically linked binaries. Function
+     resolution will not work in the child until this function runs.  */
+  __zos_cleanup_thread_pointer (NULL);
 
   BPX_CALL (fork, __bpx4frk_t, &pid, errcode, &reason_code);
 
   if (pid == 0)
     {
-      /* once this function completes, function resolution will be possible again */
-      __zos_cleanup_thread_pointer (parent_thread);
-      __ipt_zos_tcb = TCB_PTR;
+      /* The thread pointer structure is wrong right now, we need to
+	 clear all old entries and add the new task. Dynamic function
+         resolution will not work until TLS does, so the function to
+	 do that needs to be resolved in the parent. Before the thread
+         pointer cleanup, we can only call static/inlined functions
+         that don't use TLS.  */
       set_prog_ccsid (parent_ccsid);
+      __zos_cleanup_thread_pointer ((void *) (uintptr_t) TCB_PTR);
     }
 
   return pid;
