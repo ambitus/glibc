@@ -1017,6 +1017,12 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
       real_arg = 0;
       break;
 
+    /* case F_SETLKW64:  */
+    case F_SETLKW:
+    /* case F_GETLK64:  */
+    case F_GETLK:
+    /* case F_SETLK64:  */
+    case F_SETLK:
     case F_SETTAG:
     case F_CONTROL_CVT:
       real_arg_ptr = &arg;
@@ -1027,13 +1033,6 @@ __zos_sys_fcntl (int *errcode, int fd, int cmd, void *arg)
       break;
 
     /* z/OS TODO: The rest of these.  */
-
-    /* case F_GETLK64:  */
-    case F_GETLK:
-    /* case F_SETLK64:  */
-    case F_SETLK:
-    /* case F_SETLKW64:  */
-    case F_SETLKW:
 
     case F_GETOWN_EX:
     case F_SETOWN_EX:
