@@ -51,9 +51,26 @@ typedef __pid_t pid_t;
 /* This will define all the `__W*' macros.  */
 # include <bits/waitstatus.h>
 
+/* The logic here is replicated in wait.h keep that inline
+   with this.
+
+           z/OS Standard
+   SIGQUIT  24     3
+   SIGABRT   3     6
+   SIGURG    6    40
+   None     41    24
+*/
 # define WEXITSTATUS(status)	__WEXITSTATUS (status)
-# define WTERMSIG(status)	__WTERMSIG (status)
-# define WSTOPSIG(status)	__WSTOPSIG (status)
+# define WTERMSIG(status)	(__WTERMSIG (status) == 24 ?  3 : \
+				 __WTERMSIG (status) ==  3 ?  6 : \
+				 __WTERMSIG (status) ==  6 ? 40 : \
+				 __WTERMSIG (status) == 41 ? 24 : \
+				 __WTERMSIG (status))
+# define WSTOPSIG(status)	(__WSTOPSIG (status) == 24 ?  3 : \
+				 __WSTOPSIG (status) ==  3 ?  6 : \
+				 __WSTOPSIG (status) ==  6 ? 40 : \
+				 __WSTOPSIG (status) == 41 ? 24 : \
+				 __WSTOPSIG (status))
 # define WIFEXITED(status)	__WIFEXITED (status)
 # define WIFSIGNALED(status)	__WIFSIGNALED (status)
 # define WIFSTOPPED(status)	__WIFSTOPPED (status)

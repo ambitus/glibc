@@ -143,6 +143,8 @@ user_to_kern_signo (int signo)
   /* TODO: Add this to all the signal-involved syscalls.  */
 }
 
+/* The logic here is replicated in wait.h, keep that inline
+   with this. */
 static inline int
 kern_to_user_signo (int signo)
 {
