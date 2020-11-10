@@ -2400,7 +2400,6 @@ __zos_sys_fork (int *errcode)
   /* For some reason, fork unsets THLIccsid. We set it back up
      manually.  */
   uint16_t parent_ccsid = get_prog_ccsid ();
-  void *parent_thread = __zos_get_thread_pointer ();
   /* This call is a noop. It's just here to cause this function to be
      resolved in the parent for dynamically linked binaries. Function
      resolution will not work in the child until this function runs.  */
