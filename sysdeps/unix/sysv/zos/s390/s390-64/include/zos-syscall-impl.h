@@ -2400,6 +2400,7 @@ __zos_sys_fork (int *errcode)
   /* For some reason, fork unsets THLIccsid. We set it back up
      manually.  */
   uint16_t parent_ccsid = get_prog_ccsid ();
+  void *parent_thread = __zos_get_thread_pointer ();
   /* This call is a noop. It's just here to cause this function to be
      resolved in the parent for dynamically linked binaries. Function
      resolution will not work in the child until this function runs.  */
@@ -2411,12 +2412,13 @@ __zos_sys_fork (int *errcode)
     {
       /* The thread pointer structure is wrong right now, we need to
 	 clear all old entries and add the new task. Dynamic function
-         resolution will not work until TLS does, so the function to
+	 resolution will not work until TLS does, so the function to
 	 do that needs to be resolved in the parent. Before the thread
-         pointer cleanup, we can only call static/inlined functions
-         that don't use TLS.  */
+	 pointer cleanup, we can only call static/inlined functions
+	 that don't use TLS.  */
       set_prog_ccsid (parent_ccsid);
-      __zos_cleanup_thread_pointer ((void *) (uintptr_t) TCB_PTR);
+      __ipt_zos_tcb = TCB_PTR;
+      __zos_cleanup_thread_pointer (parent_thread);
     }
 
   return pid;
