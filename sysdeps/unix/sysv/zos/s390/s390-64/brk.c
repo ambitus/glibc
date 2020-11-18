@@ -27,7 +27,8 @@
 
 /* The size of the fixed area we allocate, in megabytes.  */
 #define BRK_AREA_SIZE  (4 * 1024)
-#define MEG_FLOOR(addr)  ((uintptr_t) (addr) & ~(1024UL * 1024UL - 1))
+#define ONE_MEG  (1024UL * 1024UL)
+#define MEG_FLOOR(addr)  ((uintptr_t) (addr) & ~(ONE_MEG - 1))
 
 /* This must be initialized data because commons can't have aliases.  */
 void *__curbrk = 0;
@@ -51,7 +52,7 @@ try_iarv64 (uint64_t megabytes)
 				    megabytes - 1,
 				    GUARDLOC_HIGH, NULL, NULL);
   if (addr != NULL)
-    brk_max = (char *) addr + megabytes * 1024 * 1024;
+    brk_max = (char *) addr + megabytes * ONE_MEG;
 
   return addr;
 }
@@ -95,7 +96,7 @@ __brk (void *addr)
 	     fall back to using a (smaller amount of) 32-bit storage.
 	     NOTE: We can't deallocate when using STORAGE OBTAIN.  */
 	  using_iarv64 = false;
-	  if (!(brk_start = try_storage (1 * 1024 * 1024)))
+	  if (!(brk_start = try_storage (1 * ONE_MEG)))
 	    {
 	      /* Try (roughly) the minimum size that is likely to permit
 		 startup to succeed (permitting up to about 10KB of TLS
@@ -145,24 +146,32 @@ __brk (void *addr)
       if (new_floor > old_floor)
 	{
 	  /* We need to grow the resident memory area.  */
-	  uint64_t delta = (new_floor - old_floor) / (1024 * 1024);
+	  uint64_t delta = (new_floor - old_floor) / ONE_MEG;
 
-	  uint32_t ret;
-	  __iarv64_shrink_guard (brk_min, delta, &ret, NULL);
-	  if (ret > 4)
+	  /* We pre-allocate one megabyte as an optimization, so we we
+	     only actually need to allocate once that runs out. Glibc
+	     uses that space internally so it will never be deallocated,
+	     so we don't need to handle that situation.  */
+	  if (__glibc_likely (old_floor != (uintptr_t) brk_min - ONE_MEG
+			      || --delta > 0))
 	    {
-	      __set_errno (ENOMEM);
-	      goto lose;
+	      uint32_t ret;
+	      __iarv64_shrink_guard (brk_min, delta, &ret, NULL);
+	      if (__glibc_unlikely (ret > 4))
+		{
+		  __set_errno (ENOMEM);
+		  goto lose;
+		}
 	    }
 	}
       else if (new_floor < old_floor)
 	{
 	  /* We should shrink the resident memory area.  */
-	  uint64_t delta = (old_floor - new_floor) / (1024 * 1024);
+	  uint64_t delta = (old_floor - new_floor) / ONE_MEG;
 
 	  uint32_t ret;
 	  __iarv64_grow_guard (brk_min, delta, &ret, NULL);
-	  if (ret > 4)
+	  if (__glibc_unlikely (ret > 4))
 	    {
 	      /* We're not out of memory, but something has gone
 		 wrong.  */
