@@ -66,7 +66,8 @@ tag_one_fd (int fd)
      streams being enabled.  */
   fcvt.prog_ccsid = 0;
   fcvt.command = F_CVT_ON;
-  if (st.st_ccsid == 0)
+  if ((S_ISCHR (st.st_mode) && major (st.st_rdev) == 2)
+      || st.st_ccsid == 0)
     {
       fcvt.file_ccsid = 1047;
     }

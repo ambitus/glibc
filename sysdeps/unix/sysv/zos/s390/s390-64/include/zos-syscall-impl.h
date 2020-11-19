@@ -683,6 +683,13 @@ __zos_sys_open (int *errcode, const char *pathname,
 	      {
 		fcvt.file_ccsid = FT_BINARY;
 	      }
+	    else if (S_ISCHR (fd_target.st_mode)
+		     && major (fd_target.st_rdev) == 2)
+	      {
+		/* Apparently terminals should always be treated as
+		   1047.  */
+		fcvt.file_ccsid = 1047;
+	      }
 	    else if (fd_target.st_ccsid == 0)
 	      {
 		char *untagged_existing_file
