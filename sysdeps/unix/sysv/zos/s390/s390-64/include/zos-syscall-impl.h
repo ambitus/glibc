@@ -609,7 +609,8 @@ __zos_sys_open (int *errcode, const char *pathname,
      major block number 5.
      NOTE: There is similar code in check_fds.c, keep that in line
      with this.  */
-  if (!(S_ISCHR (path_target.st_mode) && major (path_target.st_dev) == 5))
+  if (!(S_ISCHR (path_target.st_mode)
+	&& major (path_target.st_rdev) == 5))
     {
       int accmode = flags & O_ACCMODE;
       switch (accmode)
