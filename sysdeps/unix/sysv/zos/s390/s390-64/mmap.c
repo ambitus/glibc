@@ -56,9 +56,8 @@ __mmap64 (void *addr, size_t len, int prot, int flags, int fd,
       ret = __create_anon_mmap (addr, len, prot, flags);
 #else
       /* z/OS TODO: In rltd, we don't keep track of anonymous mappings, and
-         can't free them or mprotect them.
-         z/OS TODO: allow prot to apply.  */
-      ret = __storage_obtain_simple (len);
+         can't free them or mprotect them. */
+      ret = __storage_obtain (len, !(prot & PROT_EXEC), true);
       if (ret == NULL)
 	ret = MAP_FAILED;
 #endif

@@ -110,8 +110,7 @@ libc_hidden_tls_proto (__sig_tdata)
       {									\
 	struct sir_stack *stack = __sig_tdata.stack_start;		\
 	__storage_release ((unsigned int) (uintptr_t) stack,		\
-			   (unsigned int) stack->length,		\
-			   __ipt_zos_tcb, true);			\
+			   (unsigned int) stack->length);		\
       }									\
     else								\
       atomic_store_release (&__sir_data.cached_stack_in_use, -1);	\

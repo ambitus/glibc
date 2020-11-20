@@ -155,12 +155,8 @@ ENTRY (__sir_entry)
 	l	%r0, 0(%r15)
 	llgfr	%r8, %r0
 
-	/* Load the IPT Task Control Block  */
-	/* larl	%r15, __ipt_zos_tcb
-	l	%r6, 0(%r15) */
-
-	/* Load the flags for subpool 72, 31-bit real and virtual storage,
-	   owned by the IPT.  */
+	/* Load the flags for subpool 131, 31-bit virtual storage,
+	   owned by the job step task.  */
 	larl	%r15, .Lsir_const_pool
 	l	%r15, .Lstorage_flags-.Lsir_const_pool(%r15)
 	/*sar	%a0, %r6*/
@@ -219,7 +215,6 @@ ENTRY (__sir_entry)
 	.align 4
 .Lsir_const_pool:
 .Lstorage_flags:
-	/*.long	67127408  */
 	.long REGULAR_OBTAIN_FLAGS  /* Flags for STORAGE OBTAIN.  */
 
 	.text

@@ -131,7 +131,7 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
       struct str_list *newp = alloca (sizeof (struct str_list));
 #else
       struct str_list *newp =
-	__storage_obtain_simple ((sizeof (struct str_list) + 7) & ~7);
+	__storage_obtain ((sizeof (struct str_list) + 7) & ~7, false, false);
 #endif
       newp->str = str;
       newp->len = len;
@@ -147,7 +147,7 @@ __libc_message (enum __libc_message_action action, const char *fmt, ...)
       struct iovec *iov = alloca (nlist * sizeof (struct iovec));
 #else
       struct iovec *iov =
-	__storage_obtain_simple ((nlist * sizeof (struct iovec) + 7) & ~7);
+	__storage_obtain ((nlist * sizeof (struct iovec) + 7) & ~7, false, false);
 #endif
       ssize_t total = 0;
 

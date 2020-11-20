@@ -77,7 +77,7 @@ struct storage
 static inline void __attribute__ ((always_inline))
 perm_store_init (struct storage *store, size_t total_size)
 {
-  void *res = __storage_obtain_simple (roundup16 (total_size + 15));
+  void *res = __storage_obtain (roundup16 (total_size + 15), false, false);
 
   if (res == NULL)
     CRASH_NOW ();

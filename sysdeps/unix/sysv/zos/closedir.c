@@ -48,9 +48,8 @@ __closedir (DIR *dirp)
 
   /* Get size of the memory that was allocated in opendir() and free it. */
   size_t storage_size = (sizeof (DIR) + dirp->allocation + 7UL) & ~7UL;
-  retval = __storage_release ((unsigned int) (uintptr_t) dirp, \
-			      (unsigned int) storage_size, \
-			      __ipt_zos_tcb, true);
+  retval = __storage_release ((unsigned int) (uintptr_t) dirp,
+			      (unsigned int) storage_size);
   if (retval == -1)
     {
       __set_errno (EFAULT);

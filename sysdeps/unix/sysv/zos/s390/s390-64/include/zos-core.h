@@ -23,18 +23,9 @@
 /* The 31-bit bar.  */
 #define PTR31_BAR 2147483647
 
-/* The subpool we use for everything.
-
-   We want a private, fetch-protected, task-owned subpool. There are
-   many available, the choice of specific subpool number is
-   arbitrary.
-
-   The storage key is ignored for the subpools we are using.
-
-   TODO: We want a subpool no one else is likely to use.
-   TODO: If we change this, change the storage flags in sir_entry
-   also.  */
-#define STORAGE_SUBPOOL 72
+/* The subpool we use for everything. */
+/* sp 131 is non auth, private low, fetch protected, pagable, owned by the job step tcb */
+#define STORAGE_SUBPOOL 131
 
 
 /* STORAGE flags  */
@@ -44,7 +35,7 @@
 #define STORAGE_COND_NO	       0x00000002
 #define STORAGE_BNDRY_PAGE     0x00000004
 #define STORAGE_MAX_MIN_LEN    0x00000008
-#define STORAGE_LOC_VIRT_31_64 0x00000030
+#define STORAGE_LOC_VIRT_31    0x00000030
 #define STORAGE_LOC_REAL_31_64 0x00000040
 #define STORAGE_USE_ALET       0x00000080
 #define STORAGE_SUBPOOL_MASK   0x0000ff00
@@ -64,11 +55,12 @@
 /* The standard storage flags that we use for most everything.  */
 #define REGULAR_OBTAIN_FLAGS						\
   (STORAGE_SUBPOOL << STORAGE_SUBPOOL_SHIFT | STORAGE_REQ_OBTAIN	\
-  | STORAGE_LOC_VIRT_31_64 | STORAGE_LOC_REAL_31_64)
+  | STORAGE_CALLRKY_YES | STORAGE_CHECKZERO_YES                         \
+  | STORAGE_LOC_VIRT_31 | STORAGE_LOC_REAL_31_64 | STORAGE_LOC_REAL_64)
 
 #define REGULAR_RELEASE_FLAGS						\
-  (STORAGE_SUBPOOL << STORAGE_SUBPOOL_SHIFT | STORAGE_REQ_RELEASE)	\
-
+  (STORAGE_SUBPOOL << STORAGE_SUBPOOL_SHIFT | STORAGE_REQ_RELEASE       \
+  | STORAGE_CALLRKY_YES)
 
 #ifndef __ASSEMBLER__
 # include <stdbool.h>
@@ -88,20 +80,16 @@ enum guardloc
    Block.  */
 extern unsigned int __ipt_zos_tcb attribute_hidden;
 
-extern void *__storage_obtain (unsigned int length, unsigned int tcbaddr,
-			       bool noexec,
+extern void *__storage_obtain (unsigned int length, bool noexec,
 			       bool on_page_boundary) attribute_hidden
   __attribute_malloc__ __attribute_alloc_size__ ((1));
 
-/* TODO: remove this when the regular one works.  */
-extern void *__storage_obtain_simple (unsigned int length)
-  __attribute_malloc__ __attribute_alloc_size__ ((1))
-  attribute_hidden;
-
 extern int __storage_release (unsigned int storage_addr,
-			      unsigned int length,
-			      unsigned int tcbaddr,
-			      bool noexec) attribute_hidden;
+			      unsigned int length) attribute_hidden;
+
+extern void __pgser_release (unsigned int storage_addr,
+			     unsigned int length) attribute_hidden;
+
 extern void * __iarv64_getstorage (uint64_t segments,
 				   uint64_t guardsize,
 				   enum guardloc loc,
@@ -188,6 +176,33 @@ hidden_proto (__load_pt_interp)
 extern void * __loadhfs (char *path) attribute_hidden;
 extern void * __load_pt_interp (void) attribute_hidden;
 #endif
+
+
+struct __gtrace_64 {
+  unsigned short len;
+  unsigned short fid;
+  unsigned int ptr31;
+  unsigned long int ptr64;
+};
+
+#define __GTF_USER_CLASS 0x0e
+
+/* eid can be 0 through 1023 for user events. */
+
+#define __gtrace(eid, fid_, data_ptr_, data_len_, rc) \
+  unsigned int rc __attribute__((used)) = 0;                    \
+  struct __gtrace_64 t = {.len = data_len_,                     \
+                          .fid = fid_,                          \
+                          .ptr31 = 0, .ptr64 = (unsigned long int)data_ptr_}; \
+  __asm__ __volatile__("la      1, %1  \n\t"   \
+                       "mc      %2, %3 \n\t"   \
+                       "st      15, %0 \n\t"   \
+                       : "=m"(rc) : "m"(t), "n"(eid), "n"(__GTF_USER_CLASS), "m"(*data_ptr_) \
+                       : "r1", "r15", "memory");
+
+/* Example:  __gtrace(0x312, 0, &c, sizeof(c), rc); */
+
+#define HAVE_GTRACE 1
 
 #endif  /* !__ASSEMBLER__  */
 #endif /* !_ZOS_CORE_H  */

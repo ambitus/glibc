@@ -49,7 +49,7 @@ __set_estaex_handler (void (*user_handler) (struct sdwa *, void *),
 
   /* Acquire some below-the-bar storage. It will live for as long
      as the program does.  */
-  storage = __storage_obtain_simple (alloc_size);
+  storage = __storage_obtain (alloc_size, false, false);
 
   /* These must be below the bar */
   handler_data = storage;

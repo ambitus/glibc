@@ -161,7 +161,10 @@ info_decref (struct map_info *info)
 	}
       else
 	{
-	  /* Nothing necessary for 31-bit allocations.  */
+	  uint32_t ret = __storage_release ((unsigned int)(unsigned long)info->memobj_start, (unsigned int)info->length);
+	  free_info (info);
+	  if (ret > 0)
+	    return FAIL;
 	}
     }
 
@@ -245,8 +248,8 @@ dealloc_range (uint64_t start, uint64_t len)
     }
   else
     {
-      /* z/OS TODO: Make sure this is idempotent.  */
-      return __storage_release ((uint32_t) start, (uint32_t) len, 0, 0);
+      __pgser_release((unsigned int)start, (unsigned int)len);
+      return 0;
     }
 }
 
@@ -521,12 +524,9 @@ create_storage_map (void *addr __attribute__ ((unused)), size_t len,
 		    size_t *actual_len)
 {
   void *mapping;
+  int noexec = !(prot & PROT_EXEC);
 
-  /* Allocate the mapping itself.  */
-  /* mapping = __storage_obtain (len, __ipt_zos_tcb, noexec, true);  */
-  /* z/OS TODO: change this to the above when the regular call is
-     working.  */
-  mapping = __storage_obtain_simple (len);
+  mapping = __storage_obtain (len, noexec, true);
 
   if (mapping == NULL)
     return MAP_FAILED;

@@ -39,7 +39,6 @@ void *__curbrk = 0;
 weak_alias (__curbrk, ___brk_addr)
 
 
-extern unsigned int __ipt_zos_tcb attribute_hidden;
 static void *brk_min, *brk_max;
 static bool using_iarv64 = true;
 static int brk_lock = LLL_LOCK_INITIALIZER;
@@ -60,10 +59,7 @@ try_iarv64 (uint64_t megabytes)
 static inline void *
 try_storage (unsigned int bytes)
 {
-  /* addr = __storage_obtain (1 * 1024 * 1024,
-     __ipt_zos_tcb, true, true); */
-  /* z/OS TODO: revert this when regular storage obtain works.  */
-  void *addr = __storage_obtain_simple (bytes);
+  void *addr = __storage_obtain (1 * 1024 * 1024, false, true);
 
   if (addr != NULL)
     brk_max = (char *) addr + bytes;

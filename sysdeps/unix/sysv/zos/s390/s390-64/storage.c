@@ -60,16 +60,12 @@ unsigned int __ipt_zos_tcb __attribute__ ((nocommon));
    be cleaned up on process termination.  */
 
 
-/* This is the range of subpools we will consider using.  */
-_Static_assert (1 <= STORAGE_SUBPOOL && STORAGE_SUBPOOL <= 127, "");
-
 
 /* This does the actual storage request. Returns zero on failure,
    1 on success for RELEASE, and the storage address for OBTAIN.  */
 static uint32_t
-storage_request (uint32_t length, uint32_t tcbaddr,
-		 uint32_t target_addr, uint32_t flags,
-		 uint32_t flags2)
+storage_request (uint32_t length, uint32_t target_addr,
+		 uint32_t flags, uint32_t flags2)
 {
   /* storage calling convention (for our use case):
      in:
@@ -90,50 +86,36 @@ storage_request (uint32_t length, uint32_t tcbaddr,
        just RELEASE:
 	 r1: clobbered  */
 
-  /* TODO: parts of this function are commented out because they trigger
-     a bug in gcc, which occurs because it defines the arglist as
-     whatever r1 points to. Put them back in when that bug has been
-     fixed.  */
-
-  /* TODO: I think the final offset is different for release, 204
-     instead of 160. Change that.  */
-
   uint32_t ret_addr, return_code;
+  uint32_t cvt = *(uint32_t *)16;
+  uint32_t syst_linkage_table = *(uint32_t *)(uint64_t)(cvt + 772);
+  uint32_t lx_ex_offset = (flags & STORAGE_REQ_RELEASE) ? 204 : 160;
+  uint32_t lx_ex = *(uint32_t *)(uint64_t)(syst_linkage_table + lx_ex_offset);
 
-  register uint32_t r15 asm ("r15") = flags;
-  /* register uint32_t storage_addr asm ("r1") = target_addr;  */
-  register uint32_t len asm ("r0") = length;
-
-  __asm__ __volatile__ ("lgr	%%r5, %%r1\n\t"
-			"sar	%%a0, %3\n\t"
-			"sar	%%a15, %4\n\t"
-			"llgt	%%r14, 16\n\t"
-			"l	%%r14, 772(%%r14)\n\t"
-			"l	%%r14, 160(%%r14)\n\t"
-			"pc	0(%%r14)\n\t"
-			"lgr	%2, %%r1\n\t"  /* Copy the storage
-						  address out of r1.  */
-			"lgr	%%r1, %%r5"    /* Don't clobber r1.  */
-			: "+r" (len), "+r" (r15), "=r" (ret_addr)
-			: "r" (tcbaddr), "r" (flags2)
-			: "r14", "r5", "a0", "a1", /* "a14", "a15", */ "cc");
-			// "sar   %%a0, %3\n\t"
-			// "sar   %%a15, %4\n\t"
-			// "llgt  %%r14, 16\n\t"
-			// "l     %%r14, 772(%%r14)\n\t"
-			// "l     %%r14, 160(%%r14)\n\t"
-			// "pc    0(%%r14)\n\t"
-			// : "+r" (len), "+r" (storage_addr),
-			//   "+r" (r15)
-			// : "r" (tcbaddr), "r" (flags2)
-			// : "r14", "a0", "a1", /* "a14", "a15", */ "cc");
-
-  /* ret_addr = storage_addr;  */
-  return_code = r15;
+  __asm__ __volatile__ ("l	%%r0, %2      \n\t"
+			"sar	%%a15, %%r0   \n\t"
+			"llgt   %%r0, %3      \n\t"
+			"llgt   %%r1, %4      \n\t"
+			"llgt   %%r14, %5     \n\t"
+			"llgt   %%r15, %6     \n\t"
+			"pc	0(%%r14)      \n\t"
+			"st	%%r1, %0      \n\t"
+			"st	%%r15, %1     "
+			: "=m" (ret_addr), "=m" (return_code)
+			: "m" (flags2), "m" (length), "m" (target_addr), "m" (lx_ex), "m" (flags)
+			: "r0", "r1", "r14", "r15", "cc");
 
   /* Return code is 0 for a successful request.	 */
   if (flags & STORAGE_REQ_RELEASE)
     return return_code == 0 ? 1 : 0;
+  
+  if (flags & STORAGE_CHECKZERO_YES)
+    {
+      if (return_code == 0)
+	memset((void *)(uint64_t)ret_addr, 0, length);
+      else if (return_code == 0x14)
+	return_code = 0;
+    }
   return return_code == 0 ? ret_addr : 0;
 }
 
@@ -145,28 +127,28 @@ storage_request (uint32_t length, uint32_t tcbaddr,
 
    Can only get virtual storage below the 2 GB bar.  */
 void *
-__storage_obtain (unsigned int length, unsigned int tcbaddr,
-		  bool noexec,
-		  bool on_page_boundary)
+__storage_obtain (unsigned int length, 
+		  bool noexec, bool on_page_boundary)
 {
   /* The storage obtain request is as follows:
-     STORAGE OBTAIN,LENGTH=length,SP=100,LOC=(31,31)
-     ,TCBADDR=ipt,COND=YES
-     [,maybe EXECUTABLE=NO][,maybe BNDRY=PAGE][,maybe CHECKZERO=YES]
+     STORAGE OBTAIN,LENGTH=length,SP=131,LOC=(31,64),COND=YES,
+     CALLRKY=YES,[,maybe EXECUTABLE=NO][,maybe BNDRY=PAGE]
+     [,maybe CHECKZERO=YES]
+     sp 131 is non auth, private low, fetch protected, pagable, owned by the 
+     job step task.
      We also zero all storage once obtained, if it was not zeroed
      already by STORAGE OBTAIN.
 
      If on_page_boundary is true, then we also specify BNDRY=PAGE.
      BNDRY=PAGE will always get storage starting at a page boundary.
 
-     We use LOC=(31,31) which means we get virtual storage below 2 GB
-     that is backed by physical storage below 2 GB.
-     We use a subpool for which key does not matter.
+     We use LOC=(31,64) which means we get virtual storage below 2 GB
+     that is backed anywhere.
+     We specify CALLRKY=YES because we use subpool 129.
 
      TODO: Implement read/write protection
      TODO: Should we use the BACK parameter?
-     TODO: Should we use LOC=(31,64) which means we get virtual storage
-     below 2 GB that can be backed by physical storage above 2 GB?  */
+  */
   uint32_t flags, flags2, request_return;
   void *retptr;
 
@@ -181,15 +163,10 @@ __storage_obtain (unsigned int length, unsigned int tcbaddr,
   if (length == 0 || length % 8 != 0)
     return NULL;
 
-  /* We require storage to be associated with a vaild TCB.
-     TODO: check that TCB is valid here.  */
-  if (tcbaddr == 0)
-    return NULL;
-
   /* Base flags that we use for every OBTAIN request. Right now we use
-     a constant fixed storage subpool, always specify LOC=(31,31),
-     TCBADDR, and COND=YES.  */
-  flags = REGULAR_OBTAIN_FLAGS | STORAGE_USE_TCBADDR;
+     subpool 131 (owned by the job step), always specify LOC=(31,64),
+     CALLRKEY=YES, and COND=YES.  */
+  flags = REGULAR_OBTAIN_FLAGS;
   flags |= on_page_boundary ? STORAGE_BNDRY_PAGE : 0;
 
   if (noexec)
@@ -200,78 +177,46 @@ __storage_obtain (unsigned int length, unsigned int tcbaddr,
   else
     flags2 = 0;
 
-  request_return = storage_request (length, tcbaddr, 0, flags, flags2);
+  request_return = storage_request (length, 0, flags, flags2);
   retptr = request_return ? (void *) (uintptr_t) request_return : NULL;
-
-  /* For our subpool and LOC, when BNDRY=PAGE and LENGTH >= 4096, or
-     when length >= 8192, storage obtain will zero the storage for
-     us.  */
-  if (retptr && (length < 4096 || (!on_page_boundary && length < 8192)))
-    memset (retptr, 0, length);
 
   return retptr;
 }
-
-
-/* TODO: remove this once the generic version above is working.  */
-void *
-__storage_obtain_simple (unsigned int length)
-{
-  if (length == 0 || length % 8 != 0)
-    return NULL;
-
-  uint32_t ret_addr, flags = REGULAR_OBTAIN_FLAGS;
-
-  register uint32_t r15 asm ("r15") = flags;
-  register uint32_t len asm ("r0") = length;
-
-  __asm__ __volatile__ ("lgr	%%r5, %%r1\n\t"
-			"llgt	%%r14, 16\n\t"
-			"l	%%r14, 772(%%r14)\n\t"
-			"l	%%r14, 160(%%r14)\n\t"
-			"pc	0(%%r14)\n\t"
-			"lgr	%2, %%r1\n\t"  /* Copy the storage
-						  address out of r1.  */
-			"lgr	%%r1, %%r5"    /* Don't clobber r1.  */
-			: "+r" (len), "+r" (r15), "=r" (ret_addr)
-			:
-			: "r14", "r5", "a0", "a1", /* "a14", "a15", */ "cc");
-
-  uint32_t return_code = r15;
-
-  /* Return code is 0 for a successful request.	 */
-  return return_code == 0 ? (void *) (uintptr_t) ret_addr : NULL;
-}
-
 
 /* C interface to a subset of STORAGE RELEASE's functionality.
    Should probably only be used with STORAGE OBTAINed storage.
    Returns 0 on success and -1 on failure.  */
 int
-__storage_release (unsigned int storage_addr, unsigned int length,
-		   unsigned int tcbaddr, bool noexec)
+__storage_release (unsigned int storage_addr, unsigned int length)
 {
   uint32_t flags, flags2, res;
-  if (length == 0 || tcbaddr == 0 || storage_addr == 0)
+  if (length == 0 || storage_addr == 0)
     return -1;
 
-  /* Disable functionality as it doesn't work at the moment */
-  return 0;
-
   /* Base flags that we use for every OBTAIN request. Right now we use
-     a constant fixed storage subpool, specify TCBADDR, and
-     COND=YES.  */
-  flags = REGULAR_RELEASE_FLAGS | STORAGE_USE_TCBADDR;
-  if (noexec)
-    {
-      flags |= STORAGE_USE_AR15;
-      flags2 = STORAGE_EXECUTABLE_NO;
-    }
-  else
-    flags2 = 0;
+     subpool 131, with CALLRKY=YES and COND=YES.  */
+  flags = REGULAR_RELEASE_FLAGS;
+  flags2 = 0;
 
-  res = storage_request (length, tcbaddr, storage_addr, flags, flags2);
+  res = storage_request (length, storage_addr, flags, flags2);
   return res ? -1 : 0;
+}
+
+/* discards the data, replacing it with zeros.  Equivalent to
+   STORAGE RELEASE followed by STORAGE OBTAIN.  Faster than
+   MVCL for large areas.  The pages do not use resouces. */
+void
+__pgser_release(unsigned int storage_addr, unsigned int length)
+{
+  unsigned int first_byte_addr = storage_addr;
+  unsigned int last_byte_addr = storage_addr + length - 1;
+  __asm__("slr  %%r0, %%r0   \n\t"
+          "l    %%r1, %0     \n\t"
+          "l    %%r15, %1    \n\t"
+          "la   %%r14, 0x600 \n\t"
+          "svc  138          \n\t"
+          : : "m" (first_byte_addr), "m" (last_byte_addr)
+          : "r0", "r1", "r14", "r15");
 }
 
 /* IARV64

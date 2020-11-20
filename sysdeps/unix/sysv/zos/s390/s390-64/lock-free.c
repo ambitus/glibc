@@ -685,12 +685,11 @@ __lf_hash_table_initialize (lf_hash_table *table, size_t num_buckets,
     __typeof (size) _size = (size);					\
     if (size >= PTR31_BAR)						\
       crash ();								\
-    __storage_obtain_simple ((unsigned int) _size);			\
+    __storage_obtain ((unsigned int) _size, false, false);		\
   })
 #define raw_deallocator(addr, size) \
   __storage_release ((unsigned int) (uintptr_t) addr, \
-		     (unsigned int) (size_t) size,    \
-		     __ipt_zos_tcb, true)
+		     (unsigned int) (size_t) size)
 
 /* The granularity with which the allocator is able to allocate.  */
 #define RAW_ALLOCATOR_BLKSZ 8

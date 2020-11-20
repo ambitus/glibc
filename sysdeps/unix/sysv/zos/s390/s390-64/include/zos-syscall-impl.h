@@ -2217,7 +2217,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   size_t lens_total = (sizeof (*envlens) * envc +
 		       envlen_off + 7UL) & ~7UL;
 
-  lens = __storage_obtain_simple (lens_total);
+  lens = __storage_obtain (lens_total, false, false);
   if (lens == NULL)
     {
       *errcode = ENOMEM;
@@ -2253,7 +2253,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   count_lengths (envp, envc, envlens, envlen_ptrs);
 #undef count_lengths
 
-  translated = __storage_obtain_simple ((total_size + 7UL) & ~7UL);
+  translated = __storage_obtain ((total_size + 7UL) & ~7UL, false, false);
   if (translated == NULL)
     {
       /* z/OS TODO: free lens.  */

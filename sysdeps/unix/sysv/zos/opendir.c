@@ -99,7 +99,7 @@ __opendir (const char *name)
   /* Get total storage size for DIR structure and for the internal buffer. */
   size_t storage_size = (sizeof (DIR) + allocation + 7UL) & ~7UL;
   /* Allocate storage. */
-  DIR *dirp = (DIR *) __storage_obtain_simple (storage_size);
+  DIR *dirp = (DIR *) __storage_obtain (storage_size, false, false);
   if (dirp == NULL)
     {
       /* To close directory in case of error local __closedir2() function

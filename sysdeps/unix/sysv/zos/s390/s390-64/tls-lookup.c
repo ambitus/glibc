@@ -83,7 +83,7 @@ __zos_initialize_thread_pointer (void *addr)
   /* Allocate storage for the lock-free list node pool and the thread
      pointer hashtable, plus extra so we can align them both to 16
      bytes.  */
-  node_pool = __storage_obtain_simple ((unsigned int) alloc_size);
+  node_pool = __storage_obtain ((unsigned int) alloc_size, false, false);
   node_pool = (object_pool *) (((uintptr_t) node_pool + 15) & ~15);
   __zos_tp_table =
     (lf_hash_table *) (((uintptr_t) node_pool
