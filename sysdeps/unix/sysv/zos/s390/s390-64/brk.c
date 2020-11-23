@@ -59,7 +59,7 @@ try_iarv64 (uint64_t megabytes)
 static inline void *
 try_storage (unsigned int bytes)
 {
-  void *addr = __storage_obtain (1 * 1024 * 1024, false, true);
+  void *addr = __storage_obtain (bytes, false, true);
 
   if (addr != NULL)
     brk_max = (char *) addr + bytes;

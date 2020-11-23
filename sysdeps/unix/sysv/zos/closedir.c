@@ -50,7 +50,7 @@ __closedir (DIR *dirp)
   size_t storage_size = (sizeof (DIR) + dirp->allocation + 7UL) & ~7UL;
   retval = __storage_release ((unsigned int) (uintptr_t) dirp,
 			      (unsigned int) storage_size);
-  if (retval == -1)
+  if (retval != 0)
     {
       __set_errno (EFAULT);
       return -1;

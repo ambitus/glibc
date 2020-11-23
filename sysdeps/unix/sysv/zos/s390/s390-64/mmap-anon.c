@@ -161,9 +161,11 @@ info_decref (struct map_info *info)
 	}
       else
 	{
-	  uint32_t ret = __storage_release ((unsigned int)(unsigned long)info->memobj_start, (unsigned int)info->length);
+	  uint32_t ret = __storage_release ((unsigned int) (uintptr_t)
+					    info->memobj_start,
+					    (unsigned int) info->length);
 	  free_info (info);
-	  if (ret > 0)
+	  if (ret != 0)
 	    return FAIL;
 	}
     }
@@ -248,7 +250,7 @@ dealloc_range (uint64_t start, uint64_t len)
     }
   else
     {
-      __pgser_release((unsigned int)start, (unsigned int)len);
+      __pgser_release ((unsigned int) start, (unsigned int) len);
       return 0;
     }
 }

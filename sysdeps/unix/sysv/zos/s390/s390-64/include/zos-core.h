@@ -23,8 +23,13 @@
 /* The 31-bit bar.  */
 #define PTR31_BAR 2147483647
 
-/* The subpool we use for everything. */
-/* sp 131 is non auth, private low, fetch protected, pagable, owned by the job step tcb */
+/* The subpool we use for everything.
+
+   Subpool 131 is private low, fetch-protected, pageable, and does not
+   require authorization. Storage allocated from it is owned by the
+   jobstep TCB instead of the task that allocates it, meaning that it
+   will not be deallocated until all threads end (or it's manually
+   deallocated). The storage key is ignored for this subpool.  */
 #define STORAGE_SUBPOOL 131
 
 
@@ -178,7 +183,8 @@ extern void * __load_pt_interp (void) attribute_hidden;
 #endif
 
 
-struct __gtrace_64 {
+struct __gtrace_64
+{
   unsigned short len;
   unsigned short fid;
   unsigned int ptr31;
@@ -189,20 +195,26 @@ struct __gtrace_64 {
 
 /* eid can be 0 through 1023 for user events. */
 
-#define __gtrace(eid, fid_, data_ptr_, data_len_, rc) \
-  unsigned int rc __attribute__((used)) = 0;                    \
-  struct __gtrace_64 t = {.len = data_len_,                     \
-                          .fid = fid_,                          \
-                          .ptr31 = 0, .ptr64 = (unsigned long int)data_ptr_}; \
-  __asm__ __volatile__("la      1, %1  \n\t"   \
-                       "mc      %2, %3 \n\t"   \
-                       "st      15, %0 \n\t"   \
-                       : "=m"(rc) : "m"(t), "n"(eid), "n"(__GTF_USER_CLASS), "m"(*data_ptr_) \
-                       : "r1", "r15", "memory");
+#define __gtrace(eid, fid_, data_ptr_, data_len_, rc)			\
+  do {									\
+    unsigned int rc __attribute__ ((used)) = 0;				\
+    struct __gtrace_64 t = {.len = data_len_,				\
+			    .fid = fid_,				\
+			    .ptr31 = 0,					\
+			    .ptr64 = (unsigned long int) (data_ptr_)};	\
+    __asm__ __volatile__ ("la      1, %1  \n\t"				\
+			  "mc      %2, %3 \n\t"				\
+			  "st      15, %0 \n\t"				\
+			  : "=m"(rc)					\
+			  : "m"(t), "n"(eid), "n"(__GTF_USER_CLASS),	\
+			    "m"(*(data_ptr_))				\
+			  : "r1", "r15", "memory");			\
+  } while (0)
 
 /* Example:  __gtrace(0x312, 0, &c, sizeof(c), rc); */
 
-#define HAVE_GTRACE 1
+/* Define this to 1 to enable tracing.  */
+#define HAVE_GTRACE 0
 
 #endif  /* !__ASSEMBLER__  */
 #endif /* !_ZOS_CORE_H  */

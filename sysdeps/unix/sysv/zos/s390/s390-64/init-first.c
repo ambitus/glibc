@@ -22,6 +22,7 @@
 static __always_inline void
 __zos_early_setup (void)
 {
+  /* __bpx_call_table = GET_BPX_FUNCTION_TABLE; */
 }
 
 /* co-opt VDSO_SETUP to do our initialization, since we aren't
