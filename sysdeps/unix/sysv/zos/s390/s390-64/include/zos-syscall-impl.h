@@ -112,6 +112,11 @@ typedef uint32_t __bpxk_32_t;
 
 struct rusage;
 
+/* TODO: Check that this is correct.  */
+#define BPXYSTAT_LEN							\
+  ((uint32_t) (sizeof (struct stat)					\
+	       - (sizeof (__time_t) + sizeof (unsigned long int)) * 3))
+
 /***************************************************
  * Utility functions/macros
  ***************************************************/
@@ -335,6 +340,15 @@ __zos_sys_chattr (const char *pathname, const struct zos_file_attrs *attrs)
   return retval;
 }
 
+typedef void (*__bpx4ops_t) (const uint32_t *pathname_len,
+			     const char *pathname,
+			     const int32_t *options,
+			     const int32_t *mode,
+			     const uint32_t *statbuf_len,
+			     struct stat *statbuf,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
 typedef void (*__bpx4opn_t) (const uint32_t *pathname_len,
 			     const char *pathname,
 			     const int32_t *options,
@@ -512,10 +526,16 @@ __zos_sys_open (int *errcode, const char *pathname,
       __zos_sys_chattr (pathname, &attrs);
     }
 
+  struct stat fd_target;
+  const uint32_t statbuf_len = BPXYSTAT_LEN;
   int32_t zflags = __map_common_oflags_to_zos (flags);
-  /* Do the syscall.  */
-  BPX_CALL (open, __bpx4opn_t, &path_len, translated_path, &zflags,
-	    &kernel_mode, &retval, errcode, &reason_code);
+  /* Do the syscall. Intead of using the open syscall, we actually use
+     the openstat syscall that combines open and stat to save us a
+     syscall. Otherwise we would always follow up with an fstat to get
+     the file tag.  */
+  BPX_CALL (openstat, __bpx4ops_t, &path_len, translated_path, &zflags,
+	    &kernel_mode, &statbuf_len, &fd_target, &retval, errcode,
+	    &reason_code);
   /* TODO: check important reason codes. */
   /* TODO: confirm retvals are in line with what linux gives.  */
 
@@ -523,24 +543,14 @@ __zos_sys_open (int *errcode, const char *pathname,
   if (retval == -1)
     return retval;
 
-  int stat_valid;
-  struct stat fd_target;
-
   if ((flags & (O_NOFOLLOW | O_DIRECTORY)) && not_creating)
     {
-      stat_valid = 1;
       /* While we already checked the path we were opening once, that
 	 alone is not sufficient. It's still possible someone removed
 	 the file that we checked and replaced it with something else, so
 	 now we do an fstat on whatever we actually ended up opening to
-	 see if it seems okay.  */
-      if (__zos_sys_fstat (&tmp_err, retval, &fd_target) == -1)
-	{
-	  __zos_sys_close (errcode, retval);
-	  *errcode = tmp_err;
-	  return -1;
-	}
-
+	 see if it seems okay. Well, actually we already did it since
+	 we open using openstat.  */
       if ((flags & O_DIRECTORY) && !S_ISDIR (fd_target.st_mode))
 	{
 	  __zos_sys_close (errcode, retval);
@@ -569,8 +579,6 @@ __zos_sys_open (int *errcode, const char *pathname,
 	  return -1;
 	}
     }
-  else
-    stat_valid = 0;
 
   if (flags & O_CLOEXEC)
     {
@@ -593,15 +601,6 @@ __zos_sys_open (int *errcode, const char *pathname,
 	  *errcode = tmp_err;
 	  return -1;
 	}
-    }
-
-  /* Only stat if we need to.  */
-  if (!stat_valid
-      && __zos_sys_fstat (&tmp_err, retval, &fd_target) < 0)
-    {
-      __zos_sys_close (errcode, retval);
-      *errcode = tmp_err;
-      return -1;
     }
 
   /* Handle tagging and character conversion if the file isn't part
@@ -896,19 +895,13 @@ typedef void (*__bpx4fst_t) (const int32_t *fd,
 
 typedef __bpx4sta_t __bpx4lst_t;
 
-
-/* TODO: Check that this is correct.  */
-static const uint32_t __bpxystat_len = sizeof (struct stat) -
-				       (sizeof (__time_t) +
-					sizeof (unsigned long int)) * 3;
-
 static inline int
 __zos_sys_stat (int *errcode, const char *pathname,
 		struct stat *statbuf)
 {
   int32_t retval, reason_code;
   char translated_path[__BPXK_PATH_MAX];
-  uint32_t statbuf_len = __bpxystat_len;
+  const uint32_t statbuf_len = BPXYSTAT_LEN;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
   if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
@@ -929,7 +922,7 @@ static inline int
 __zos_sys_fstat (int *errcode, int fd, struct stat *statbuf)
 {
   int32_t retval, reason_code;
-  uint32_t statbuf_len = __bpxystat_len;
+  const uint32_t statbuf_len = BPXYSTAT_LEN;
   BPX_CALL (fstat, __bpx4fst_t, &fd, &statbuf_len, statbuf, &retval,
 	    errcode, &reason_code);
   __initialize_times (statbuf);
@@ -946,7 +939,7 @@ __zos_sys_lstat (int *errcode, const char *pathname,
 {
   int32_t retval, reason_code;
   char translated_path[__BPXK_PATH_MAX];
-  uint32_t statbuf_len = __bpxystat_len;
+  const uint32_t statbuf_len = BPXYSTAT_LEN;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
   if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
