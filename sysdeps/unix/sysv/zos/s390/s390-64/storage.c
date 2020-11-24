@@ -175,7 +175,7 @@ __storage_obtain (unsigned int length,
   /* Base flags that we use for every OBTAIN request. Right now we use
      subpool 131 (owned by the job step), always specify LOC=(31,64),
      CALLRKEY=YES, and COND=YES.  */
-  flags = REGULAR_OBTAIN_FLAGS;
+  flags = REGULAR_OBTAIN_FLAGS | STORAGE_CHECKZERO_YES;
   flags |= on_page_boundary ? STORAGE_BNDRY_PAGE : 0;
 
   if (noexec)
