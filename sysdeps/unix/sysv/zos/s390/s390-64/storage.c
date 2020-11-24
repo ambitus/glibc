@@ -154,7 +154,6 @@ __storage_obtain (unsigned int length,
 
      We use LOC=(31,64) which means we get virtual storage below 2 GB
      that is backed anywhere.
-     We specify CALLRKY=YES because we use subpool 129.
 
      TODO: Implement read/write protection
      TODO: Should we use the BACK parameter?  */
