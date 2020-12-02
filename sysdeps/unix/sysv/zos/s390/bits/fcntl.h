@@ -90,3 +90,13 @@ struct zos_fconvert
    flags that we can't support undefined, so the user has some way of
    knowing that they are not supported at compile time?  */
 #include <bits/fcntl-linux.h>
+
+#undef F_RDLCK
+#define F_RDLCK       1
+#undef F_WRLCK
+#define F_WRLCK       2
+#undef F_UNLCK
+#define F_UNLCK       3
+/* There is no need to fix F_EXLCK (4) and F_SHLCK (8).  
+   They are not supported in linux 2.4 and later, and 
+   the correct return code is EINVAL */
