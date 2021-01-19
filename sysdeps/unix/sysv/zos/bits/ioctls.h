@@ -19,6 +19,10 @@
 # error "Never use <bits/ioctls.h> directly; include <sys/ioctl.h> instead."
 #endif
 
+/* The maximum permitted length of the argument to be passed to the
+   device driver or physical file system. */
+#define IOCC_ARG_MAX 51200
+
 /* z/OS TODO: Figure out what the ioctls actually do, and compare this
    list against the linux list. See if we can use these to implement
    some other features.  */
@@ -114,3 +118,5 @@
 #define SIOCGSOCKPOEATTRS	0x4000D305
 #define SIOCGFDPOEATTRS		0x4000D306
 #define SIOCGSOCKMLSINFO	0x4000D307
+#define IOCC_GETPATHNAME	17
+#define IOCC_GETPATHNAMEREL	19
