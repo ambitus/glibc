@@ -183,6 +183,10 @@ static const unsigned char e_to_a[256] =
 #define tr_a_until_len_in_place(in, maxlen)				\
   tr_until_len_in_place (in, maxlen, e_to_a)
 
+/* Translate in place to ASCII until encountering a translation resulting
+   in stopchr, or maxlen is reached.  */
+#define tr_a_until_chr_or_len_in_place(in, stopchr, maxlen)		\
+  tr_until_chr_or_len_in_place (in, stopchr, maxlen, e_to_a)
 
 /* Translate until encountering a translation resulting in stopchr, or
    maxlen is reached.  */
@@ -193,12 +197,32 @@ static const unsigned char e_to_a[256] =
        place a translated version of it in a different memory location	\
        at the same time. Use it, though check the ETF2 PSA bit first.	\
        It's a formality, really, but we should still do it.  */		\
-    unsigned long _i;							\
-    char _t;								\
-    for (_i = 0; _i < (maxlen); _i++)					\
+    const char *_in = (in);						\
+    char *_out = (out);							\
+    const unsigned char *_tab = (tr_table);				\
+    unsigned long _i, _maxlen = (maxlen);				\
+    char _t, _stopchr = (stopchr);					\
+    for (_i = 0; _i < _maxlen; ++_i)					\
       {									\
-	_t = (out)[_i] = (char) (tr_table)[(unsigned char) (in)[_i]];	\
-	if (_t == (stopchr))						\
+	_t = _out[_i] = (char) _tab[(unsigned char) _in[_i]];		\
+	if (_t == _stopchr)						\
+	  break;							\
+      }									\
+    _i;									\
+  })
+
+/* Translate in place until encountering a translation resulting in stopchr, or
+   maxlen is reached.  */
+#define tr_until_chr_or_len_in_place(in, stopchr, maxlen, tr_table)	\
+  ({									\
+    char *_in = (in);							\
+    const unsigned char *_tab = (tr_table);				\
+    unsigned long _i, _maxlen = (maxlen);				\
+    char _t, _stopchr = (stopchr);					\
+    for (_i = 0; _i < _maxlen; ++_i)					\
+      {									\
+	_t = _in[_i] = (char) _tab[(unsigned char) _in[_i]];		\
+	if (_t == _stopchr)						\
 	  break;							\
       }									\
     _i;									\
@@ -209,9 +233,12 @@ static const unsigned char e_to_a[256] =
   ({									\
     /* z/OS TODO: As above, we could use one of the TRANSLATE		\
 	instructions for this.  */					\
-    unsigned long _i;							\
-    for (_i = 0; _i < (maxlen); _i++)					\
-      (out)[_i] = (char) (tr_table)[(unsigned char) (in)[_i]];		\
+    const char *_in = (in);						\
+    char *_out = (out);							\
+    const unsigned char *_tab = (tr_table);				\
+    unsigned long _i, _maxlen = (maxlen);				\
+    for (_i = 0; _i < _maxlen; ++_i)					\
+      _out[_i] = (char) _tab[(unsigned char) _in[_i]];			\
     _i;									\
   })
 
@@ -221,9 +248,11 @@ static const unsigned char e_to_a[256] =
     /* z/OS TODO: As above, we could use one of the TRANSLATE		\
        instructions for this.  */					\
     char *_in = (in), *_p;						\
-    for (_p = _in; _p != _in + (maxlen); ++_p)				\
-      *_p = (char) (tr_table)[(unsigned char) *_p];			\
-    _p;									\
+    const unsigned char *_tab = (tr_table);				\
+    unsigned long _maxlen = (maxlen);					\
+    for (_p = _in; _p < _in + _maxlen; ++_p)				\
+      *_p = (char) _tab[(unsigned char) *_p];				\
+    _maxlen;								\
   })
 
 
