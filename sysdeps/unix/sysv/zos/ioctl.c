@@ -39,7 +39,6 @@ __ioctl(int fd, unsigned long int request, ...)
   const int32_t cmd = request;
   int32_t data_len;
   void *data;
-  unsigned char *buf;
   va_list ap;
 
   va_start (ap, request);
@@ -78,10 +77,7 @@ __ioctl(int fd, unsigned long int request, ...)
 
   /* Translate a path from EBCDIC to ASCII. */
   if ((request == IOCC_GETPATHNAME) || (request == IOCC_GETPATHNAMEREL))
-    {
-      buf = (unsigned char*)data;
-      tr_until_chr_or_len (buf, buf, 0, data_len, e_to_a);
-    }
+    tr_a_until_chr_or_len_in_place ((char*)data, 0, data_len);
 
   return retval;
 }
