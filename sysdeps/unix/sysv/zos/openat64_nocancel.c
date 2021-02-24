@@ -20,7 +20,7 @@
 
 #include <sysdep-cancel.h>
 #include <not-cancel.h>
-#include "openat64.h"
+#include "openat64_nocancel.h"
 
 int
 __openat64_nocancel (int fd, const char *file, int oflag, ...)

@@ -15,36 +15,27 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#ifndef __GET_PATH_AT_FD_CANCEL_H
+#define __GET_PATH_AT_FD_CANCEL_H
+
+#include <sysdep-cancel.h>
 #include <errno.h>
-#include <stddef.h>
-#include <dirent.h>
-#include <stdio.h>		/* For BUFSIZ.  */
+#include <zos-utils.h>
+#include "get-path-at-fd.h"
 
-#include "opendirwithfd.h"
-#include "get-path-at-fd-nocancel.h"
-
-typedef void (*__bpx4ioc_t) (const uint32_t * fd,
-			     const uint32_t * cmd,
-			     const uint32_t * arg_len,
-			     char *arg,
-			     int32_t * retval, int32_t * retcode,
-			     int32_t * reason_code);
-
-/* Open a directory stream on FD.  */
-DIR *
-__fdopendir (int fd)
+/*
+ * get_path_at_fd takes an fd and a buffer of at least length
+ * __BPXK_PATH_MAX and places the path (if any) associated with fd at
+ * the begining of buffer. A non-zero return value indicates an error,
+ * either due to a too short buffer or an error in underlying w_ioctl
+ * syscall.
+ *
+ * Regargless of the error condition the buffer is filled with '\0'.
+ */
+static int
+get_path_at_fd_cancel (int fd, char *buffer, int buf_len)
 {
-  uint32_t buf_len = __BPXK_PATH_MAX + 1;
-  char buf[buf_len];
-
-  int retval = get_path_at_fd_nocancel (fd, buf, buf_len);
-
-  if (retval != 0)
-    {
-      return NULL;
-    }
-
-  return __opendir_with_fd (buf, fd);
+  return GET_PATH_AT_FD_AS (_CANCEL, fd, buffer, buf_len);
 }
 
-weak_alias (__fdopendir, fdopendir)
+#endif /* __GET_PATH_AT_FD_H */
