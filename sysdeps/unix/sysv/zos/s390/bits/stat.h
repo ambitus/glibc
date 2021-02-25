@@ -166,7 +166,8 @@ struct zos_file_attrs
 #define _CHATTR_CURR_VER 3
   unsigned short __res;
   unsigned int set_flags;	/* Which fields to set.  */
-#define _CHATTR_SETTAG 0x00004000
+#define _CHATTR_SETTAG  0x00004000
+#define _CHATTR_SETMODE 0x80000000
   __mode_t mode;
   __uid_t uid;
   __gid_t gid;
@@ -202,11 +203,11 @@ extern int zos_lchattr (const char *path, struct zos_file_attrs *attrs,
 #endif
 
 /*
-  TODO: The following:
+  z/OS TODO: Is the following correct?
+*/
 #ifdef __USE_ATFILE
 # define UTIME_NOW	((1l << 30) - 1l)
 # define UTIME_OMIT	((1l << 30) - 2l)
 #endif
-*/
 
 #endif	/* bits/stat.h */

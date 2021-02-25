@@ -1646,19 +1646,6 @@ __zos_sys_fchmod (int *errcode, int fd, mode_t mode)
   return retval;
 }
 
-
-static inline int
-__zos_sys_fchmodat (int *errcode, int dirfd, const char *pathname,
-		    mode_t mode)
-{
-  /* We can ignore flags entirely, since the only supported value,
-     AT_SYMLINK_NOFOLLOW, is unimplemented.  */
-  if (dirfd == AT_FDCWD || *pathname == '/')
-    return __zos_sys_chmod (errcode, pathname, mode);
-  SHIM_NOT_YET_IMPLEMENTED_FATAL ("fchmodat not implemented", -1);
-}
-
-
 typedef void (*__bpx4cho_t) (const uint32_t *pathname_len,
 			     const char *pathname,
 			     const uint32_t *owner_uid,
