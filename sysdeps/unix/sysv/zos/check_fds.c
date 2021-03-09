@@ -19,72 +19,228 @@
 #include <sys/stat.h>
 #include <not-cancel.h>
 
-static void
-tag_one_fd (int fd)
+/* define ZOS_DEBUG_CHECK_FDS and set env var DEBUG to non-zero value
+   to get debug info on stderr */
+#define ZOS_DEBUG_CHECK_FDS 0
+
+#if ZOS_DEBUG_CHECK_FDS
+#include <unistd.h>
+#include <stdlib.h>
+
+static const char* libtag_file_type_name(struct stat64 *st)
 {
-  struct stat64 st;
-  struct zos_fconvert fcvt;
-
-  if (__fstat64 (fd, &st) != 0)
-    return;
-
-  /* If the file is an empty untagged file open for writing, try to
-     tag the underlying file (in addition to enabling conversion on
-     the file descriptor). We don't tag underling pipes because it is
-     unclear if we are permitted to. GLIBC programs don't create
-     untagged pipes, so any untagged pipes where created by another
-     program and attemting to tag them my cause issues. Thus don't
-     attempt to retag FIFOs. Never modify stdin, even if it is
-     writeable.  z/OS TODO: This should obey the environment variable
-     controlling new file tags.  */
-  if (S_ISREG (st.st_mode)
-      && st.st_size == 0
-      && ((st.st_ccsid == 0)
-	  || (st.st_ftflags & FT_PURETXT
-	      && st.st_ftflags & FT_DEFER))
-      && fd != STDIN_FILENO)
-    {
-      int accmode = (O_ACCMODE & __fcntl64_nocancel (fd, F_GETFL));
-      if (accmode == O_WRONLY || accmode == O_RDWR)
-	{
-	  struct zos_file_tag ft;
-	  ft.ft_ccsid = 819;
-	  ft.ft_flags = FT_PURETXT;
-	  /* z/OS TODO: Race condition here.  */
-	  __fcntl64_nocancel (fd, F_SETTAG, &ft);
-	  st.st_ccsid = ft.ft_ccsid;
-	  st.st_ftflags = ft.ft_flags;
-	}
+    if (st) {
+	if (S_ISCHR(st->st_mode))                   return "CHR";
+	if (S_ISDIR(st->st_mode))                   return "DIR";
+	if (S_ISBLK(st->st_mode))                   return "BLK";
+	if (S_ISREG(st->st_mode))                   return "REG";
+	if (S_ISFIFO(st->st_mode))                  return "FIFO";
+	if (S_ISLNK(st->st_mode))                   return "LNK";
+	if (S_ISSOCK(st->st_mode))                  return "SOCK";
     }
-  /* z/OS TODO: This needs to obey first the override env vars, then
-     the env var controlling whether to treat untagged files as EBCDIC
-     or binary.  */
+    return "";
+}
 
-  /* Enable conversion, and treat untagged files as EBCDIC text.
-     NOTE: It is important that we never disable conversion, because
-     other processes may rely on the conversion state of the standard
-     streams being enabled.  */
-  fcvt.prog_ccsid = 0;
-  fcvt.command = F_CVT_ON;
-  if ((S_ISCHR (st.st_mode) && major (st.st_rdev) == 2)
-      || st.st_ccsid == 0)
+static void
+write_number(long long int n)
+{
+  const char *debug = getenv("DEBUG");
+  debug = (debug == NULL) ? "0" : (debug[0] == '\0') ? "0" : debug;
+  if (debug[0] == '0') return;
+  char digit;
+  if (n == 0)
     {
-      fcvt.file_ccsid = 1047;
-    }
-  else if ((st.st_ccsid == 1047 || st.st_ccsid == 819)
-	   && (st.st_ftflags & FT_PURETXT) != 0)
-    {
-      fcvt.file_ccsid = st.st_ccsid;
+      digit = '0';
+      write (2, &digit, 1);
     }
   else
     {
-      /* Conversion will not occur for us, but we do not explicitly
-	 disable because doing so may invalidate assumptions made by
-	 other programs.  */
-      fcvt.file_ccsid = FT_BINARY;
+      int d = n % 10;
+      n = n / 10;
+      digit = d + '0';
+      write_number (n);
+      write (2, &digit, 1);
+    }
+  return;
+}
+
+static void
+write_string(const char *string)
+{
+  const char *debug = getenv("DEBUG");
+  debug = (debug == NULL) ? "0" : (debug[0] == '\0') ? "0" : debug;
+  if (debug[0] == '0') return;
+
+  size_t len = 0;
+  while (string[len] != '\0')
+    len++;
+
+  write (2, string, len);
+}
+
+#define libtag_trace(arg) \
+    do {\
+	write_string (__FILE__);\
+	write_string (":");\
+	write_number (__LINE__);\
+	write_string (arg);\
+    } while (0)
+#define libtag_trace_info(arg) libtag_trace("INFO: " arg)
+#define libtag_trace_error(arg) libtag_trace("ERROR: " arg)
+#define libtag_trace_stat(rc, st) \
+    do {\
+	if (rc == -1) {\
+	    libtag_trace_error("stat failed");\
+	    break;\
+	}\
+	libtag_trace_info("stat:");\
+	libtag_trace_info("  st.st_size: ");\
+	write_number ((long long)st.st_size);\
+	write_string ("\n");\
+	libtag_trace_info("  st.st_tag.ft_txtflag: ");\
+	write_number (!!(st.st_ftflags & __ZOS_STAT_FT_ISTEXT));\
+	write_string ("\n");\
+	libtag_trace_info("  st.st_tag.ft_ccsid: ");\
+	write_number ((int)st.st_ccsid);\
+	write_string ("\n");\
+	libtag_trace_info("  st.st_tag.ft_deferred: ");\
+	write_number (!!(st.st_ftflags & __ZOS_STAT_FT_ISDEFERRED));\
+	write_string ("\n");\
+	libtag_trace_info("  file type: ");\
+	write_string (libtag_file_type_name(&st));\
+	write_string ("\n");\
+    } while (0)
+#define libtag_trace_query_attr(rc, cvt) \
+    do {\
+	if (rc == -1) {\
+	    libtag_trace_error("query_attr failed");\
+	    break;\
+	}\
+	libtag_trace_info("query_attr:");\
+	write_string ("\n");\
+	libtag_trace_info("  cvt.file_ccsid: ");\
+	write_number ((int)cvt.file_ccsid);\
+	write_string ("\n");\
+	libtag_trace_info("  cvt.prog_ccsid: ");\
+	write_number ((int)cvt.prog_ccsid);\
+	write_string ("\n");\
+	libtag_trace_info("  cvt.command: ");	\
+	write_number ((int)cvt.command);\
+	write_string ("\n");\
+    } while (0)
+#else
+#define libtag_trace(arg)
+#define libtag_trace_info(arg)
+#define libtag_trace_error(arg)
+#define libtag_trace_stat(rc, st)
+#define libtag_trace_query_attr(rc, cvt)
+#endif
+
+static int
+query_attr (int fd, struct zos_fconvert *cvt)
+{
+  cvt->prog_ccsid = 0;
+  cvt->file_ccsid = 0;
+  cvt->command = F_CVT_QUERY;
+
+  return __fcntl64_nocancel (fd, F_CONTROL_CVT, cvt);
+}
+
+static int
+disable_conversion_fd (int fd)
+{
+#if ZOS_DEBUG_CHECK_FDS
+  write_string (__func__);
+  write_string ("(");
+  write_number (fd);
+  write_string (")\n");
+#endif
+
+  struct zos_fconvert cvt =
+    { .prog_ccsid = 0, .file_ccsid = 0, .command = F_CVT_OFF };
+  return __fcntl64_nocancel (fd, F_CONTROL_CVT, &cvt);
+}
+
+static int
+enable_conversion_fd (int fd, unsigned short int ccsid)
+{
+#if ZOS_DEBUG_CHECK_FDS
+  write_string (__func__);
+  write_string ("(");
+  write_number (fd);
+  write_string (", ");
+  write_number (ccsid);
+  write_string (")\n");
+#endif
+  // don't use conversion when it's useless
+  if (ccsid == FT_BINARY || ccsid == FT_UNTAGGED || ccsid == 819)
+    {
+      /* This does work correctly, dispite looking like a mistake. */
+      disable_conversion_fd (fd);
     }
 
-  __fcntl64_nocancel (fd, F_CONTROL_CVT, &fcvt);
+  struct zos_fconvert cvt =
+    { .prog_ccsid = 0, .file_ccsid = ccsid, .command = F_CVT_ON };
+  return __fcntl64_nocancel (fd, F_CONTROL_CVT, &cvt);
+}
+
+static int
+set_attr_stdio (int fd)
+{
+#if ZOS_DEBUG_CHECK_FDS
+  write_string (__func__);
+  write_string ("(");
+  write_number (fd);
+  write_string (")\n");
+#endif
+
+  int rc = 0;
+  struct zos_fconvert cvt;
+  struct stat64 st;
+
+  /* The 'deferred' flag can only be obtained via fstat(). */
+  rc = __fstat64 (fd, &st);
+
+#if ZOS_DEBUG_CHECK_FDS
+  libtag_trace_stat(rc, st);
+  write_string ("\n");
+#endif
+  /* We don't touch stdin pipes: under /bin/sh, they look as if they
+     were untagged but the pipe is actually tagged with ft_deferred=1.
+     We don't touch deferred tags because such a stream will eventually
+     receive a tag (and conversion) from the reader or writer. */
+
+  if (rc == 0
+      && !(st.st_ftflags & __ZOS_STAT_FT_ISDEFERRED)
+      && !(fd == STDIN_FILENO && S_ISFIFO(st.st_mode)))
+    {
+      /* Note: the order of fstat() and query_attr() calls DOES matter.
+	 If query_attr is called first, there's a chance that the deferred
+	 tagging changes stream attributes after it but before fstat().
+	 Here, we've already discarded deferred tags, so it's safe to
+	 check other properties.
+
+	 Also note that st.st_tag.ft_ccs and cvt.fccsid are NOT equivalent,
+	 and that's why we have to use query_attr(). */
+
+      rc = query_attr(fd, &cvt);
+#if ZOS_DEBUG_CHECK_FDS
+      libtag_trace_query_attr(rc, cvt);
+      write_string ("\n");
+#endif
+      /* We only set up conversion if it's not configured already,
+	 e.g. by the shell.
+       */
+      if (rc == 0)
+	{
+	  /* by default standard streams are tagged IBM-1047 */
+	  if (cvt.file_ccsid == FT_UNTAGGED)
+	    cvt.file_ccsid = 1047;
+
+	  rc = enable_conversion_fd (fd, cvt.file_ccsid);
+	}
+    }
+  return rc;
 }
 
 /* Because z/OS is such a mess of encodings, we have to guess what it
@@ -92,13 +248,16 @@ tag_one_fd (int fd)
    guessing that untagged input and output should really be treated as
    EBCDIC text, even the most basic of executables will not run correctly
    under the system shell.  */
-
 void
 __libc_set_conv_standard_fds (void)
 {
-  tag_one_fd (STDIN_FILENO);
-  tag_one_fd (STDOUT_FILENO);
-  tag_one_fd (STDERR_FILENO);
+  /* z/OS TODO: is the LE call 
+     __ae_autoconvert_state(_CVTSTATE_ON); from libtag significant?
+     things seem to work without it. Maybe it will become important
+     when we start to have threads? */
+  set_attr_stdio(STDIN_FILENO);
+  set_attr_stdio(STDOUT_FILENO);
+  set_attr_stdio(STDERR_FILENO);
 }
 
 #include <csu/check_fds.c>
