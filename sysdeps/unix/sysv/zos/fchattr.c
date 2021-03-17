@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <zos-chattr.h>
 #include <sysdep.h>
+#include <mode_t-translation.h>
 
 typedef void (*__bpx4fcr_t) (const int32_t *fd,
 			     const int32_t *attrs_len,
@@ -54,8 +55,14 @@ __zos_fchattr (int fd, struct zos_file_attrs *attrs,
 	attrs->version = _CHATTR_CURR_VER;
     }
 
+  uint32_t kern_mode = user_to_kern_mode_t (attrs->mode);
+  attrs->mode = kern_mode;
+
   BPX_CALL (fchattr, __bpx4fcr_t, &fd, &size, attrs, &retval, &retcode,
 	    &reason_code);
+
+  uint32_t user_mode = kern_to_user_mode_t (attrs->mode);
+  attrs->mode = user_mode;
 
   if (retval < 0)
     __set_errno (retcode);

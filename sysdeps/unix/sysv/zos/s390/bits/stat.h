@@ -117,20 +117,23 @@ struct stat64
 };
 #endif /* __USE_LARGEFILE64  */
 
-/* TODO: define the __S_* constants */
+/* Encoding of the file mode.
 
-/* Encoding of the file mode.  */
+   Note that these file modes are NOT the z/OS BPXYMODE values.
+   To translate the these file modes into something suitable to
+   pass to a BPX_CALL see user_to_kern_mode_t and kern_to_user_mode_t
+   in mode_t-translation.h. The z/OS equivalents of these macros
+   are defined there. */
+#define	__S_IFMT	0170000	/* These bits determine file type.  */
 
-#define __S_IFMT	0xFF000000 /* These bits determine file type.  */
-
-/* File types.	*/
-#define __S_IFDIR	0x01000000 /* Directory.  */
-#define __S_IFCHR	0x02000000 /* Character device.	 */
-#define __S_IFBLK	0x06000000 /* Block device.  */
-#define __S_IFREG	0x03000000 /* Regular file.  */
-#define __S_IFIFO	0x04000000 /* FIFO.  */
-#define __S_IFLNK	0x05000000 /* Symbolic link.  */
-#define __S_IFSOCK	0x07000000 /* Socket.  */
+/* File types.  */
+#define	__S_IFDIR	0040000	/* Directory.  */
+#define	__S_IFCHR	0020000	/* Character device.  */
+#define	__S_IFBLK	0060000	/* Block device.  */
+#define	__S_IFREG	0100000	/* Regular file.  */
+#define	__S_IFIFO	0010000	/* FIFO.  */
+#define	__S_IFLNK	0120000	/* Symbolic link.  */
+#define	__S_IFSOCK	0140000	/* Socket.  */
 
 /* POSIX.1b objects.  Note that these macros always evaluate to zero.  But
    they do it by enforcing the correct use of the macros.  */
@@ -166,8 +169,13 @@ struct zos_file_attrs
 #define _CHATTR_CURR_VER 3
   unsigned short __res;
   unsigned int set_flags;	/* Which fields to set.  */
-#define _CHATTR_SETTAG  0x00004000
-#define _CHATTR_SETMODE 0x80000000
+#define _CHATTR_SETTAG      0x00004000
+#define _CHATTR_SETMODE     0x80000000
+#define _CHATTR_SETOWN      0x40000000
+#define _CHATTR_SETATIME    0x08000000
+#define _CHATTR_SETATIMECUR 0x04000000
+#define _CHATTR_SETMTIME    0x02000000
+#define _CHATTR_SETMTIMECUR 0x01000000
   __mode_t mode;
   __uid_t uid;
   __gid_t gid;
@@ -188,6 +196,7 @@ struct zos_file_attrs
   unsigned char	__res5[8];
   __time_t atime;
   __time_t mtime;
+  /* z/OS TODO: may be missing 2 fullwords for audit info here? */
   __time_t ctime;
   __time_t reftime;
   unsigned char seclabel[8];

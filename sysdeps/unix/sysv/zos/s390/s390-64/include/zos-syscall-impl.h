@@ -51,6 +51,7 @@
 #include <tls.h>
 
 #include <bpxk-constants.h>
+#include <mode_t-translation.h>
 
 /* some things use these aliases  */
 #define __zos_sys_fcntl64      __zos_sys_fcntl
@@ -326,7 +327,7 @@ typedef void (*__bpx4cha_t) (int32_t *pathname_length,
 /* While this is a z/OS syscall it does not appear to be a POSIX, or
    even Linux syscall.  */
 static int
-__zos_sys_chattr (const char *pathname, const struct zos_file_attrs *attrs)
+__zos_sys_chattr (const char *pathname, struct zos_file_attrs *attrs)
 {
   int32_t retval, retcode, reason_code;
   int attrs_length = sizeof (*attrs);
@@ -334,8 +335,14 @@ __zos_sys_chattr (const char *pathname, const struct zos_file_attrs *attrs)
   uint32_t pathname_len = translate_and_check_size (pathname,
 						    translated_path);
 
+  uint32_t kern_mode = user_to_kern_mode_t (attrs->mode);
+  attrs->mode = kern_mode;
+
   BPX_CALL (chattr, __bpx4fcr_t, &pathname_len, translated_path,
 	    &attrs_length, attrs, &retval, &retcode, &reason_code);
+
+  uint32_t user_mode = kern_to_user_mode_t (attrs->mode);
+  attrs->mode = user_mode;
 
   return retval;
 }
@@ -393,7 +400,7 @@ __zos_sys_open (int *errcode, const char *pathname,
      then we translate them to the proper z/OS constants, and to an
      extent validate them and reject ones that we cannot support or
      emulate.  */
-  int32_t kernel_mode = mode;
+  int32_t kernel_mode = user_to_kern_mode_t (mode);
 
   /* There are some flags that z/OS has no equivalent for as of yet,
      so we must fall back to a racy emulation.  */
@@ -431,7 +438,7 @@ __zos_sys_open (int *errcode, const char *pathname,
   if (flags & O_ASYNC)
     {
       /* TODO: Need to ask IBM. What is O_ASYNCSIG? Is it similar to
-         O_ASYNC on other platforms? If so, is it a drop-in
+	 O_ASYNC on other platforms? If so, is it a drop-in
 	 replacement?  */
       SHIM_NOT_YET_IMPLEMENTED_FATAL ("O_ASYNC", -1);
     }
@@ -492,14 +499,14 @@ __zos_sys_open (int *errcode, const char *pathname,
      ASCII agenda. :)
 
      z/OS TODO: is it important to check the size of the file?  I
-                don't think it is because FIFOs should never have a
-                non-zero size, but I could find and z/OS specific
-                documentation about that.
+		don't think it is because FIFOs should never have a
+		non-zero size, but I could find and z/OS specific
+		documentation about that.
 
      z/OS TODO: What happens in a more complex scenario with more than
-                2 threads? Surly that is undefined behavior anyway
-                right? Right? -- We should wait till we see a program
-                use a single FIFO for more than 2 threads.  */
+		2 threads? Surly that is undefined behavior anyway
+		right? Right? -- We should wait till we see a program
+		use a single FIFO for more than 2 threads.  */
   if (__zos_sys_stat (&tmp_err, pathname, &path_target) == 0
       && S_ISFIFO (path_target.st_mode)
       && path_target.st_ccsid == 0)
@@ -542,6 +549,10 @@ __zos_sys_open (int *errcode, const char *pathname,
   /* If the call itself fails, we are done.  */
   if (retval == -1)
     return retval;
+
+  /* Convert the BPXYMODE obtained by openstat. */
+  int32_t user_mode = kern_to_user_mode_t (fd_target.st_mode);
+  fd_target.st_mode = user_mode;
 
   if ((flags & (O_NOFOLLOW | O_DIRECTORY)) && not_creating)
     {
@@ -902,7 +913,13 @@ __zos_sys_stat (int *errcode, const char *pathname,
 
   BPX_CALL (stat, __bpx4sta_t, &path_len, translated_path, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
-  __initialize_times (statbuf);
+
+  if (statbuf != NULL)
+    {
+      uint32_t user_mode = kern_to_user_mode_t (statbuf->st_mode);
+      statbuf->st_mode = user_mode;
+      __initialize_times (statbuf);
+    }
   /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
@@ -913,9 +930,16 @@ __zos_sys_fstat (int *errcode, int fd, struct stat *statbuf)
 {
   int32_t retval, reason_code;
   const uint32_t statbuf_len = BPXYSTAT_LEN;
+
   BPX_CALL (fstat, __bpx4fst_t, &fd, &statbuf_len, statbuf, &retval,
 	    errcode, &reason_code);
-  __initialize_times (statbuf);
+
+  if (statbuf != NULL)
+    {
+      uint32_t user_mode = kern_to_user_mode_t (statbuf->st_mode);
+      statbuf->st_mode = user_mode;
+      __initialize_times (statbuf);
+    }
   /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
@@ -940,7 +964,13 @@ __zos_sys_lstat (int *errcode, const char *pathname,
 
   BPX_CALL (lstat, __bpx4lst_t, &path_len, translated_path, &statbuf_len,
 	    statbuf, &retval, errcode, &reason_code);
-  __initialize_times (statbuf);
+
+  if (statbuf != NULL)
+    {
+      uint32_t user_mode = kern_to_user_mode_t (statbuf->st_mode);
+      statbuf->st_mode = user_mode;
+      __initialize_times (statbuf);
+    }
   /* TODO: confirm retvals are in line with what linux gives.  */
   return retval;
 }
@@ -1615,7 +1645,7 @@ __zos_sys_chmod (int *errcode, const char *pathname, mode_t mode)
   /* TODO: this mask might be unnecessary. Linux allows extra bits
      to be set in chmod's mode. We haven't tested to see whether
      or not the bpx services do the same, so we mask to be safe.  */
-  int32_t kernel_mode = mode & 0x0fff;
+  int32_t kernel_mode = user_to_kern_mode_t (mode) & 0x0fff; /* TODO */
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
   if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
@@ -1639,7 +1669,7 @@ __zos_sys_fchmod (int *errcode, int fd, mode_t mode)
   /* TODO: this mask might be unnecessary. Linux allows extra bits
      to be set in chmod's mode. We haven't tested to see whether
      or not the bpx services do the same, so we mask to be safe.  */
-  int32_t kernel_mode = mode & 0x0fff;
+  int32_t kernel_mode = user_to_kern_mode_t (mode) & 0x0fff;
   BPX_CALL (fchmod, __bpx4fcm_t, &fd, &kernel_mode, &retval, errcode,
 	    &reason_code);
   /* retvals are the same as for linux.  */
@@ -1822,7 +1852,7 @@ __zos_sys_mkdir (int *errcode, const char *pathname, mode_t mode)
 {
   int32_t retval, reason_code;
   char translated_path[__BPXK_PATH_MAX];
-  uint32_t dmode = mode;
+  uint32_t dmode = user_to_kern_mode_t (mode);
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
   if (__glibc_unlikely (path_len == __BPXK_PATH_MAX))
@@ -2030,7 +2060,7 @@ __zos_sys_mknod (int *errcode, const char *pathname, mode_t mode,
 {
   int32_t retval, reason_code;
   char translated_path[__BPXK_PATH_MAX];
-  uint32_t mod = mode;
+  uint32_t mod = user_to_kern_mode_t (mode);
   uint32_t devid = dev;
   uint32_t path_len = translate_and_check_size (pathname,
 						translated_path);
@@ -2235,7 +2265,7 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   do {									\
     for (uint32_t i = 0; i < count; i++)				\
       {									\
-        argptrs[i] = translated;					\
+	argptrs[i] = translated;					\
 	tr_e_until_len (list[i], translated, lengths[i]);		\
 	translated += lengths[i];					\
       }									\
@@ -2358,9 +2388,9 @@ __zos_sys_umask (int *errcode, mode_t mask)
 {
   /* TODO: See if umask works with ACLs the same way as it does on
      linux.  */
-  uint32_t file_mode_creation_mask = mask, ret_mask;
+  uint32_t file_mode_creation_mask = user_to_kern_mode_t (mask), ret_mask;
   BPX_CALL (umask, __bpx4umk_t, &file_mode_creation_mask, &ret_mask);
-  return (mode_t)ret_mask;
+  return kern_to_user_mode_t (ret_mask);
 }
 
 
@@ -2989,10 +3019,10 @@ __zos_sys_socket (int *errcode, int domain, int type, int protocol)
 
 
 typedef void (*__bpx4bnd_t) (const int32_t *sockd,
-                             const int32_t *addrlen,
-                             const struct sockaddr *addr,
-                             int32_t *retval, int32_t *retcode,
-                             int32_t *reason_code);
+			     const int32_t *addrlen,
+			     const struct sockaddr *addr,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
 
 static inline int
 __zos_sys_bind (int *errcode, int fd, const struct sockaddr *addr, socklen_t len)
@@ -3015,13 +3045,13 @@ __zos_sys_bind (int *errcode, int fd, const struct sockaddr *addr, socklen_t len
 
 
 typedef void (*__bpx4opt_t) (const int32_t *sockd,
-                             const int32_t *operation,
-                             const int32_t *level,
-                             const int32_t *name,
-                             int32_t *datalen,
-                             char *data,
-                             int32_t *retval, int32_t *retcode,
-                             int32_t *reason_code);
+			     const int32_t *operation,
+			     const int32_t *level,
+			     const int32_t *name,
+			     int32_t *datalen,
+			     char *data,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
 
 static inline int
 __zos_sys_getsockopt (int *errcode, int fd, int level, int optname,

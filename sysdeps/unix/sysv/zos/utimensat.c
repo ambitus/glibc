@@ -37,18 +37,8 @@ utimensat (int fd, const char *file, const struct timespec tsp[2], int flags)
       return -1;
     }
 
-  if (flags & AT_SYMLINK_NOFOLLOW)
-    {
-      /*
-       * z/OS TODO: How do we support this?
-       * Note that z/OS's /bin/touch doesn't support the no-derefrence option
-       * found in GNU touch. We seem to have a similar issue in open(2) with
-       * the O_NOFOLLOW option. The z/OS USS doesn't appear to support this
-       * either.
-       */
-      __set_errno (ENOTSUP);
-      return -1;
-    }
+  struct zos_file_attrs attrs = { 0 };
+  attrs.set_flags = _CHATTR_SETATIME | _CHATTR_SETMTIME;
 
   struct timeval tv[2];
 
@@ -58,11 +48,19 @@ utimensat (int fd, const char *file, const struct timespec tsp[2], int flags)
       tv[0].tv_usec = tsp[0].tv_nsec / 1000;
       tv[1].tv_sec = tsp[1].tv_sec;
       tv[1].tv_usec = tsp[1].tv_nsec / 1000;
+      attrs.atime = tsp[0].tv_sec;
+      attrs.mtime = tsp[1].tv_sec;
     }
 
-  if (fd == AT_FDCWD || *file == '/')
+  if ((flags & AT_SYMLINK_NOFOLLOW)
+      && (fd == AT_FDCWD || *file == '/'))
     {
       return __utimes(file, tv);
+    }
+  else if ((!(flags & AT_SYMLINK_NOFOLLOW))
+	   && (fd == AT_FDCWD || *file == '/'))
+    {
+      return zos_lchattr (file, &attrs, 0);
     }
 
   size_t buf_len = __BPXK_PATH_MAX;
@@ -81,13 +79,20 @@ utimensat (int fd, const char *file, const struct timespec tsp[2], int flags)
       __set_errno (ENAMETOOLONG);
       return -1;
     }
-  
+
   buf[path_len] = '/';
-  
+
   for (size_t i = 0; file[i] != '\0'; i++)
     {
       buf[path_len + i + 1] = file[i];
     }
-  
-  return __utimes((const char *) buf, tv);
+
+  if (flags & AT_SYMLINK_NOFOLLOW)
+    {
+      return zos_lchattr ((const char *) buf, &attrs, 0);
+    }
+  else /* !(flags & AT_SYMLINK_NOFOLLOW) */
+    {
+      return __utimes((const char *) buf, tv);
+    }
 }
