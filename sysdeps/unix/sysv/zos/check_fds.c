@@ -1,4 +1,4 @@
-/* Copyright (C) 2020 Free Software Foundation, Inc.
+/* Copyright (C) 2020-2021 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,39 +19,49 @@
 #include <sys/stat.h>
 #include <not-cancel.h>
 
-/* define ZOS_DEBUG_CHECK_FDS and set env var DEBUG to non-zero value
-   to get debug info on stderr */
+/* define ZOS_DEBUG_CHECK_FDS and set env var ZOS_TAG_DEBUG to
+   a non-zero value to get debug info on stderr */
 #define ZOS_DEBUG_CHECK_FDS 0
 
 #if ZOS_DEBUG_CHECK_FDS
 #include <unistd.h>
 #include <stdlib.h>
 
-static const char* libtag_file_type_name(struct stat64 *st)
+static const char*
+zos_tag_file_type_name (struct stat *st)
 {
     if (st) {
-	if (S_ISCHR(st->st_mode))                   return "CHR";
-	if (S_ISDIR(st->st_mode))                   return "DIR";
-	if (S_ISBLK(st->st_mode))                   return "BLK";
-	if (S_ISREG(st->st_mode))                   return "REG";
-	if (S_ISFIFO(st->st_mode))                  return "FIFO";
-	if (S_ISLNK(st->st_mode))                   return "LNK";
-	if (S_ISSOCK(st->st_mode))                  return "SOCK";
+	if (S_ISCHR (st->st_mode))
+	  return "CHR";
+	if (S_ISDIR (st->st_mode))
+	  return "DIR";
+	if (S_ISBLK (st->st_mode))
+	  return "BLK";
+	if (S_ISREG (st->st_mode))
+	  return "REG";
+	if (S_ISFIFO (st->st_mode))
+	  return "FIFO";
+	if (S_ISLNK (st->st_mode))
+	  return "LNK";
+	if (S_ISSOCK (st->st_mode))
+	  return "SOCK";
     }
     return "";
 }
 
 static void
-write_number(long long int n)
+write_number (long long n)
 {
-  const char *debug = getenv("DEBUG");
-  debug = (debug == NULL) ? "0" : (debug[0] == '\0') ? "0" : debug;
-  if (debug[0] == '0') return;
   char digit;
+  const char *debug = getenv ("ZOS_TAG_DEBUG");
+  debug = (debug == NULL) ? "0" : (debug[0] == '\0') ? "0" : debug;
+
+  if (debug[0] == '0')
+    return;
   if (n == 0)
     {
       digit = '0';
-      write (2, &digit, 1);
+      __write (2, &digit, 1);
     }
   else
     {
@@ -59,15 +69,15 @@ write_number(long long int n)
       n = n / 10;
       digit = d + '0';
       write_number (n);
-      write (2, &digit, 1);
+      __write (2, &digit, 1);
     }
   return;
 }
 
 static void
-write_string(const char *string)
+write_string (const char *string)
 {
-  const char *debug = getenv("DEBUG");
+  const char *debug = getenv ("ZOS_TAG_DEBUG");
   debug = (debug == NULL) ? "0" : (debug[0] == '\0') ? "0" : debug;
   if (debug[0] == '0') return;
 
@@ -75,65 +85,71 @@ write_string(const char *string)
   while (string[len] != '\0')
     len++;
 
-  write (2, string, len);
+  __write (2, string, len);
 }
 
-#define libtag_trace(arg) \
+#define zos_tag_trace(arg) \
     do {\
 	write_string (__FILE__);\
 	write_string (":");\
 	write_number (__LINE__);\
 	write_string (arg);\
     } while (0)
-#define libtag_trace_info(arg) libtag_trace("INFO: " arg)
-#define libtag_trace_error(arg) libtag_trace("ERROR: " arg)
-#define libtag_trace_stat(rc, st) \
-    do {\
-	if (rc == -1) {\
-	    libtag_trace_error("stat failed");\
-	    break;\
-	}\
-	libtag_trace_info("stat:");\
-	libtag_trace_info("  st.st_size: ");\
-	write_number ((long long)st.st_size);\
-	write_string ("\n");\
-	libtag_trace_info("  st.st_tag.ft_txtflag: ");\
-	write_number (!!(st.st_ftflags & __ZOS_STAT_FT_ISTEXT));\
-	write_string ("\n");\
-	libtag_trace_info("  st.st_tag.ft_ccsid: ");\
-	write_number ((int)st.st_ccsid);\
-	write_string ("\n");\
-	libtag_trace_info("  st.st_tag.ft_deferred: ");\
-	write_number (!!(st.st_ftflags & __ZOS_STAT_FT_ISDEFERRED));\
-	write_string ("\n");\
-	libtag_trace_info("  file type: ");\
-	write_string (libtag_file_type_name(&st));\
-	write_string ("\n");\
-    } while (0)
-#define libtag_trace_query_attr(rc, cvt) \
-    do {\
-	if (rc == -1) {\
-	    libtag_trace_error("query_attr failed");\
-	    break;\
-	}\
-	libtag_trace_info("query_attr:");\
-	write_string ("\n");\
-	libtag_trace_info("  cvt.file_ccsid: ");\
-	write_number ((int)cvt.file_ccsid);\
-	write_string ("\n");\
-	libtag_trace_info("  cvt.prog_ccsid: ");\
-	write_number ((int)cvt.prog_ccsid);\
-	write_string ("\n");\
-	libtag_trace_info("  cvt.command: ");	\
-	write_number ((int)cvt.command);\
-	write_string ("\n");\
-    } while (0)
+#define zos_tag_trace_info(arg) zos_tag_trace ("INFO: " arg)
+#define zos_tag_trace_error(arg) zos_tag_trace ("ERROR: " arg)
+#define zos_tag_trace_stat(rc, st)			\
+  do							\
+    {							\
+      if (rc == -1)					\
+	  {						\
+	    zos_tag_trace_error ("stat failed");	\
+	    break;					\
+	  }						\
+      zos_tag_trace_info ("stat:");			\
+      zos_tag_trace_info ("  st.st_size: ");		\
+      write_number ((long long) st.st_size);		\
+      write_string ("\n");					\
+      zos_tag_trace_info ("  st.st_tag.ft_txtflag: ");			\
+      write_number (!!(st.st_ftflags & __ZOS_STAT_FT_ISTEXT));		\
+      write_string ("\n");						\
+      zos_tag_trace_info ("  st.st_tag.ft_ccsid: ");			\
+      write_number ((int) st.st_ccsid);					\
+      write_string ("\n");						\
+      zos_tag_trace_info ("  st.st_tag.ft_deferred: ");			\
+      write_number (!!(st.st_ftflags & __ZOS_STAT_FT_ISDEFERRED));	\
+      write_string ("\n");						\
+      zos_tag_trace_info ("  file type: ");				\
+      write_string (zos_tag_file_type_name (&st));			\
+      write_string ("\n");						\
+    }									\
+  while (0)
+#define zos_tag_trace_query_attr(rc, cvt)		\
+  do							\
+    {							\
+      if (rc == -1)					\
+	  {						\
+	    zos_tag_trace_error ("query_attr failed");	\
+	    break;					\
+	  }						\
+      zos_tag_trace_info ("query_attr:");		\
+      write_string ("\n");				\
+      zos_tag_trace_info ("  cvt.file_ccsid: ");	\
+      write_number ((int) cvt.file_ccsid);		\
+      write_string ("\n");				\
+      zos_tag_trace_info ("  cvt.prog_ccsid: ");	\
+      write_number ((int) cvt.prog_ccsid);		\
+      write_string ("\n");				\
+      zos_tag_trace_info ("  cvt.command: ");		\
+      write_number ((int) cvt.command);			\
+      write_string ("\n");				\
+    }							\
+  while (0)
 #else
-#define libtag_trace(arg)
-#define libtag_trace_info(arg)
-#define libtag_trace_error(arg)
-#define libtag_trace_stat(rc, st)
-#define libtag_trace_query_attr(rc, cvt)
+#define zos_tag_trace(arg)
+#define zos_tag_trace_info(arg)
+#define zos_tag_trace_error(arg)
+#define zos_tag_trace_stat(rc, st)
+#define zos_tag_trace_query_attr(rc, cvt)
 #endif
 
 static int
@@ -172,7 +188,7 @@ enable_conversion_fd (int fd, unsigned short int ccsid)
   write_number (ccsid);
   write_string (")\n");
 #endif
-  // don't use conversion when it's useless
+  /* don't use conversion when it's useless  */
   if (ccsid == FT_BINARY || ccsid == FT_UNTAGGED || ccsid == 819)
     {
       /* This does work correctly, dispite looking like a mistake. */
@@ -185,7 +201,7 @@ enable_conversion_fd (int fd, unsigned short int ccsid)
 }
 
 static int
-set_attr_stdio (int fd)
+tag_one_fd (int fd)
 {
 #if ZOS_DEBUG_CHECK_FDS
   write_string (__func__);
@@ -202,7 +218,7 @@ set_attr_stdio (int fd)
   rc = __fstat64 (fd, &st);
 
 #if ZOS_DEBUG_CHECK_FDS
-  libtag_trace_stat(rc, st);
+  zos_tag_trace_stat (rc, st);
   write_string ("\n");
 #endif
   /* We don't touch stdin pipes: under /bin/sh, they look as if they
@@ -212,7 +228,7 @@ set_attr_stdio (int fd)
 
   if (rc == 0
       && !(st.st_ftflags & __ZOS_STAT_FT_ISDEFERRED)
-      && !(fd == STDIN_FILENO && S_ISFIFO(st.st_mode)))
+      && !(fd == STDIN_FILENO && S_ISFIFO (st.st_mode)))
     {
       /* Note: the order of fstat() and query_attr() calls DOES matter.
 	 If query_attr is called first, there's a chance that the deferred
@@ -223,14 +239,13 @@ set_attr_stdio (int fd)
 	 Also note that st.st_tag.ft_ccs and cvt.fccsid are NOT equivalent,
 	 and that's why we have to use query_attr(). */
 
-      rc = query_attr(fd, &cvt);
+      rc = query_attr (fd, &cvt);
 #if ZOS_DEBUG_CHECK_FDS
-      libtag_trace_query_attr(rc, cvt);
+      zos_tag_trace_query_attr (rc, cvt);
       write_string ("\n");
 #endif
       /* We only set up conversion if it's not configured already,
-	 e.g. by the shell.
-       */
+	 e.g. by the shell.  */
       if (rc == 0)
 	{
 	  /* by default standard streams are tagged IBM-1047 */
@@ -251,13 +266,13 @@ set_attr_stdio (int fd)
 void
 __libc_set_conv_standard_fds (void)
 {
-  /* z/OS TODO: is the LE call 
+  /* z/OS TODO: is the LE call
      __ae_autoconvert_state(_CVTSTATE_ON); from libtag significant?
      things seem to work without it. Maybe it will become important
      when we start to have threads? */
-  set_attr_stdio(STDIN_FILENO);
-  set_attr_stdio(STDOUT_FILENO);
-  set_attr_stdio(STDERR_FILENO);
+  tag_one_fd (STDIN_FILENO);
+  tag_one_fd (STDOUT_FILENO);
+  tag_one_fd (STDERR_FILENO);
 }
 
 #include <csu/check_fds.c>
