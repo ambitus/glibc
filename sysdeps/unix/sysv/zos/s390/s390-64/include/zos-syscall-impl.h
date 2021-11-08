@@ -347,6 +347,49 @@ __zos_sys_chattr (const char *pathname, struct zos_file_attrs *attrs)
   return retval;
 }
 
+static inline void get_env_ccsid(const char *envkey, struct zos_file_tag *tag) {
+  struct zos_file_tag tag_ignore;
+  if (tag == NULL) tag = &tag_ignore;
+  char *encode_new = getenv (envkey);
+  if (encode_new != NULL
+      && strncmp (encode_new, "IBM-1047",
+		  sizeof ("IBM-1047") - 1) == 0)
+    {
+      /* EBCDIC.  */
+      tag->ft_ccsid = 1047;
+      tag->ft_flags = FT_PURETXT;
+    }
+  else if (encode_new != NULL
+	   && strncmp (encode_new, "BINARY",
+		       sizeof ("BINARY") - 1) == 0)
+    {
+      /* Binary.  */
+      tag->ft_ccsid = 65535;
+      tag->ft_flags = 0;
+    }
+  else if (encode_new != NULL
+	   && strncmp (encode_new, "UNTAGGED",
+		       sizeof ("UNTAGGED") - 1) == 0)
+    {
+      /* Untagged.  */
+      tag->ft_ccsid = 0;
+      tag->ft_flags = 0;
+    }
+  else if (encode_new != NULL
+	   && strncmp (encode_new, "ISO8859-1",
+		       sizeof ("ISO8859-1") - 1) == 0)
+    {
+      /* ASCII.  */
+      tag->ft_ccsid = 819;
+      tag->ft_flags = FT_PURETXT;
+    }
+  else
+    {
+      /* Didn't update tag. Using the default that *tag was set to.  */
+    }
+  return;
+}
+
 typedef void (*__bpx4ops_t) (const uint32_t *pathname_len,
 			     const char *pathname,
 			     const int32_t *options,
@@ -631,7 +674,6 @@ __zos_sys_open (int *errcode, const char *pathname,
 
 	  if ((S_ISREG (fd_target.st_mode)
 	       || S_ISFIFO (fd_target.st_mode))
-	      && fd_target.st_size == 0
 	      && ((fd_target.st_ccsid == 0)
 		  || (fd_target.st_ftflags & FT_PURETXT
 		      && fd_target.st_ftflags & FT_DEFER)))
@@ -641,46 +683,40 @@ __zos_sys_open (int *errcode, const char *pathname,
 		 empty.  */
 	      struct zos_file_tag tag;
 
-	      if ((flags & O_TRUEBINARY) == O_TRUEBINARY)
+	      if (fd_target.st_size == 0) /* New (i.e. Empty) Untagged File */
 		{
-		  /* Tag as binary.  */
-		  tag.ft_ccsid = FT_BINARY;
-		  tag.ft_flags = 0;
-		}
-	      else
-		{
-		  char *encode_new = getenv ("_ENCODE_FILE_NEW");
-		  if (encode_new != NULL
-		      && strncmp (encode_new, "IBM-1047",
-				  sizeof ("IBM-1047") - 1) == 0)
+		  if ((flags & O_TRUEBINARY) == O_TRUEBINARY)
 		    {
-		      /* Tag as EBCDIC.  */
-		      tag.ft_ccsid = 1047;
-		      tag.ft_flags = FT_PURETXT;
-		    }
-		  else if (encode_new != NULL
-			   && strncmp (encode_new, "BINARY",
-				       sizeof ("BINARY") - 1) == 0)
-		    {
-		      /* Tag as Binary.  */
-		      tag.ft_ccsid = 0;
-		      tag.ft_flags = FT_BINARY;
+		      /* Treat as binary, don't change tag.  */
+		      tag.ft_ccsid = FT_BINARY;
+		      tag.ft_flags = 0;
 		    }
 		  else
 		    {
-		      /* Tag as ASCII.  */
 		      tag.ft_ccsid = 819;
 		      tag.ft_flags = FT_PURETXT;
+		      get_env_ccsid("_ENCODE_FILE_NEW", &tag);
+		      __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
 		    }
 		}
+	      else  /* Existing (i.e.) Non-Empty Untagged File */
+		{
+		  tag.ft_ccsid = 0;
+		  tag.ft_ccsid = FT_BINARY;
+		  get_env_ccsid("_ENCODE_FILE_EXISTING", &tag);
+		  struct zos_file_attrs attrs = {
+						 .eyecatcher = { 0xC1, 0xE3, 0xE3, 0x40 },
+						 .version = _CHATTR_CURR_VER,
+						 .set_flags = _CHATTR_SETTAG,
+						 .tag = tag
+		  };
+		  __zos_sys_chattr (pathname, &attrs);
+		}
 
-	      __zos_sys_fcntl (&tmp_err, retval, F_SETTAG, &tag);
 	      fd_target.st_ccsid = tag.ft_ccsid;
 	      fd_target.st_ftflags = tag.ft_flags;
 	    }
-
 	  /* Fallthrough.  */
-
 	case O_RDONLY:
 	  {
 	    /* Enable conversion unless the input file is explictly
@@ -703,24 +739,14 @@ __zos_sys_open (int *errcode, const char *pathname,
 	      }
 	    else if (fd_target.st_ccsid == 0)
 	      {
-		char *untagged_existing_file
-		  = getenv ("_ENCODE_FILE_EXISTING");
-		if (untagged_existing_file != NULL
-		    && strncmp (untagged_existing_file, "ISO8859-1",
-				sizeof ("ISO8859-1") - 1) == 0)
-		  {
-		    fcvt.file_ccsid = 819;
-		  }
-		else if (untagged_existing_file != NULL
-			 && strncmp (untagged_existing_file, "BINARY",
-				    sizeof ("BINARY") - 1) == 0)
-		  {
-		    fcvt.file_ccsid = FT_BINARY;
-		  }
-		else
-		  {
-		    fcvt.file_ccsid = 1047;
-		  }
+		/* Opened untagged file, cannot tag as in read only mode.  */
+		/* Since the file already exists, and the question of its encoding
+		   only matters for non-empty files, treat according to encode file
+		   existing or 1047, by default */
+		struct zos_file_tag temp_tag;
+		temp_tag.ft_ccsid = 1047;
+		get_env_ccsid("_ENCODE_FILE_EXISTING", &temp_tag);
+		fcvt.file_ccsid = temp_tag.ft_ccsid;
 	      }
 	    else if ((fd_target.st_ccsid == 1047
 		      || fd_target.st_ccsid == 819)
