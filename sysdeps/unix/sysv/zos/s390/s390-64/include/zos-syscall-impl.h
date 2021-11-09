@@ -2174,6 +2174,70 @@ typedef void (*__bpx4exc_t) (const uint32_t *pathname_len,
 			     int32_t *retval, int32_t *retcode,
 			     int32_t *reason_code);
 
+typedef void (*__bpx4env_t) (const uint32_t *fun_code,
+			     const uint32_t *in_arg_count,
+			     const void *const *in_arg_list,
+			     const uint32_t *out_arg_count,
+			     const void *const *out_arg_list,
+			     int32_t *retval, int32_t *retcode,
+			     int32_t *reason_code);
+
+/* Activate automatic text conversion of tagged USS files by
+   passing environment variable _BPXK_AUTOCVT=ON to the USS kernel. */
+static inline int
+enable_auto_conversion(void)
+{
+  uint32_t fun_code    = 6; /* Function code: 6 - pass/request environment   */
+                            /* variable '_BPXK_*' to/from the kernel.        */
+  uint32_t in_arg_cnt  = 5; /* Number of input parameters.                   */
+  uint32_t out_arg_cnt = 0; /* Number of output parameters - no parameters.  */
+  void *out_arg_ptr = NULL; /* Pointer to output parameters - no parameters. */
+
+  /* Pointers to input parameters. */
+  void *in_arg_list[5];
+  void *in_arg_ptr = in_arg_list;
+
+  int32_t retval, errcode, reason_code;
+
+  /* Input parameters for the function code 6. */
+  /* That function code is mentioned only in BPXYCONS macro (BPXK_PARAMETER).
+     Parameters for that function code are not documented at all. That
+     information was found using bpxtrace and dbx tools with test program
+     that calls setenv() function and is built with xlc.
+     According to the documentation "z/OS XL C/C++ Runtime Library Reference":
+     "setenv() uses the BPX1ENV callable service to pass environment variables
+     that begin with '_BPXK_' to the kernel.". But at the moment we don't have
+     z/OS-specific implementation of setenv(), so we use BPX4ENV callable
+     service here directly instead of default setenv() function. */
+  uint32_t subfun_code = 2; /* Type of operation with '_BPXK_*' variable:    */
+                            /* 2 - pass environment variable to the kernel.  */
+  char bpxk_param[] = "_BPXK_AUTOCVT"; /* Name of the environment variable.  */
+  char bpxk_value[] = "ON";            /* Value of the environment variable. */
+  uint32_t  bpxk_param_len = 13;       /* Length of the variable's name.     */
+  uint32_t  bpxk_value_len = 2;        /* Length of the variable's value.    */
+
+  /* Set pointers to the input parameters in correct order. */
+  in_arg_list[0] = &subfun_code;
+  in_arg_list[1] = &bpxk_param_len;
+  in_arg_list[2] = bpxk_param;
+  in_arg_list[3] = &bpxk_value_len;
+  in_arg_list[4] = bpxk_value;
+
+  /* Convert name and value of the variable to EBCDIC encoding. */
+  tr_until_len_in_place(bpxk_param, bpxk_param_len, a_to_1047);
+  tr_until_len_in_place(bpxk_value, bpxk_value_len, a_to_1047);
+
+  BPX_CALL (oe_env_np, __bpx4env_t, &fun_code,
+	    &in_arg_cnt, &in_arg_ptr,
+	    &out_arg_cnt, &out_arg_ptr,
+	    &retval, &errcode, &reason_code);
+
+  if (retval != 0 && errcode != 0)
+    return -1;
+
+  return 0;
+}
+
 static inline int
 __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
 		  char *const envp[])
@@ -2305,6 +2369,19 @@ __zos_sys_execve (int *errcode, const char *pathname, char *const argv[],
   /* z/OS TODO: We might want to define an exit to clean up any
      resources.  */
   void *exit_addr = NULL, *exit_params = NULL;
+
+  /* Activate automatic text conversion of tagged USS files by
+     passing environment variable _BPXK_AUTOCVT=ON to the USS kernel.
+     That is necessary to execute ASCII scripts via exec() syscall.
+     -----
+     Ignore return value of that function at the moment as if automatic
+     text conversion activation is failed:
+     1. exec() syscall still able to execute binary modules and
+        EBCDIC scripts.
+     2. if we want to abort exec() syscall, we need to specify some
+        valuable errno value to show the exact error to the caller.
+        Don't know which errno value can be used for that. */
+  enable_auto_conversion();
 
   /* Temporarily turn us into an EBCDIC program to allow us to
      directly exec ASCII scripts.  */
